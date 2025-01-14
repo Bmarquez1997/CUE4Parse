@@ -44,6 +44,11 @@ public interface IPropertyHolder
     public bool TryGetAllValues<T>(out T[] obj, string name);
 }
 
+public class UPropertyAttribute(string? propertyName = null) : Attribute
+{
+    public readonly string? PropertyName = propertyName;
+}
+
 [JsonConverter(typeof(UObjectConverter))]
 [SkipObjectRegistration]
 public class UObject : IPropertyHolder
