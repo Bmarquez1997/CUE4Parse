@@ -9,6 +9,7 @@ using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Meshes;
 using CUE4Parse.UE4.Objects.RenderCore;
 using CUE4Parse_Conversion.Meshes.PSK;
+using Serilog;
 
 namespace CUE4Parse_Conversion.Meshes
 {
@@ -268,11 +269,16 @@ namespace CUE4Parse_Conversion.Meshes
 
                     foreach (var (weight, boneIndex) in v.Infs.BoneWeight.Zip(v.Infs.BoneIndex))
                     {
-                        if (weight != 0)
+                        if (weight == 0) continue;
+                        if (boneIndex >= boneMap.Length)
                         {
-                            var bone = (short)boneMap[boneIndex];
-                            skeletalMeshLod.Verts[vert].AddInfluence(bone, weight);
+                            // TODO: Figure out why this is happening
+                            Log.Warning("BoneIndex {0} greater than number of bones: {1}, skipping weight assignment", boneIndex, boneMap.Length);
+                            continue;
                         }
+                        
+                        var bone = (short)boneMap[boneIndex];
+                        skeletalMeshLod.Verts[vert].AddInfluence(bone, weight);
                     }
                 }
 
