@@ -277,7 +277,7 @@ namespace CUE4Parse.FileProvider.Vfs
         public void PostMount()
         {
             var workingAes = LoadIniConfigs();
-            if (workingAes) return;
+            if (workingAes || DefaultGame.EncryptionKeyGuid is null) return;
 
             var vfsToVerify = _mountedVfs.Keys
                     .Where(it => it is {IsEncrypted: false, EncryptedFileCount: > 0})
