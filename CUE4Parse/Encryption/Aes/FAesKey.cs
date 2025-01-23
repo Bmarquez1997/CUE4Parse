@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using CUE4Parse.Utils;
 
 namespace CUE4Parse.Encryption.Aes
@@ -7,6 +8,7 @@ namespace CUE4Parse.Encryption.Aes
     {
         public readonly byte[] Key;
         public readonly string KeyString;
+        public bool IsDefault => Key.All(x => x == 0);
 
         public FAesKey(byte[] key)
         {
