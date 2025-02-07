@@ -54,9 +54,9 @@ public class FSkelMeshSection
         bCastShadow = true;
         bVisibleInRayTracing = true;
         CorrespondClothSectionIndex = -1;
-        SoftVertices = Array.Empty<FSoftVertex>();
-        ClothMappingDataLODs = Array.Empty<FMeshToMeshVertData[]>();
-        BoneMap = Array.Empty<ushort>();
+        SoftVertices = [];
+        ClothMappingDataLODs = [];
+        BoneMap = [];
         MaxBoneInfluences = 4;
         OverlappingVertices = new Dictionary<int, int[]>();
         GenerateUpToLodIndex = -1;
@@ -248,7 +248,7 @@ public class FSkelMeshSection
 
         if (Ar.Game == EGame.GAME_Paragon) return;
 
-        if (Ar.Game < EGame.GAME_UE4_23 || !stripDataFlags.IsClassDataStripped(1)) // DuplicatedVertices, introduced in UE4.23
+        if (Ar.Game is < EGame.GAME_UE4_23 and not EGame.GAME_Fortnite_S10 || !stripDataFlags.IsClassDataStripped(1)) // DuplicatedVertices, introduced in UE4.23
         {
             Ar.SkipFixedArray(4); // DupVertData
             Ar.SkipFixedArray(8); // DupVertIndexData

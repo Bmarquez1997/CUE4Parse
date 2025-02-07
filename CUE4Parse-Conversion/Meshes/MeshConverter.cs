@@ -150,7 +150,7 @@ namespace CUE4Parse_Conversion.Meshes
                     HasTangents = true,
                     Indices = new Lazy<FRawStaticIndexBuffer>(() => new FRawStaticIndexBuffer
                     {
-                        Indices16 = srcLod.Indices.Indices16, Indices32 = srcLod.Indices.Indices32
+                        Indices16 = srcLod.MultiSizeIndexContainer.Indices16, Indices32 = srcLod.MultiSizeIndexContainer.Indices32
                     }),
                     Sections = new Lazy<CMeshSection[]>(() =>
                     {

@@ -63,9 +63,7 @@ public class USkeletalMesh : UObject
 
             var bCooked = Ar.ReadBoolean();
             if (Ar.Versions["SkeletalMesh.KeepMobileMinLODSettingOnDesktop"])
-            {
-                var minMobileLODIdx = Ar.Read<int>();
-            }
+                _ = Ar.Read<int>(); // minMobileLODIdx
 
             if (bCooked && LODModels == null)
             {

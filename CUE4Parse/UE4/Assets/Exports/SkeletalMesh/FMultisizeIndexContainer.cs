@@ -11,21 +11,19 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
 
         public FMultisizeIndexContainer()
         {
-            Indices16 = Array.Empty<ushort>();
-            Indices32 = Array.Empty<uint>();
+            Indices16 = [];
+            Indices32 = [];
         }
         
         public FMultisizeIndexContainer(FArchive Ar) : this()
         {
             if (Ar.Ver < EUnrealEngineObjectUE4Version.KEEP_SKEL_MESH_INDEX_DATA)
-            {
-                Ar.Position += 4; //var bOldNeedsCPUAccess = Ar.ReadBoolean();
-            }
-            
-            var dataSize = Ar.Read<byte>();
+                _ = Ar.ReadBoolean(); // bOldNeedsCPUAccess
+
+            var dataTypeSize = Ar.Read<byte>();
             if (Ar.Game == EGame.GAME_OutlastTrials) Ar.Position += 4;
 
-            if (dataSize == 0x02)
+            if (dataTypeSize == 0x02)
             {
                 Indices16 = Ar.ReadBulkArray<ushort>();
             }
@@ -33,6 +31,16 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             {
                 Indices32 = Ar.ReadBulkArray<uint>();
             }
+        }
+        
+        public static int CalcMetaDataSize()
+        {
+            var numBytes = 0;
+
+            numBytes += 1; // dataTypeSize
+            numBytes += 4; // cachedNumIndices
+
+            return numBytes;
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using CUE4Parse.MappingsProvider;
@@ -47,21 +48,15 @@ public interface IPropertyHolder
 public abstract class AbstractPropertyHolder : IPropertyHolder
 {
     public List<FPropertyTag> Properties { get; protected set; } = new();
-
     public T GetOrDefault<T>(string name, T defaultValue = default!, StringComparison comparisonType = StringComparison.Ordinal) =>
         PropertyUtil.GetOrDefault(this, name, defaultValue, comparisonType);
-
     public Lazy<T> GetOrDefaultLazy<T>(string name, T defaultValue = default!, StringComparison comparisonType = StringComparison.Ordinal) =>
         PropertyUtil.GetOrDefaultLazy(this, name, defaultValue, comparisonType);
-
     public T Get<T>(string name, StringComparison comparisonType = StringComparison.Ordinal) =>
         PropertyUtil.Get<T>(this, name, comparisonType);
-
     public Lazy<T> GetLazy<T>(string name, StringComparison comparisonType = StringComparison.Ordinal) =>
         PropertyUtil.GetLazy<T>(this, name, comparisonType);
-
     public T GetByIndex<T>(int index) => PropertyUtil.GetByIndex<T>(this, index);
-
     public bool TryGetValue<T>(out T obj, params string[] names)
     {
         foreach (string name in names)
@@ -165,14 +160,30 @@ public class UObject : AbstractPropertyHolder
             ObjectGuid = Ar.Read<FGuid>();
         }
 
-        if (FUE5MainStreamObjectVersion.Get(Ar) < FUE5MainStreamObjectVersion.Type.SparseClassDataStructSerialization || !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
-            return;
 
-        if (Class?.ExportType is { } type && type.EndsWith("BlueprintGeneratedClass"))
+        if (FUE5MainStreamObjectVersion.Get(Ar) >=
+            FUE5MainStreamObjectVersion.Type.SparseClassDataStructSerialization ||
+            !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
         {
-            SerializedSparseClassDataStruct = new FPackageIndex(Ar).Load<UStruct>();
-            if (SerializedSparseClassDataStruct is null) return;
-            SerializedSparseClassData = new FStructFallback(Ar, SerializedSparseClassDataStruct);
+            if (Class?.ExportType is { } type && type.EndsWith("BlueprintGeneratedClass"))
+            {
+                SerializedSparseClassDataStruct = new FPackageIndex(Ar).Load<UStruct>();
+                if (SerializedSparseClassDataStruct is null) return;
+                SerializedSparseClassData = new FStructFallback(Ar, SerializedSparseClassDataStruct);
+            }
+        }
+        
+        var fields = GetType().GetFields();
+        foreach (var field in fields)
+        {
+            var attribute = field.GetCustomAttribute<UPropertyAttribute>();
+            if (attribute is null) continue;
+            
+            var name = attribute.PropertyName ?? field.Name;
+            if (Properties.FirstOrDefault(prop => prop.Name.Text.Equals(name)) 
+                is not { } property) continue;
+            
+            field.SetValue(this, property.Tag?.GetValue(field.FieldType));
         }
     }
 
@@ -415,6 +426,53 @@ public class UObject : AbstractPropertyHolder
             writer.WritePropertyName("SerializedSparseClassData");
             serializer.Serialize(writer, SerializedSparseClassData);
         }
+    }
+
+    public T GetOrDefault<T>(string name, T defaultValue = default!, StringComparison comparisonType = StringComparison.Ordinal) =>
+        PropertyUtil.GetOrDefault(this, name, defaultValue, comparisonType);
+
+    public Lazy<T> GetOrDefaultLazy<T>(string name, T defaultValue = default!, StringComparison comparisonType = StringComparison.Ordinal) =>
+        PropertyUtil.GetOrDefaultLazy(this, name, defaultValue, comparisonType);
+
+    public T Get<T>(string name, StringComparison comparisonType = StringComparison.Ordinal) =>
+        PropertyUtil.Get<T>(this, name, comparisonType);
+
+    public Lazy<T> GetLazy<T>(string name, StringComparison comparisonType = StringComparison.Ordinal) =>
+        PropertyUtil.GetLazy<T>(this, name, comparisonType);
+
+    public T GetByIndex<T>(int index) => PropertyUtil.GetByIndex<T>(this, index);
+
+    public bool TryGetValue<T>(out T obj, params string[] names)
+    {
+        foreach (string name in names)
+        {
+            if (this.TryGet<T>(name, out obj, comparisonType: StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        obj = default!;
+        return false;
+    }
+
+    public bool TryGetAllValues<T>(out T[] obj, string name)
+    {
+        var maxIndex = -1;
+        var collected = new List<FPropertyTag>();
+        foreach (var prop in Properties)
+        {
+            if (prop.Name.Text != name) continue;
+            collected.Add(prop);
+            maxIndex = Math.Max(maxIndex, prop.ArrayIndex);
+        }
+
+        obj = new T[maxIndex + 1];
+        foreach (var prop in collected) {
+            obj[prop.ArrayIndex] = (T)prop.Tag?.GetValue(typeof(T))!;
+        }
+
+        return obj.Length > 0;
     }
 
     // Just ignore it for the parser

@@ -20,8 +20,8 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
 
         public FSkeletalMeshVertexBuffer()
         {
-            VertsHalf = Array.Empty<FGPUVertHalf>();
-            VertsFloat = Array.Empty<FGPUVertFloat>();
+            VertsHalf = [];
+            VertsFloat = [];
         }
 
         public FSkeletalMeshVertexBuffer(FAssetArchive Ar) : this()
