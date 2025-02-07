@@ -16,7 +16,7 @@ namespace CUE4Parse.FileProvider.Vfs
 
         private readonly KeyEnumerable _keys;
         private readonly ValueEnumerable _values;
-        private readonly ConcurrentBag<KeyValuePair<long, IReadOnlyDictionary<string, GameFile>>> _indicesBag = new ();
+        private readonly ConcurrentBag<IReadOnlyDictionary<string, GameFile>> _indicesBag = new ();
 
         public readonly bool IsCaseInsensitive;
         public IEnumerable<string> Keys => _keys;
@@ -30,7 +30,7 @@ namespace CUE4Parse.FileProvider.Vfs
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void AddFiles(IReadOnlyDictionary<string, GameFile> newFiles, long readOrder = 0)
+        public void AddFiles(IReadOnlyDictionary<string, GameFile> newFiles)
         {
             foreach (var file in newFiles.Values)
             {
@@ -39,7 +39,7 @@ namespace CUE4Parse.FileProvider.Vfs
                     _byId[ioEntry.ChunkId.AsPackageId()] = file;
                 }
             }
-            _indicesBag.Add(new KeyValuePair<long, IReadOnlyDictionary<string, GameFile>>(readOrder, newFiles));
+            _indicesBag.Add(newFiles);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -52,10 +52,11 @@ namespace CUE4Parse.FileProvider.Vfs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool ContainsKey(string key)
         {
-            if (IsCaseInsensitive) key = key.ToLowerInvariant();
+            if (IsCaseInsensitive)
+                key = key.ToLowerInvariant();
             foreach (var files in _indicesBag)
             {
-                if (files.Value.ContainsKey(key))
+                if (files.ContainsKey(key))
                     return true;
             }
 
@@ -65,10 +66,11 @@ namespace CUE4Parse.FileProvider.Vfs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryGetValue(string key, out GameFile value)
         {
-            if (IsCaseInsensitive) key = key.ToLowerInvariant();
-            foreach (var files in _indicesBag.OrderByDescending(kvp => kvp.Key))
+            if (IsCaseInsensitive)
+                key = key.ToLowerInvariant();
+            foreach (var files in _indicesBag)
             {
-                if (files.Value.TryGetValue(key, out value))
+                if (files.TryGetValue(key, out value))
                     return true;
             }
 
@@ -82,8 +84,9 @@ namespace CUE4Parse.FileProvider.Vfs
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (TryGetValue(path, out var file) ||
-                    TryGetValue(path.SubstringBeforeWithLast('.') + GameFile.Ue4PackageExtensions[1], out file))
+                if (TryGetValue(path, out var file))
+                    return file;
+                if (TryGetValue(path.SubstringBeforeWithLast('.') + GameFile.Ue4PackageExtensions[1], out file))
                     return file;
 
                 throw new KeyNotFoundException($"There is no game file with the path \"{path}\"");
@@ -93,9 +96,9 @@ namespace CUE4Parse.FileProvider.Vfs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IEnumerator<KeyValuePair<string, GameFile>> GetEnumerator()
         {
-            foreach (var index in _indicesBag.OrderByDescending(kvp => kvp.Key))
+            foreach (var index in _indicesBag)
             {
-                foreach (var entry in index.Value)
+                foreach (var entry in index)
                 {
                     yield return entry;
                 }
@@ -105,7 +108,7 @@ namespace CUE4Parse.FileProvider.Vfs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public int Count => _indicesBag.Sum(it => it.Value.Count);
+        public int Count => _indicesBag.Sum(it => it.Count);
 
         private class KeyEnumerable : IEnumerable<string>
         {
@@ -118,9 +121,9 @@ namespace CUE4Parse.FileProvider.Vfs
 
             public IEnumerator<string> GetEnumerator()
             {
-                foreach (var index in _orig._indicesBag.OrderByDescending(kvp => kvp.Key))
+                foreach (var index in _orig._indicesBag)
                 {
-                    foreach (var key in index.Value.Keys)
+                    foreach (var key in index.Keys)
                     {
                         yield return key;
                     }
@@ -141,9 +144,9 @@ namespace CUE4Parse.FileProvider.Vfs
 
             public IEnumerator<GameFile> GetEnumerator()
             {
-                foreach (var index in _orig._indicesBag.OrderByDescending(kvp => kvp.Key))
+                foreach (var index in _orig._indicesBag)
                 {
-                    foreach (var key in index.Value.Values)
+                    foreach (var key in index.Values)
                     {
                         yield return key;
                     }

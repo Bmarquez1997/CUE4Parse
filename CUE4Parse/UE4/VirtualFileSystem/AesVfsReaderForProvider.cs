@@ -8,7 +8,7 @@ namespace CUE4Parse.UE4.VirtualFileSystem
     {
         public void MountTo(FileProviderDictionary files, bool caseInsensitive, EventHandler<int>? vfsMounted = null)
         {
-            files.AddFiles(Mount(caseInsensitive), ReadOrder);
+            files.AddFiles(Mount(caseInsensitive));
             vfsMounted?.Invoke(this, files.Count);
         }
     }
