@@ -12,9 +12,11 @@ namespace CUE4Parse.UE4.Assets.Objects
         public readonly int ElementCount;
         public readonly uint SizeOnDisk;
         public readonly long OffsetInFile;
+        public readonly uint CookedIndex;
 
         public FByteBulkDataHeader(FAssetArchive Ar)
         {
+            CookedIndex = 0;
             if (Ar.Owner is IoPackage { BulkDataMap.Length: > 0 } iopkg)
             {
                 var dataIndex = Ar.Read<int>();
@@ -25,6 +27,7 @@ namespace CUE4Parse.UE4.Assets.Objects
                     ElementCount = (int) metaData.SerialSize;
                     OffsetInFile = (long) metaData.SerialOffset;
                     SizeOnDisk = (uint) metaData.SerialSize; // ??
+                    CookedIndex = metaData.CookedIndex;
                     return;
                 }
                 Ar.Position -= 4;

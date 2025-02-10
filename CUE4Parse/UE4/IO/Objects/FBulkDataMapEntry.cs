@@ -11,6 +11,8 @@ namespace CUE4Parse.UE4.IO.Objects
         public readonly ulong DuplicateSerialOffset;
         public readonly ulong SerialSize;
         public readonly uint Flags;
-        public readonly uint Pad;
+        public readonly byte CookedIndex; // https://github.com/EpicGames/UnrealEngine/commit/6e7f2558611221cfdf413106900caf947e3c17c5
+        public readonly short _pad0;
+        public readonly byte _pad1;
     }
 }

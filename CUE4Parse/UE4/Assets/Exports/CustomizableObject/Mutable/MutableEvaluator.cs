@@ -31,27 +31,6 @@ public class MutableEvaluator
         var customizableObjectPrivate = CustomizableObject.Get<FPackageIndex>("Private").Load();
         ModelStreamableData = customizableObjectPrivate?.Get<FPackageIndex>("ModelStreamableData")
             .Load<UModelStreamableData>()?.StreamingData;
-
-        Dictionary<long, string> bulkArchives = [];
-        
-        foreach (var matchingArchive in Provider.Files.Where((entry, _) => entry.Key.Contains(CustomizableObject.Name + ".", StringComparison.OrdinalIgnoreCase) && (entry.Key.EndsWith(".ubulk") || entry.Key.EndsWith(".uptnl"))))
-        {
-            if (!bulkArchives.TryGetValue(matchingArchive.Value.Size, out var archive))
-                bulkArchives.Add(matchingArchive.Value.Size, matchingArchive.Key);
-            else if (!archive.Equals(matchingArchive.Key))
-                Log.Information("Duplicate key found: {0}, Current: {1}, New: {2}", matchingArchive.Value.Size, archive, matchingArchive.Key);
-        }
-        // number = rom.SourceId % 
-        for (var i = 0; i < ModelStreamableData.StreamableBulkData.Length; i++)
-        {
-            var streamableBulkData = ModelStreamableData.StreamableBulkData[i];
-            if (!bulkArchives.TryGetValue(streamableBulkData.Header.SizeOnDisk, out var bulkArchivePath)
-                || !Provider.TryFindGameFile(bulkArchivePath, out var bulkData))
-                continue;
-            
-            var dataReader = bulkData.CreateReader();
-            BulkReaders[Convert.ToUInt32(i)] = dataReader;
-        }
     }
 
     public FMesh LoadResource(int resourceIndex)
@@ -74,13 +53,14 @@ public class MutableEvaluator
         var block = ModelStreamableData.ModelStreamables[rom.Id];
         if (!BulkReaders.TryGetValue(block.FileId, out var reader))
         {
-            Log.Error("BulkReader missing for DataType: {0}, FileID: {1}", dataType, block.FileId);
-            // reader = new FByteArchive("Mutable BulkData", ModelStreamableData.StreamableBulkData[block.FileId].Data);
-            // BulkReaders[block.FileId] = (FArchive)reader.Clone();
+            reader = new FByteArchive("Mutable BulkData", ModelStreamableData.StreamableBulkData[block.FileId].Data);
+            BulkReaders[block.FileId] = (FArchive)reader.Clone();
         }
 
         if (reader != null)
             reader.Position = (long)block.Offset;
+        else
+            Log.Error("Reader not found for type: {0} and file index: {1}", dataType.ToString(), block.FileId);
 
         return reader;
     }

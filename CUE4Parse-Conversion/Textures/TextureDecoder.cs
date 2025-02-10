@@ -269,6 +269,10 @@ public static class TextureDecoder
             EImageFormat.BC1 => DXTDecoder.DXT1(rawBytes, size.X, size.Y, 1),
             EImageFormat.L_UByte => rawBytes,
             EImageFormat.L_UByteRLE => UncompressRLE_L(size.X, size.Y, rawBytes),
+            EImageFormat.RGB_UByte => rawBytes,
+            EImageFormat.RGB_UByteRLE => UncompressRLE_RGB(size.X, size.Y, rawBytes),
+            EImageFormat.RGBA_UByte => rawBytes,
+            EImageFormat.RGBA_UByteRLE => UncompressRLE_RGBA(size.X, size.Y, rawBytes),
             _ => throw new NotImplementedException($"Mutable image format not supported: {dataStorage.ImageFormat}")
         };
         
@@ -280,6 +284,10 @@ public static class TextureDecoder
             EImageFormat.BC1 => SKColorType.Rgba8888,
             EImageFormat.L_UByte => SKColorType.Gray8,
             EImageFormat.L_UByteRLE => SKColorType.Gray8,
+            EImageFormat.RGB_UByte => SKColorType.Rgb888x,
+            EImageFormat.RGB_UByteRLE => SKColorType.Rgb888x,
+            EImageFormat.RGBA_UByte => SKColorType.Rgba8888,
+            EImageFormat.RGBA_UByteRLE => SKColorType.Rgba8888,
             _ => SKColorType.Gray8
             // _ => throw new NotImplementedException($"Mutable image format not supported: {dataStorage.ImageFormat}")
         };

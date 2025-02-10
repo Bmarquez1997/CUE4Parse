@@ -114,7 +114,7 @@ public class MutableExporter : ExporterBase
         {
             var skeleton = skeletons[skeletonGroup.Key].Load<USkeleton>();
             if (filterSkeletonName != null && 
-                !filterSkeletonName.Equals(skeleton.Name, StringComparison.OrdinalIgnoreCase)) continue;
+                !skeleton.Name.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
             
             if (skeleton.Name.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeleton.Name.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
             {
@@ -158,10 +158,10 @@ public class MutableExporter : ExporterBase
             return;
         }
         
-        // var meshName = $"{skeleton.Name}_{materialSlotName}";
-        var meshName = materialSlotName;
-        if (appendId) meshName = $"{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
-        var exportPath = $"{PackagePath}/{skeleton.Name}/{meshName}";
+        var meshName = $"{skeleton.Name.Replace("_Skeleton", "")}_{materialSlotName}";
+        // var meshName = materialSlotName;
+        if (appendId) meshName = $"{materialSlotName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
+        var exportPath = $"{PackagePath}/{skeleton.Name}/{materialSlotName}";
         
         var totalSockets = new List<FPackageIndex>();
         if (Options.SocketFormat != ESocketFormat.None)
@@ -186,8 +186,17 @@ public class MutableExporter : ExporterBase
 
     private void ExportMutableImage(FImage image)
     {
-        var bitmap = image.Decode();
-        if (bitmap != null) Images.Add(bitmap);
+        if (image.DataStorage.ImageFormat == EImageFormat.BC5) return;
+        try
+        {
+            var bitmap = image.Decode();
+            if (bitmap != null) Images.Add(bitmap);
+        }
+        catch (Exception e)
+        {
+            Log.Error("Exception thrown decoding mutable image: {0}", e.Message);
+        }
+        
     }
 
     public override bool TryWriteToDir(DirectoryInfo baseDirectory, out string label, out string savedFilePath)

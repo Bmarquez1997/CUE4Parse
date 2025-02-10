@@ -3,6 +3,8 @@ using System.Runtime.CompilerServices;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Assets.Utils;
 using CUE4Parse.UE4.Exceptions;
+using CUE4Parse.UE4.Readers;
+using CUE4Parse.Utils;
 using Newtonsoft.Json;
 using Serilog;
 using static CUE4Parse.UE4.Assets.Objects.EBulkDataFlags;
@@ -106,7 +108,16 @@ namespace CUE4Parse.UE4.Assets.Objects
 #if DEBUG
                 Log.Debug("bulk data in .uptnl file (Optional Payload) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
 #endif
-                if (!Ar.TryGetPayload(PayloadType.UPTNL, out var uptnlAr) || uptnlAr == null) return false;
+                FArchive? uptnlAr = null;
+                if (Header.CookedIndex > 0 && Ar.Owner?.Provider != null)
+                {
+                    if (!Ar.Owner.Provider.TryCreateReader($"{Ar.Name.SubstringBeforeLast(".")}.{Header.CookedIndex:000}.uptnl", out uptnlAr)) return false;
+                }
+                else
+                {
+                    if (!Ar.TryGetPayload(PayloadType.UPTNL, out var assetArchive) || assetArchive == null) return false;
+                    uptnlAr = assetArchive;
+                }
 
                 uptnlAr.Position = Header.OffsetInFile;
                 CheckReadSize(uptnlAr.Read(data, offset, Header.ElementCount));
@@ -116,7 +127,16 @@ namespace CUE4Parse.UE4.Assets.Objects
 #if DEBUG
                 Log.Debug("bulk data in .ubulk file (Payload In Separate File) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
 #endif
-                if (!Ar.TryGetPayload(PayloadType.UBULK, out var ubulkAr) || ubulkAr == null) return false;
+                FArchive? ubulkAr = null;
+                if (Header.CookedIndex > 0 && Ar.Owner?.Provider != null)
+                {
+                    if (!Ar.Owner.Provider.TryCreateReader($"{Ar.Name.SubstringBeforeLast(".")}.{Header.CookedIndex:000}.ubulk", out ubulkAr)) return false;
+                }
+                else
+                {
+                    if (!Ar.TryGetPayload(PayloadType.UBULK, out var assetArchive) || assetArchive == null) return false;
+                    ubulkAr = assetArchive;
+                }
 
                 ubulkAr.Position = Header.OffsetInFile;
                 CheckReadSize(ubulkAr.Read(data, offset, Header.ElementCount));;
