@@ -487,7 +487,7 @@ namespace CUE4Parse_Conversion.Animations
             // read translation keys
             if (transOffset == -1)
             {
-                track.KeyPos = new[] { FVector.ZeroVector };
+                track.KeyPos = [FVector.ZeroVector];
             }
             else
             {
@@ -498,7 +498,7 @@ namespace CUE4Parse_Conversion.Animations
             // read rotation keys
             if (rotOffset == -1)
             {
-                track.KeyQuat = new[] { FQuat.Identity };
+                track.KeyQuat = [FQuat.Identity];
             }
             else
             {
@@ -507,7 +507,11 @@ namespace CUE4Parse_Conversion.Animations
             }
 
             // read scale keys
-            if (scaleOffset != -1)
+            if (scaleOffset == -1)
+            {
+                track.KeyScale = [FVector.ZeroVector];
+            }
+            else
             {
                 reader.Position = scaleOffset;
                 ReadPerTrackVectorData(reader, "scale", ref track.KeyScale, ref track.KeyScaleTime, animSequence.NumFrames);
@@ -522,9 +526,18 @@ namespace CUE4Parse_Conversion.Animations
             var transKeys = compressedData.CompressedTrackOffsets[trackIndex * 4 + 1];
             var rotOffset = compressedData.CompressedTrackOffsets[trackIndex * 4 + 2];
             var rotKeys = compressedData.CompressedTrackOffsets[trackIndex * 4 + 3];
+            var scaleOffset = 0;
+            var scaleKeys = 0;
+
+            if (compressedData.CompressedScaleOffsets.IsValid())
+            {
+                scaleOffset = compressedData.CompressedScaleOffsets.OffsetData[trackIndex * 2];
+                scaleKeys = compressedData.CompressedScaleOffsets.OffsetData[trackIndex * 2 + 1];
+            }
 
             track.KeyPos = new FVector[transKeys];
             track.KeyQuat = new FQuat[rotKeys];
+            track.KeyScale = new FVector[scaleKeys];
 
             var mins = FVector.ZeroVector;
             var ranges = FVector.ZeroVector;

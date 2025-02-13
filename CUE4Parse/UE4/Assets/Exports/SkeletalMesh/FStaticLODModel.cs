@@ -15,7 +15,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
 {
     public enum EClassDataStripFlag : byte
     {
-        CDSF_AdjacencyData_DEPRECATED = 1,
+        CDSF_AdjacencyData = 1,
         CDSF_MinLodData = 2,
     };
 
@@ -23,7 +23,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
     public class FStaticLODModel
     {
         public FSkelMeshSection[] Sections = [];
-        public FMultisizeIndexContainer? MultiSizeIndexContainer;
+        public FMultisizeIndexContainer? Indices;
         public short[] ActiveBoneIndices;
         public FSkelMeshChunk[] Chunks;
         public int Size;
@@ -40,7 +40,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
         public FMultisizeIndexContainer AdjacencyIndexBuffer;
         public FSkeletalMeshVertexClothBuffer ClothVertexBuffer;
         public FSkeletalMeshHalfEdgeBuffer HalfEdgeBuffer;
-        public bool SkipLod => MultiSizeIndexContainer == null || MultiSizeIndexContainer.Indices16.Length < 1 && MultiSizeIndexContainer.Indices32.Length < 1;
+        public bool SkipLod => Indices == null || Indices.Indices16.Length < 1 && Indices.Indices32.Length < 1;
 
         public FStaticLODModel()
         {
@@ -58,9 +58,15 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
 
             Sections = Ar.ReadArray(() => new FSkelMeshSection(Ar));
 
-            MultiSizeIndexContainer = skelMeshVer < FSkeletalMeshCustomVersion.Type.SplitModelAndRenderData ? 
-                new FMultisizeIndexContainer(Ar) : 
-                new FMultisizeIndexContainer { Indices32 = Ar.ReadBulkArray<uint>() }; // UE4.19+ uses 32-bit index buffer (for editor data)
+            if (skelMeshVer < FSkeletalMeshCustomVersion.Type.SplitModelAndRenderData)
+            {
+                Indices = new FMultisizeIndexContainer(Ar);
+            }
+            else
+            {
+                // UE4.19+ uses 32-bit index buffer (for editor data)
+                Indices = new FMultisizeIndexContainer { Indices32 = Ar.ReadBulkArray<uint>() };
+            }
 
             ActiveBoneIndices = Ar.ReadArray<short>();
 
@@ -162,7 +168,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                         Ar.Position -= 4;
 
                         var internalStripFlags = new FStripDataFlags(Ar);
-                        if (internalStripFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData_DEPRECATED))
+                        if (internalStripFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
                         {
                             Ar.Position -= 2;
                             return;
@@ -184,7 +190,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                         return;
                     }
 
-                    if (!stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData_DEPRECATED))
+                    if (!stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
                         AdjacencyIndexBuffer = new FMultisizeIndexContainer(Ar);
 
                     if (Ar.Ver >= EUnrealEngineObjectUE4Version.APEX_CLOTH && HasClothData())
@@ -224,7 +230,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 if (Ar.Game is EGame.GAME_FragPunk)
                     Ar.Read<int>();
 
-                _ = Ar.Read<uint>(); // BuffersSize
+                Ar.Position += 4; //var buffersSize = Ar.Read<uint>();
 
                 if (bInlined)
                 {
@@ -261,7 +267,26 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                             SerializeStreamedData(tempAr, bHasVertexColors);
                         }
 
-                        SerializeAvailabilityInfo(Ar, stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData_DEPRECATED));
+                        var skipBytes = 5;
+                        if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
+                            skipBytes += 5;
+                        skipBytes += 4 * 4 + 2 * 4 + 2 * 4;
+                        skipBytes += FSkinWeightVertexBuffer.MetadataSize(Ar);
+                        Ar.Position += skipBytes;
+
+                        if (Ar.Game == EGame.GAME_StarWarsJediSurvivor) Ar.Position += 4;
+
+                        if (HasClothData())
+                        {
+                            var clothIndexMapping = Ar.ReadArray<long>();
+                            Ar.Position += 2 * 4;
+                            if (FUE5ReleaseStreamObjectVersion.Get(Ar) >= FUE5ReleaseStreamObjectVersion.Type.AddClothMappingLODBias)
+                            {
+                                Ar.Position += 4 * clothIndexMapping.Length;
+                            }
+                        }
+
+                        var profileNames = Ar.ReadArray(Ar.ReadFName);
                     }
                 }
             }
@@ -281,7 +306,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 Sections[i].SerializeRenderItem(Ar);
             }
 
-            MultiSizeIndexContainer = new FMultisizeIndexContainer(Ar);
+            Indices = new FMultisizeIndexContainer(Ar);
             VertexBufferGPUSkin = new FSkeletalMeshVertexBuffer { bUseFullPrecisionUVs = true };
 
             ActiveBoneIndices = Ar.ReadArray<short>();
@@ -307,7 +332,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                     ColorVertexBuffer = new FSkeletalMeshVertexColorBuffer(newColorVertexBuffer.Data);
                 }
 
-                if (!stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData_DEPRECATED))
+                if (!stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
                     AdjacencyIndexBuffer = new FMultisizeIndexContainer(Ar);
 
                 if (HasClothData())
@@ -339,7 +364,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
         {
             var stripDataFlags = Ar.Read<FStripDataFlags>();
 
-            MultiSizeIndexContainer = new FMultisizeIndexContainer(Ar);
+            Indices = new FMultisizeIndexContainer(Ar);
             VertexBufferGPUSkin = new FSkeletalMeshVertexBuffer { bUseFullPrecisionUVs = true };
 
             var positionVertexBuffer = new FPositionVertexBuffer(Ar);
@@ -352,8 +377,12 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 ColorVertexBuffer = new FSkeletalMeshVertexColorBuffer(newColorVertexBuffer.Data);
             }
 
-            if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData_DEPRECATED))
+            if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation &&
+                !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
+            {
+                if (Ar.Game != EGame.GAME_GTATheTrilogyDefinitiveEdition)
                 AdjacencyIndexBuffer = new FMultisizeIndexContainer(Ar);
+            }
 
             if (HasClothData())
                 ClothVertexBuffer = new FSkeletalMeshVertexClothBuffer(Ar);
@@ -376,7 +405,14 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             }
 
             if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.SkeletalVertexAttributes)
-                VertexAttributeBuffers = Ar.ReadMap(Ar.ReadFName, () => new FSkeletalMeshAttributeVertexBuffer(Ar));
+            {
+                var count = Ar.Read<int>();
+                VertexAttributeBuffers = new Dictionary<FName, FSkeletalMeshAttributeVertexBuffer>(count);
+                for (int i = 0; i < count; i++)
+                {
+                    VertexAttributeBuffers[Ar.ReadFName()] = new FSkeletalMeshAttributeVertexBuffer(Ar);
+                }
+            }
 
             if (FFortniteMainBranchObjectVersion.Get(Ar) >= FFortniteMainBranchObjectVersion.Type.SkeletalHalfEdgeData && Ar.Game is not EGame.GAME_Fortnite_S27)
             {
@@ -384,8 +420,8 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 var meshDeformerStripFlags = Ar.Read<FStripDataFlags>();
                 if (!meshDeformerStripFlags.IsClassDataStripped(MeshDeformerStripFlag))
                 {
-                    if (Ar.Read<int>() == 0)
-                        Ar.Position -= 4;
+                    // if (Ar.Read<int>() == 0)
+                    //     Ar.Position -= 4;
                     
                     HalfEdgeBuffer = new FSkeletalMeshHalfEdgeBuffer(Ar);
                 }
@@ -407,23 +443,6 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
             }
         }
         
-        private void SerializeAvailabilityInfo(FArchive Ar, bool bAdjacencyDataStripped)
-        {
-            Ar.Position += FMultisizeIndexContainer.CalcMetaDataSize();
-            if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation && !bAdjacencyDataStripped)
-                Ar.Position += FMultisizeIndexContainer.CalcMetaDataSize();
-
-            Ar.Position += FStaticMeshVertexBuffer.CalcMetaDataSize();
-            Ar.Position += FPositionVertexBuffer.CalcMetaDataSize();
-            Ar.Position += FColorVertexBuffer.CalcMetaDataSize();
-            Ar.Position += FSkinWeightVertexBuffer.CalcMetaDataSize(Ar);
-
-            if (HasClothData())
-                Ar.Position += FSkeletalMeshVertexClothBuffer.CalcMetaDataSize(Ar);
-
-            FSkinWeightProfilesData.CalcMetaDataSize(Ar);
-        }
-
         private bool HasClothData()
         {
             for (var i = 0; i < Chunks.Length; i++)

@@ -10,11 +10,11 @@ public class FSkinWeightProfilesData
 
     public FSkinWeightProfilesData(FArchive Ar)
     {
-        OverrideData = Ar.ReadMap(Ar.ReadFName, () => new FRuntimeSkinWeightProfileData(Ar));
-    }
-
-    public static void CalcMetaDataSize(FArchive Ar)
-    {
-        _ = Ar.ReadArray(Ar.ReadFName);
+        var length = Ar.Read<int>();
+        OverrideData = new Dictionary<FName, FRuntimeSkinWeightProfileData>();
+        for (var i = 0; i < length; i++)
+        {
+            OverrideData[Ar.ReadFName()] = new FRuntimeSkinWeightProfileData(Ar);
+        }
     }
 }

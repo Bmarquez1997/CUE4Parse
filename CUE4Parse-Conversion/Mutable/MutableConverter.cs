@@ -158,7 +158,7 @@ public static class MutableConverter
     }
 
     private static Dictionary<short, short> BuildBoneIndexMap(FBoneName[] meshBoneMap,
-        UScriptMap boneNameMap, Dictionary<FName, int> finalNameToIndexMap)
+        UScriptMap boneNameMap, Dictionary<string, int> finalNameToIndexMap)
     {
         Dictionary<short, short> boneIndexMap = [];
         for (var i = 0; i < meshBoneMap.Length; i++)
@@ -168,7 +168,7 @@ public static class MutableConverter
                 .GetValue<string>();
             if (boneName == null) continue;
             var boneIndex = finalNameToIndexMap.First(indexMapEntry =>
-                indexMapEntry.Key.Text.Equals(boneName, StringComparison.OrdinalIgnoreCase)).Value;
+                indexMapEntry.Key.Equals(boneName, StringComparison.OrdinalIgnoreCase)).Value;
             boneIndexMap[(short) i] = (short) boneIndex;
         }
 

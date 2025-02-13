@@ -21,12 +21,12 @@ public class OptionalProperty : FPropertyTagType<FPropertyTagType>
             return;
         }
 
-        var wasOptionalSet = Ar.Game >= EGame.GAME_UE5_5 && Ar.ReadBoolean();
-        if (!wasOptionalSet)
-        {
-            Value = default;
-            return;
-        }
+        // var wasOptionalSet = Ar.Game >= EGame.GAME_UE5_5 && Ar.ReadBoolean();
+        // if (!wasOptionalSet)
+        // {
+        //     Value = default;
+        //     return;
+        // }
         
         Value = type switch
         {

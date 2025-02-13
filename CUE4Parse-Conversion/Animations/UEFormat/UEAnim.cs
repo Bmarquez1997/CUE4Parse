@@ -39,7 +39,7 @@ public class UEAnim : UEFormatExport
                     var translation = boneTransform.Translation;
                     var rotation = boneTransform.Rotation;
                     var scale = boneTransform.Scale3D;
-                    if (sequence.OriginalSequence.FindTrackForBoneIndex(i) >= 0)
+                    if (originalSequence.FindTrackForBoneIndex(i) >= 0)
                     {
                         track.GetBoneTransform(frame, sequence.NumFrames, ref rotation, ref translation, ref scale);
                     }

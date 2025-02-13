@@ -126,6 +126,18 @@ namespace CUE4Parse.UE4.Versions
             // Add a new virtual texture to support virtual texture light map on mobile
             VirtualTexturedLightmapsV3,
 
+            // Added fallback target modes including auto to Nanite builder
+            NaniteFallbackTarget,
+
+            // Added support to force Nanite material usage if Nanite mesh builders are also forced.
+            NaniteForceMaterialUsage,
+
+            // Custom material expression includes are now serialized & used for DDC key generation
+            AddedMaterialExpressionIncludesHash,
+
+            // Do not serialize deprecated high res source mesh
+            DeprecatedHighResSourceMesh,
+
             // -----<new versions can be added above this line>-------------------------------------------------
             VersionPlusOne,
             LatestVersion = VersionPlusOne - 1
@@ -160,6 +172,9 @@ namespace CUE4Parse.UE4.Versions
                 < EGame.GAME_UE4_25 => Type.MaterialShaderMapIdSerialization,
                 < EGame.GAME_UE4_26 => Type.AutoExposureDefaultFix,
                 < EGame.GAME_UE4_27 => Type.VolumeExtinctionBecomesRGB,
+                < EGame.GAME_UE5_3 => Type.VirtualTexturedLightmapsV3,
+                < EGame.GAME_UE5_4 => Type.NaniteForceMaterialUsage,
+                < EGame.GAME_UE5_5 => Type.AddedMaterialExpressionIncludesHash,
                 _ => Type.LatestVersion
             };
         }

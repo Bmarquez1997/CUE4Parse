@@ -41,14 +41,4 @@ public class FPositionVertexBuffer
         if (Ar.Game == EGame.GAME_Gollum) Ar.Position += 25;
         Verts = Ar.ReadBulkArray<FVector>();
     }
-
-    public static int CalcMetaDataSize()
-    {
-        var numBytes = 0;
-
-        numBytes += 4; // Stride
-        numBytes += 4; // NumVertices
-
-        return numBytes;
-    }
 }

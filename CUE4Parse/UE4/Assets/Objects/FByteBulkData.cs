@@ -6,8 +6,6 @@ using CUE4Parse.FileProvider.Vfs;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Assets.Utils;
 using CUE4Parse.UE4.Exceptions;
-using CUE4Parse.UE4.Readers;
-using CUE4Parse.Utils;
 using Newtonsoft.Json;
 using Serilog;
 using static CUE4Parse.UE4.Assets.Objects.EBulkDataFlags;
@@ -31,7 +29,6 @@ namespace CUE4Parse.UE4.Assets.Objects
         public FByteBulkData(FAssetArchive Ar)
         {
             Header = new FByteBulkDataHeader(Ar);
-
             if (Header.ElementCount == 0 || BulkDataFlags.HasFlag(BULKDATA_Unused))
             {
                 // Log.Warning("Bulk with no data");
@@ -71,14 +68,13 @@ namespace CUE4Parse.UE4.Assets.Objects
         protected FByteBulkData(FAssetArchive Ar, bool skip = false)
         {
             Header = new FByteBulkDataHeader(Ar);
-            var bulkDataFlags = Header.BulkDataFlags;
 
-            if (bulkDataFlags.HasFlag(BULKDATA_Unused | BULKDATA_PayloadInSeperateFile | BULKDATA_PayloadAtEndOfFile))
+            if (BulkDataFlags.HasFlag(BULKDATA_Unused | BULKDATA_PayloadInSeperateFile | BULKDATA_PayloadAtEndOfFile))
             {
                 return;
             }
 
-            if (bulkDataFlags.HasFlag(BULKDATA_ForceInlinePayload) || Header.OffsetInFile == Ar.Position)
+            if (BulkDataFlags.HasFlag(BULKDATA_ForceInlinePayload) || Header.OffsetInFile == Ar.Position)
             {
                 Ar.Position += Header.SizeOnDisk;
             }
@@ -108,7 +104,7 @@ namespace CUE4Parse.UE4.Assets.Objects
             else if (BulkDataFlags.HasFlag(BULKDATA_OptionalPayload))
             {
 #if DEBUG
-                Log.Debug("bulk data in .uptnl file (Optional Payload) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
+                Log.Debug("bulk data in {CookedIndex}.uptnl file (Optional Payload) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", Header.CookedIndex, BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
 #endif
                 if (!TryGetBulkPayload(Ar, PayloadType.UPTNL, out var uptnlAr)) return false;
 
@@ -118,7 +114,7 @@ namespace CUE4Parse.UE4.Assets.Objects
             else if (BulkDataFlags.HasFlag(BULKDATA_PayloadInSeperateFile))
             {
 #if DEBUG
-                Log.Debug("bulk data in .ubulk file (Payload In Separate File) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
+                Log.Debug("bulk data in {CookedIndex}.ubulk file (Payload In Separate File) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", Header.CookedIndex, BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
 #endif
                 if (!TryGetBulkPayload(Ar, PayloadType.UBULK, out var ubulkAr)) return false;
 
@@ -146,7 +142,7 @@ namespace CUE4Parse.UE4.Assets.Objects
             Ar.Dispose();
             return true;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryGetBulkPayload(FAssetArchive Ar, PayloadType type, [MaybeNullWhen(false)] out FAssetArchive payloadAr)
         {
@@ -165,7 +161,7 @@ namespace CUE4Parse.UE4.Assets.Objects
             }
             return payloadAr != null;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetDataSize() => Header.ElementCount;
     }

@@ -14,8 +14,8 @@ public class FStaticMeshVertexBuffer
     public readonly int NumTexCoords;
     public readonly int Strides;
     public readonly int NumVertices;
-    public readonly bool bUseFullPrecisionUVs;
-    public readonly bool bUseHighPrecisionTangentBasis;
+    public readonly bool UseFullPrecisionUVs;
+    public readonly bool UseHighPrecisionTangentBasis;
     public readonly FStaticMeshUVItem[] UV;  // TangentsData ?
 
     public FStaticMeshVertexBuffer(FArchive Ar)
@@ -26,14 +26,16 @@ public class FStaticMeshVertexBuffer
         NumTexCoords = Ar.Read<int>();
         Strides = Ar.Game < EGame.GAME_UE4_19 ? Ar.Read<int>() : -1;
         NumVertices = Ar.Read<int>();
-        bUseFullPrecisionUVs = Ar.ReadBoolean();
-        bUseHighPrecisionTangentBasis = Ar.Game >= EGame.GAME_UE4_12 && Ar.ReadBoolean();
+        UseFullPrecisionUVs = Ar.ReadBoolean();
+        UseHighPrecisionTangentBasis = Ar.Game >= EGame.GAME_UE4_12 && Ar.ReadBoolean();
+        if (Ar.Game == EGame.GAME_DeltaForceHawkOps) Ar.Position += 4;
+
 
         if (!stripDataFlags.IsAudioVisualDataStripped())
         {
             if (Ar.Game < EGame.GAME_UE4_19)
             {
-                UV = Ar.ReadBulkArray(() => new FStaticMeshUVItem(Ar, bUseHighPrecisionTangentBasis, NumTexCoords, bUseFullPrecisionUVs));
+                UV = Ar.ReadBulkArray(() => new FStaticMeshUVItem(Ar, UseHighPrecisionTangentBasis, NumTexCoords, UseFullPrecisionUVs));
             }
             else
             {
@@ -51,7 +53,7 @@ public class FStaticMeshVertexBuffer
                 if (itemCount != NumVertices)
                     throw new ParserException($"NumVertices={itemCount} != NumVertices={NumVertices}");
 
-                tempTangents = Ar.ReadArray(NumVertices, () => FStaticMeshUVItem.SerializeTangents(Ar, bUseHighPrecisionTangentBasis));
+                tempTangents = Ar.ReadArray(NumVertices, () => FStaticMeshUVItem.SerializeTangents(Ar, UseHighPrecisionTangentBasis));
                 if (Ar.Position - position != itemCount * itemSize)
                     throw new ParserException($"Read incorrect amount of tangent bytes, at {Ar.Position}, should be: {position + itemSize * itemCount} behind: {position + (itemSize * itemCount) - Ar.Position}");
 
@@ -63,7 +65,7 @@ public class FStaticMeshVertexBuffer
                 if (itemCount != NumVertices * NumTexCoords)
                     throw new ParserException($"NumVertices={itemCount} != {NumVertices * NumTexCoords}");
 
-                var uv = Ar.ReadArray(NumVertices, () => FStaticMeshUVItem.SerializeTexcoords(Ar, NumTexCoords, bUseFullPrecisionUVs));
+                var uv = Ar.ReadArray(NumVertices, () => FStaticMeshUVItem.SerializeTexcoords(Ar, NumTexCoords, UseFullPrecisionUVs));
                 if (Ar.Position - position != itemCount * itemSize)
                     throw new ParserException($"Read incorrect amount of Texture Coordinate bytes, at {Ar.Position}, should be: {position + itemSize * itemCount} behind: {position + (itemSize * itemCount) - Ar.Position}");
 
@@ -87,17 +89,5 @@ public class FStaticMeshVertexBuffer
         {
             UV = [];
         }
-    }
-
-    public static int CalcMetaDataSize()
-    {
-        var numBytes = 0;
-
-        numBytes += 4; // NumTexCoords
-        numBytes += 4; // NumVertices
-        numBytes += 4; // bUseFullPrecisionUVs
-        numBytes += 4; // bUseHighPrecisionTangentBasis
-
-        return numBytes;
     }
 }

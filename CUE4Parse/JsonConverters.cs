@@ -2114,10 +2114,10 @@ public class FStaticMeshVertexBufferConverter : JsonConverter<FStaticMeshVertexB
         writer.WriteValue(value.Strides);
 
         writer.WritePropertyName("UseHighPrecisionTangentBasis");
-        writer.WriteValue(value.bUseHighPrecisionTangentBasis);
+        writer.WriteValue(value.UseHighPrecisionTangentBasis);
 
         writer.WritePropertyName("UseFullPrecisionUVs");
-        writer.WriteValue(value.bUseFullPrecisionUVs);
+        writer.WriteValue(value.UseFullPrecisionUVs);
 
         writer.WriteEndObject();
     }

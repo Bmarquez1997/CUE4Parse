@@ -23,15 +23,4 @@ public class FSkeletalMeshVertexClothBuffer
             }
         }
     }
-    
-    public static int CalcMetaDataSize(FArchive Ar)
-    {
-        var numBytes = 0;
-
-        _ = Ar.ReadArray(() => new FClothBufferIndexMapping(Ar)); // ClothIndexMapping
-        numBytes += 4; // Stride
-        numBytes += 4; // NumVertices
-
-        return numBytes;
-    }
 }

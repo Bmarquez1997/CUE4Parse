@@ -125,40 +125,32 @@ public class FSkinWeightVertexBuffer
         Weights ??= Array.Empty<FSkinWeightInfo>();
     }
 
-    public static int CalcMetaDataSize(FArchive Ar)
+    public static int MetadataSize(FArchive Ar)
     {
         var numBytes = 0;
+            var bNewWeightFormat = FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.UnlimitedBoneInfluences;
 
-        if (FAnimObjectVersion.Get(Ar) < FAnimObjectVersion.Type.UnlimitedBoneInfluences)
+            if (!Ar.Versions["SkeletalMesh.UseNewCookedFormat"])
         {
-            if (FSkeletalMeshCustomVersion.Get(Ar) < FSkeletalMeshCustomVersion.Type.SplitModelAndRenderData)
-            {
-                numBytes += 4; // bExtraBoneInfluences
-                numBytes += 4; // NumVertices
-            }
-            else
-            {
-                numBytes += 4; // bExtraBoneInfluences
-                numBytes += 4; // Stride
-                numBytes += 4; // NumVertices
-            }
+            numBytes = 2 * 4;
+        }
+        else if (!bNewWeightFormat)
+        {
+            numBytes = 3 * 4;
         }
         else
         {
-            numBytes += 4; // bVariableBonesPerVertex
-            numBytes += 4; // MaxBoneInfluences
-            numBytes += 4; // NumBoneWeights
-            numBytes += 4; // NumVertices
+            numBytes = 4 * 4;
+            if (FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.IncreaseBoneIndexLimitPerChunk)
+                    numBytes += 4;
+            if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.IncreasedSkinWeightPrecision)
+                numBytes += 4;
         }
 
-        if (FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.IncreaseBoneIndexLimitPerChunk)
-            numBytes += 4; // bUse16BitBoneIndex
-
-        if (FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.IncreaseBoneIndexLimitPerChunk)
-            numBytes += 4; // bUse16BitBoneWeight
-
-        if (FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.UnlimitedBoneInfluences)
-            numBytes += 4; // NumVertices
+        if (bNewWeightFormat)
+        {
+            numBytes += 4;
+        }
 
         return numBytes;
     }

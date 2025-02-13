@@ -34,14 +34,4 @@ public class FColorVertexBuffer
             Data = [];
         }
     }
-    
-    public static int CalcMetaDataSize()
-    {
-        var numBytes = 0;
-
-        numBytes += 4; // Stride
-        numBytes += 4; // NumVertices
-
-        return numBytes;
-    }
 }

@@ -18,7 +18,7 @@ namespace CUE4Parse.UE4.Assets.Objects
         public FByteBulkDataHeader(FAssetArchive Ar)
         {
             CookedIndex = FBulkDataCookedIndex.Default;
-            
+
             if (Ar.Owner is IoPackage { BulkDataMap.Length: > 0 } iopkg)
             {
                 var dataIndex = Ar.Read<int>();
