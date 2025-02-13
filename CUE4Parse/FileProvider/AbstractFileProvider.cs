@@ -364,13 +364,13 @@ namespace CUE4Parse.FileProvider
 
         protected bool LoadIniConfigs()
         {
-            if (TryFindGameFile("/Game/Config/DefaultGame.ini", out var defaultGame))
+            if (TryGetGameFile("/Game/Config/DefaultGame.ini", out var defaultGame))
             {
                 if (defaultGame is VfsEntry { Vfs: IAesVfsReader aesVfsReader }) DefaultGame.EncryptionKeyGuid = aesVfsReader.EncryptionKeyGuid;
                 if (defaultGame.TryCreateReader(out var gameAr)) DefaultGame.Read(new StreamReader(gameAr));
                 gameAr?.Dispose();
             }
-            if (TryFindGameFile("/Game/Config/DefaultEngine.ini", out var defaultEngine))
+            if (TryGetGameFile("/Game/Config/DefaultEngine.ini", out var defaultEngine))
             {
                 if (defaultEngine is VfsEntry { Vfs: IAesVfsReader aesVfsReader }) DefaultEngine.EncryptionKeyGuid = aesVfsReader.EncryptionKeyGuid;
                 if (defaultEngine.TryCreateReader(out var engineAr)) DefaultEngine.Read(new StreamReader(engineAr));
@@ -396,7 +396,7 @@ namespace CUE4Parse.FileProvider
 
         public virtual GameFile this[string path] => Files[FixPath(path)];
 
-        public virtual bool TryFindGameFile(string path, out GameFile file)
+        public virtual bool TryGetGameFile(string path, out GameFile file)
         {
             var uassetPath = FixPath(path);
             if (Files.TryGetValue(uassetPath, out file))
@@ -468,7 +468,7 @@ namespace CUE4Parse.FileProvider
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool TrySaveAsset(string path, out byte[] data)
         {
-            if (!TryFindGameFile(path, out var file))
+            if (!TryGetGameFile(path, out var file))
             {
                 data = default;
                 return false;
@@ -494,7 +494,7 @@ namespace CUE4Parse.FileProvider
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool TryCreateReader(string path, out FArchive reader)
         {
-            if (!TryFindGameFile(path, out var file))
+            if (!TryGetGameFile(path, out var file))
             {
                 reader = default;
                 return false;
@@ -526,7 +526,7 @@ namespace CUE4Parse.FileProvider
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public virtual bool TryLoadPackage(string path, out IPackage package)
         {
-            if (!TryFindGameFile(path, out var file))
+            if (!TryGetGameFile(path, out var file))
             {
                 package = default;
                 return false;
@@ -588,7 +588,7 @@ namespace CUE4Parse.FileProvider
 
         public virtual async Task<IPackage?> TryLoadPackageAsync(string path)
         {
-            if (!TryFindGameFile(path, out var file))
+            if (!TryGetGameFile(path, out var file))
             {
                 return null;
             }
@@ -644,7 +644,7 @@ namespace CUE4Parse.FileProvider
 
         public virtual bool TrySavePackage(string path, out IReadOnlyDictionary<string, byte[]> package)
         {
-            if (!TryFindGameFile(path, out var file))
+            if (!TryGetGameFile(path, out var file))
             {
                 package = default;
                 return false;
@@ -689,7 +689,7 @@ namespace CUE4Parse.FileProvider
 
         public virtual async Task<IReadOnlyDictionary<string, byte[]>?> TrySavePackageAsync(string path)
         {
-            if (!TryFindGameFile(path, out var file))
+            if (!TryGetGameFile(path, out var file))
             {
                 return null;
             }

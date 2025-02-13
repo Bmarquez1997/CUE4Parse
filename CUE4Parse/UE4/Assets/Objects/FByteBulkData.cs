@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
+using CUE4Parse.FileProvider.Vfs;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Assets.Utils;
 using CUE4Parse.UE4.Exceptions;
@@ -17,7 +20,7 @@ namespace CUE4Parse.UE4.Assets.Objects
         public static bool LazyLoad = true;
 
         public readonly FByteBulkDataHeader Header;
-        public readonly EBulkDataFlags BulkDataFlags;
+        public EBulkDataFlags BulkDataFlags => Header.BulkDataFlags;
 
         public byte[]? Data => _data?.Value;
         private readonly Lazy<byte[]?>? _data;
@@ -28,7 +31,6 @@ namespace CUE4Parse.UE4.Assets.Objects
         public FByteBulkData(FAssetArchive Ar)
         {
             Header = new FByteBulkDataHeader(Ar);
-            BulkDataFlags = Header.BulkDataFlags;
 
             if (Header.ElementCount == 0 || BulkDataFlags.HasFlag(BULKDATA_Unused))
             {
@@ -108,16 +110,7 @@ namespace CUE4Parse.UE4.Assets.Objects
 #if DEBUG
                 Log.Debug("bulk data in .uptnl file (Optional Payload) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
 #endif
-                FArchive? uptnlAr = null;
-                if (Header.CookedIndex > 0 && Ar.Owner?.Provider != null)
-                {
-                    if (!Ar.Owner.Provider.TryCreateReader($"{Ar.Name.SubstringBeforeLast(".")}.{Header.CookedIndex:000}.uptnl", out uptnlAr)) return false;
-                }
-                else
-                {
-                    if (!Ar.TryGetPayload(PayloadType.UPTNL, out var assetArchive) || assetArchive == null) return false;
-                    uptnlAr = assetArchive;
-                }
+                if (!TryGetBulkPayload(Ar, PayloadType.UPTNL, out var uptnlAr)) return false;
 
                 uptnlAr.Position = Header.OffsetInFile;
                 CheckReadSize(uptnlAr.Read(data, offset, Header.ElementCount));
@@ -127,16 +120,7 @@ namespace CUE4Parse.UE4.Assets.Objects
 #if DEBUG
                 Log.Debug("bulk data in .ubulk file (Payload In Separate File) (flags={BulkDataFlags}, pos={HeaderOffsetInFile}, size={HeaderSizeOnDisk}))", BulkDataFlags, Header.OffsetInFile, Header.SizeOnDisk);
 #endif
-                FArchive? ubulkAr = null;
-                if (Header.CookedIndex > 0 && Ar.Owner?.Provider != null)
-                {
-                    if (!Ar.Owner.Provider.TryCreateReader($"{Ar.Name.SubstringBeforeLast(".")}.{Header.CookedIndex:000}.ubulk", out ubulkAr)) return false;
-                }
-                else
-                {
-                    if (!Ar.TryGetPayload(PayloadType.UBULK, out var assetArchive) || assetArchive == null) return false;
-                    ubulkAr = assetArchive;
-                }
+                if (!TryGetBulkPayload(Ar, PayloadType.UBULK, out var ubulkAr)) return false;
 
                 ubulkAr.Position = Header.OffsetInFile;
                 CheckReadSize(ubulkAr.Read(data, offset, Header.ElementCount));;
@@ -161,6 +145,25 @@ namespace CUE4Parse.UE4.Assets.Objects
             }
             Ar.Dispose();
             return true;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryGetBulkPayload(FAssetArchive Ar, PayloadType type, [MaybeNullWhen(false)] out FAssetArchive payloadAr)
+        {
+            payloadAr = null;
+            if (Header.CookedIndex.IsDefault)
+            {
+                Ar.TryGetPayload(type, out payloadAr);
+            }
+            else if (Ar.Owner?.Provider is IVfsFileProvider vfsFileProvider)
+            {
+                var path = Path.ChangeExtension(Ar.Name, $"{Header.CookedIndex}.{type.ToString().ToLowerInvariant()}");
+                if (vfsFileProvider.TryGetGameFile(path, out var file) && file.TryCreateReader(out var reader))
+                {
+                    payloadAr = new FAssetArchive(reader, Ar.Owner);
+                }
+            }
+            return payloadAr != null;
         }
         
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
