@@ -55,7 +55,7 @@ public class FStaticMeshComponentLODInfo
             {
                 MapBuildDataId = Ar.Read<FGuid>();
             }
-            
+
             if (Ar.Game >= EGame.GAME_UE5_5)
             {
                 OriginalMapBuildDataId = Ar.Read<FGuid>();

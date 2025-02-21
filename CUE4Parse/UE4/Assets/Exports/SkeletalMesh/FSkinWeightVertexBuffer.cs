@@ -1,4 +1,3 @@
-using System;
 using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.Objects.Engine;
 using CUE4Parse.UE4.Readers;
@@ -10,7 +9,12 @@ public class FSkinWeightVertexBuffer
 {
     private const int _NUM_INFLUENCES_UE4 = 4;
 
-    public readonly FSkinWeightInfo[] Weights;
+    public  FSkinWeightInfo[] Weights;
+
+    public FSkinWeightVertexBuffer()
+    {
+        Weights = [];
+    }
 
     public FSkinWeightVertexBuffer(FArchive Ar, bool numSkelCondition)
     {
@@ -65,7 +69,7 @@ public class FSkinWeightVertexBuffer
         }
         #endregion
 
-        byte[] newData = Array.Empty<byte>();
+        byte[] newData = [];
         if (!dataStripFlags.IsAudioVisualDataStripped())
         {
             if (!bNewWeightFormat)
@@ -85,7 +89,7 @@ public class FSkinWeightVertexBuffer
 
         if (bNewWeightFormat)
         {
-            uint[] LookupData = Array.Empty<uint>();
+            uint[] LookupData = [];
 
             var lookupStripFlags = Ar.Read<FStripDataFlags>();
             var numLookupVertices = Ar.Read<int>();
@@ -122,15 +126,15 @@ public class FSkinWeightVertexBuffer
             }
         }
 
-        Weights ??= Array.Empty<FSkinWeightInfo>();
+        Weights ??= [];
     }
 
     public static int MetadataSize(FArchive Ar)
     {
         var numBytes = 0;
-            var bNewWeightFormat = FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.UnlimitedBoneInfluences;
+        var bNewWeightFormat = FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.UnlimitedBoneInfluences;
 
-            if (!Ar.Versions["SkeletalMesh.UseNewCookedFormat"])
+        if (!Ar.Versions["SkeletalMesh.UseNewCookedFormat"])
         {
             numBytes = 2 * 4;
         }
@@ -142,7 +146,7 @@ public class FSkinWeightVertexBuffer
         {
             numBytes = 4 * 4;
             if (FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.IncreaseBoneIndexLimitPerChunk)
-                    numBytes += 4;
+                numBytes += 4;
             if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.IncreasedSkinWeightPrecision)
                 numBytes += 4;
         }

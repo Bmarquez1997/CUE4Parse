@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 
@@ -20,9 +19,7 @@ public class FModelStreamableBulkData
 
         if (bCooked)
         {
-            var numBulkDatas = Ar.Read<int>();
-            StreamableBulkData = new FByteBulkData[numBulkDatas];
-
+            StreamableBulkData = new FByteBulkData[Ar.Read<int>()];
             for (int i = 0; i < StreamableBulkData.Length; i++)
             {
                 StreamableBulkData[i] = new FByteBulkData(Ar);

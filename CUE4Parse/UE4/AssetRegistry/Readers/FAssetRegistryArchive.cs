@@ -21,14 +21,14 @@ namespace CUE4Parse.UE4.AssetRegistry.Readers
             Header = header;
             NameMap = [];
         }
-        
+
         public override string ReadFString()
         {
             if (Header.Version >= FAssetRegistryVersionType.MarshalledTextAsUTF8String)
             {
                 return Encoding.UTF8.GetString(ReadBytes(Read<int>()));
             }
-            
+
             return baseArchive.ReadFString();
         }
 

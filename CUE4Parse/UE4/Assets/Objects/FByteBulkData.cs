@@ -161,6 +161,7 @@ namespace CUE4Parse.UE4.Assets.Objects
             }
             return payloadAr != null;
         }
+        
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetDataSize() => Header.ElementCount;

@@ -44,8 +44,8 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
 
         public FStaticLODModel()
         {
-            Chunks = [];
-            MeshToImportVertexMap = [];
+            Chunks = Array.Empty<FSkelMeshChunk>();
+            MeshToImportVertexMap = Array.Empty<int>();
             ColorVertexBuffer = new FSkeletalMeshVertexColorBuffer();
         }
 
@@ -354,7 +354,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 }
             }
 
-            if (Ar.Game is >= EGame.GAME_UE4_23 or EGame.GAME_Fortnite_S10 or EGame.GAME_Fortnite_S9)
+            if (Ar.Game >= EGame.GAME_UE4_23)
             {
                 var skinWeightProfilesData = new FSkinWeightProfilesData(Ar);
             }
@@ -377,23 +377,23 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 ColorVertexBuffer = new FSkeletalMeshVertexColorBuffer(newColorVertexBuffer.Data);
             }
 
-            if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation &&
-                !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
-            {
-                if (Ar.Game != EGame.GAME_GTATheTrilogyDefinitiveEdition)
+            if (FUE5ReleaseStreamObjectVersion.Get(Ar) < FUE5ReleaseStreamObjectVersion.Type.RemovingTessellation && !stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_AdjacencyData))
                 AdjacencyIndexBuffer = new FMultisizeIndexContainer(Ar);
-            }
 
             if (HasClothData())
                 ClothVertexBuffer = new FSkeletalMeshVertexClothBuffer(Ar);
 
             if (Ar.Game == EGame.GAME_Spectre)
+            {
                 _ = new FMultisizeIndexContainer(Ar);
+            }
             
-            _ = new FSkinWeightProfilesData(Ar); // skinWeightProfilesData
+            var skinWeightProfilesData = new FSkinWeightProfilesData(Ar);
 
             if (Ar.Versions["SkeletalMesh.HasRayTracingData"])
-                _ = Ar.ReadArray<byte>(); // rayTracingData
+            {
+                var rayTracingData = Ar.ReadArray<byte>();
+            }
 
             if (FUE5PrivateFrostyStreamObjectVersion.Get(Ar) >= FUE5PrivateFrostyStreamObjectVersion.Type.SerializeSkeletalMeshMorphTargetRenderData)
             {
@@ -414,15 +414,12 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 }
             }
 
-            if (FFortniteMainBranchObjectVersion.Get(Ar) >= FFortniteMainBranchObjectVersion.Type.SkeletalHalfEdgeData && Ar.Game is not EGame.GAME_Fortnite_S27)
+            if (FFortniteMainBranchObjectVersion.Get(Ar) >= FFortniteMainBranchObjectVersion.Type.SkeletalHalfEdgeData)
             {
                 const byte MeshDeformerStripFlag = 1;
                 var meshDeformerStripFlags = Ar.Read<FStripDataFlags>();
                 if (!meshDeformerStripFlags.IsClassDataStripped(MeshDeformerStripFlag))
                 {
-                    // if (Ar.Read<int>() == 0)
-                    //     Ar.Position -= 4;
-                    
                     HalfEdgeBuffer = new FSkeletalMeshHalfEdgeBuffer(Ar);
                 }
             }
@@ -442,7 +439,7 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 };
             }
         }
-        
+
         private bool HasClothData()
         {
             for (var i = 0; i < Chunks.Length; i++)

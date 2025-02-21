@@ -1,5 +1,4 @@
 ﻿using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 
@@ -11,8 +10,8 @@ public class FClothingStreamable
     public uint Size = 0;
     public FMutableStreamableBlock Block;
     public uint SourceId = 0;
-    
-    public FClothingStreamable(FArchive Ar)
+
+    public FClothingStreamable(FAssetArchive Ar)
     {
         ClothingAssetIndex = Ar.Read<int>();
         ClothingAssetLOD = Ar.Read<int>();

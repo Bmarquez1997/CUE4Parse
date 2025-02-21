@@ -19,7 +19,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
 
             if (Ar.Ver < EUnrealEngineObjectUE4Version.REFERENCE_SKELETON_REFACTOR)
             {
-                _ = Ar.Read<FColor>();
+                Ar.Read<FColor>();
             }
         }
 

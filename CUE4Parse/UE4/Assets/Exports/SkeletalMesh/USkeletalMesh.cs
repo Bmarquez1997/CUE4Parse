@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 
-public class USkeletalMesh : UObject
+public partial class USkeletalMesh : UObject
 {
     public FBoxSphereBounds ImportedBounds { get; private set; }
     public FSkeletalMaterial[] SkeletalMaterials { get; private set; }
@@ -63,7 +63,9 @@ public class USkeletalMesh : UObject
 
             var bCooked = Ar.ReadBoolean();
             if (Ar.Versions["SkeletalMesh.KeepMobileMinLODSettingOnDesktop"])
-                _ = Ar.Read<int>(); // minMobileLODIdx
+            {
+                var minMobileLODIdx = Ar.Read<int>();
+            }
 
             if (bCooked && LODModels == null)
             {

@@ -66,11 +66,9 @@ public abstract class AbstractPropertyHolder : IPropertyHolder
                 return true;
             }
         }
-
         obj = default!;
         return false;
     }
-
     public bool TryGetAllValues<T>(out T[] obj, string name)
     {
         var maxIndex = -1;
@@ -81,12 +79,10 @@ public abstract class AbstractPropertyHolder : IPropertyHolder
             collected.Add(prop);
             maxIndex = Math.Max(maxIndex, prop.ArrayIndex);
         }
-
         obj = new T[maxIndex + 1];
         foreach (var prop in collected) {
             obj[prop.ArrayIndex] = (T)prop.Tag?.GetValue(typeof(T))!;
         }
-
         return obj.Length > 0;
     }
 }

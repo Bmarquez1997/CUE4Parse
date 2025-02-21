@@ -11,12 +11,17 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh;
 [JsonConverter(typeof(FStaticMeshVertexBufferConverter))]
 public class FStaticMeshVertexBuffer
 {
-    public readonly int NumTexCoords;
-    public readonly int Strides;
-    public readonly int NumVertices;
-    public readonly bool UseFullPrecisionUVs;
-    public readonly bool UseHighPrecisionTangentBasis;
-    public readonly FStaticMeshUVItem[] UV;  // TangentsData ?
+    public int NumTexCoords;
+    public int Strides;
+    public int NumVertices;
+    public bool UseFullPrecisionUVs;
+    public bool UseHighPrecisionTangentBasis;
+    public FStaticMeshUVItem[] UV;  // TangentsData ?
+
+    public FStaticMeshVertexBuffer()
+    {
+        UV = [];
+    }
 
     public FStaticMeshVertexBuffer(FArchive Ar)
     {
@@ -29,7 +34,6 @@ public class FStaticMeshVertexBuffer
         UseFullPrecisionUVs = Ar.ReadBoolean();
         UseHighPrecisionTangentBasis = Ar.Game >= EGame.GAME_UE4_12 && Ar.ReadBoolean();
         if (Ar.Game == EGame.GAME_DeltaForceHawkOps) Ar.Position += 4;
-
 
         if (!stripDataFlags.IsAudioVisualDataStripped())
         {
@@ -44,7 +48,6 @@ public class FStaticMeshVertexBuffer
                 {
                     goto texture_coordinates;
                 }
-
                 // BulkSerialize
                 var itemSize = Ar.Read<int>();
                 var itemCount = Ar.Read<int>();
@@ -74,7 +77,7 @@ public class FStaticMeshVertexBuffer
                 {
                     if (Ar.Game is EGame.GAME_StarWarsJediFallenOrder or EGame.GAME_StarWarsJediSurvivor && tempTangents.Length == 0)
                     {
-                        UV[i] = new FStaticMeshUVItem(new [] { new FPackedNormal(0), new FPackedNormal(0), new FPackedNormal(0) }, uv[i]);
+                        UV[i] = new FStaticMeshUVItem([new FPackedNormal(0), new FPackedNormal(0), new FPackedNormal(0)], uv[i]);
                     }
                     else
                     {

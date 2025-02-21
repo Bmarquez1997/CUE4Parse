@@ -15,6 +15,7 @@ public class USceneComponent : UActorComponent
     
     public bool bIsCooked;
 
+
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
         base.Deserialize(Ar, validPos);

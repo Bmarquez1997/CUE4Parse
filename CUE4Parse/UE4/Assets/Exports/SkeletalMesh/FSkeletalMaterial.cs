@@ -22,10 +22,14 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                 MaterialSlotName = Ar.ReadFName();
                 var bSerializeImportedMaterialSlotName = !Ar.Owner.HasFlags(EPackageFlags.PKG_FilterEditorOnly);
                 if (FCoreObjectVersion.Get(Ar) >= FCoreObjectVersion.Type.SkeletalMaterialEditorDataStripping)
+                {
                     bSerializeImportedMaterialSlotName = Ar.ReadBoolean();
+                }
 
                 if (bSerializeImportedMaterialSlotName)
+                {
                     ImportedMaterialSlotName = Ar.ReadFName();
+                }
             }
             else
             {
@@ -33,12 +37,22 @@ namespace CUE4Parse.UE4.Assets.Exports.SkeletalMesh
                     _ = Ar.ReadBoolean(); // bEnableShadowCasting_DEPRECATED
 
                 if (FRecomputeTangentCustomVersion.Get(Ar) >= FRecomputeTangentCustomVersion.Type.RuntimeRecomputeTangent)
-                    _ = Ar.ReadBoolean(); // bRecomputeTangent_DEPRECATED
+                {
+                    var bRecomputeTangent = Ar.ReadBoolean();
+                }
             }
             if (FRenderingObjectVersion.Get(Ar) >= FRenderingObjectVersion.Type.TextureStreamingMeshUVChannelData)
                 UVChannelData = new FMeshUVChannelInfo(Ar);
 
-            if (Ar.Game is EGame.GAME_CalabiYau or EGame.GAME_FragPunk) Ar.Position += 4;
+            switch (Ar.Game)
+            {
+                case EGame.GAME_FragPunk or EGame.GAME_MarvelRivals:
+                    Ar.Position += 4;
+                    break;
+                case EGame.GAME_Strinova:
+                    Ar.Position += 8;
+                    break;
+            }
         }
     }
 }

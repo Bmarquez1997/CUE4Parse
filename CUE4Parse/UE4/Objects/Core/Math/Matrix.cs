@@ -14,7 +14,7 @@ namespace CUE4Parse.UE4.Objects.Core.Math
         Y,
         Z,
     }
-    
+
     public readonly struct FMatrix3x4 : IUStruct
     {
         public readonly float M00, M01, M02;
