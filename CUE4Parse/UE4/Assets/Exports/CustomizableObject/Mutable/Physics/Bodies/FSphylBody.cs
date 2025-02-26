@@ -10,10 +10,8 @@ public class FSphylBody : FBodyShape
     public float Radius;
     public float Length;
 
-    public FSphylBody(FArchive Ar) : base(Ar)
+    public FSphylBody(FMutableArchive Ar) : base(Ar)
     {
-        var version = Ar.Read<int>();
-
         Position = Ar.Read<FVector>();
         Orientation = Ar.Read<FQuat>();
         Radius = Ar.Read<float>();

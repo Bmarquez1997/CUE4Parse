@@ -5,15 +5,13 @@ namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
 public class FRangeDesc
 {
     public string Name;
-    public string Uid;
+    public string UID;
     public int DimensionParameter;
 
-    public FRangeDesc(FArchive Ar)
+    public FRangeDesc(FMutableArchive Ar)
     {
-        var version = Ar.Read<int>();
-
-        Name = Ar.ReadMutableFString();
-        Uid = Ar.ReadMutableFString();
+        Name = Ar.ReadFString();
+        UID = Ar.ReadFString();
         DimensionParameter = Ar.Read<int>();
     }
 }

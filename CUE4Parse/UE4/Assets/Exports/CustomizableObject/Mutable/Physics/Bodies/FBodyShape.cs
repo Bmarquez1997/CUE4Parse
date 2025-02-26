@@ -1,5 +1,4 @@
-﻿using System;
-using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics.Bodies;
 
@@ -8,11 +7,9 @@ public class FBodyShape
     public string Name;
     public uint Flags;
 
-    public FBodyShape(FArchive Ar)
+    public FBodyShape(FMutableArchive Ar)
     {
-        var version = Ar.Read<int>();
-
-        Name = Ar.ReadMutableFString();
+        Name = Ar.ReadFString();
         Flags = Ar.Read<uint>();
     }
 }

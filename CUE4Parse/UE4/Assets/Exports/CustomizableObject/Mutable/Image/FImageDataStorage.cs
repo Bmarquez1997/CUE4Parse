@@ -1,24 +1,23 @@
-﻿using CUE4Parse.UE4.Exceptions;
-using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Readers;
+using Newtonsoft.Json;
 using FImageSize = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<ushort>;
 using FImageArray = byte[];
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 
+[JsonConverter(typeof(FImageDataStorageConverter))]
 public class FImageDataStorage
 {
+    public FImageArray[] Buffers;
     public FImageSize ImageSize;
     public EImageFormat ImageFormat;
     public byte NumLODs;
-    public FImageArray[] Buffers;
     public ushort[] CompactedTailOffsets;
 
     private const int NumLODsInCompactedTail = 7;
 
     public FImageDataStorage(FArchive Ar)
     {
-        var version = Ar.Read<int>();
-
         ImageSize = Ar.Read<FImageSize>();
         ImageFormat = Ar.Read<EImageFormat>();
         NumLODs = Ar.Read<byte>();
@@ -27,17 +26,13 @@ public class FImageDataStorage
 
         var buffersNum = Ar.Read<int>();
         Buffers = new FImageArray[buffersNum];
-
-        for (var i = 0; i < Buffers.Length; i++)
+        for (int i = 0; i < buffersNum; i++)
         {
             Buffers[i] = Ar.ReadArray<byte>();
         }
 
-        var numTailOffsets = Ar.Read<int>();
-        if (numTailOffsets != NumLODsInCompactedTail)
-            throw new ParserException(Ar, "numTailOffsets != NumLODsInCompactedTail");
-
-        CompactedTailOffsets = Ar.ReadArray<ushort>(numTailOffsets);
+        var compactedTailOffsetsNum = Ar.Read<int>();
+        CompactedTailOffsets = Ar.ReadArray<ushort>(NumLODsInCompactedTail);
     }
 }
 

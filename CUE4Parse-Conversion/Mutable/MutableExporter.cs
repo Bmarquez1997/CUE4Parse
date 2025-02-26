@@ -35,8 +35,7 @@ public class MutableExporter : ExporterBase
         // Sort into Meshes folder, then at the end pass in lists of meshes to Converter to handle LODs?
         Dictionary<uint, Dictionary<string, List<FMesh>>> meshes = [];
         
-        var evaluator = new MutableEvaluator(provider, originalCustomizableObject);
-        evaluator.LoadModelStreamable();
+        var loader = new FMutableLoader(originalCustomizableObject);
         
         var coPrivate = originalCustomizableObject.Get<FPackageIndex>("Private").Load();
         var modelResources = coPrivate.Get<FStructFallback>("ModelResources");
@@ -44,28 +43,28 @@ public class MutableExporter : ExporterBase
         var boneNameMap = modelResources.Get<UScriptMap>("BoneNamesMap");
         var skeletons = modelResources.Get<FSoftObjectPath[]>("Skeletons");
 
-        foreach (var rom in originalCustomizableObject.Model.Program.Roms)
+        for (uint index = 0; index < originalCustomizableObject.Model.Program.Roms.Length; index++)
         {
+            var rom = originalCustomizableObject.Model.Program.Roms[index];
             switch (rom.ResourceType)
             {
-                case DataType.DT_IMAGE:
-                    // var image = evaluator.LoadImageResource((int)rom.ResourceIndex);
+                case ERomDataType.Image:
+                    // var image = evaluator.LoadImageResource(index);
                     // if (image is { IsBroken: false })
                     //     ExportMutableImage(image);
                     break;
-                case DataType.DT_MESH:
-                    var mesh = evaluator.LoadResource((int) rom.ResourceIndex);
-                    if (mesh is { IsBroken: false })
-                        StoreMutableMesh(mesh, meshes, surfaceNameMap);
+                case ERomDataType.Mesh:
+                    var mesh = loader.LoadMesh(index);
+                    StoreMutableMesh(mesh, meshes, surfaceNameMap);
                     break;
                 default:
-                    Log.Information("Unknown resource type: {0} for index: {1}", rom.ResourceType, rom.ResourceIndex);
+                    Log.Information("Unknown resource type: {0} for index: {1}", rom.ResourceType, index);
                     break;
             }
         }
 
         if (meshes.Count > 0)
-            ExportMutableMeshes(meshes, skeletons, boneNameMap, filterSkeletonName);
+            ExportMutableMeshes(originalCustomizableObject, meshes, skeletons, boneNameMap, filterSkeletonName);
     }
     
     private Dictionary<uint, string> GetSurfaceNameMap(FStructFallback modelResources)
@@ -107,7 +106,7 @@ public class MutableExporter : ExporterBase
         meshes[skeletonIndex][materialSlotName].Add(mesh);
     }
 
-    private void ExportMutableMeshes(Dictionary<uint, Dictionary<string, List<FMesh>>> meshes,
+    private void ExportMutableMeshes(UCustomizableObject originalCustomizableObject, Dictionary<uint, Dictionary<string, List<FMesh>>> meshes,
         FSoftObjectPath[] skeletons, UScriptMap boneNameMap, string? filterSkeletonName)
     {
         foreach (var skeletonGroup in meshes)
@@ -124,12 +123,12 @@ public class MutableExporter : ExporterBase
                     
                     if (materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeleton.Name.Equals("SK_Figure"))
                         materialGroup.Value.ForEach(mesh =>
-                            ExportMutableMesh([mesh], materialGroup.Key, skeleton, boneNameMap, true));
+                            ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeleton, boneNameMap, true));
                     else
                     {
                         var sortedList = materialGroup.Value.OrderByDescending(mesh => mesh.VertexBuffers.ElementCount)
                             .ToList();
-                        ExportMutableMesh(sortedList, materialGroup.Key, skeleton, boneNameMap);
+                        ExportMutableMesh(originalCustomizableObject, sortedList, materialGroup.Key, skeleton, boneNameMap);
                     }
                 }
             }
@@ -139,20 +138,20 @@ public class MutableExporter : ExporterBase
                 {
                     var sortedList = materialGroup.Value.OrderByDescending(mesh => mesh.VertexBuffers.ElementCount)
                         .ToList();
-                    ExportMutableMesh(sortedList, materialGroup.Key, skeleton, boneNameMap);
+                    ExportMutableMesh(originalCustomizableObject, sortedList, materialGroup.Key, skeleton, boneNameMap);
                 }
             }
         }
     }
     
-    private void ExportMutableMesh(List<FMesh> meshes, string materialSlotName, USkeleton skeleton, UScriptMap boneNameMap, bool appendId = false)
+    private void ExportMutableMesh(UCustomizableObject originalCustomizableObject, List<FMesh> meshes, string materialSlotName, USkeleton skeleton, UScriptMap boneNameMap, bool appendId = false)
     {
         var mesh = meshes[0];
         meshes.RemoveAt(0);
 
         if (meshes.Count == 0 && mesh.VertexBuffers.ElementCount <= 800) return;
         
-        if (!mesh.TryConvert(materialSlotName, skeleton, boneNameMap, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
+        if (!mesh.TryConvert(originalCustomizableObject, materialSlotName, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         {
             Log.Logger.Warning($"Mesh '{ExportName}' has no LODs");
             return;

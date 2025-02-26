@@ -1,7 +1,9 @@
 ﻿using CUE4Parse.UE4.Readers;
+using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 
+[JsonConverter(typeof(FImageLODRangeConverter))]
 public class FImageLODRange
 {
     public int FirstIndex;

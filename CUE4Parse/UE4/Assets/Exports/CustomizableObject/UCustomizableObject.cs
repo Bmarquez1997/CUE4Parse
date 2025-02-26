@@ -1,29 +1,45 @@
 ﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Objects.UObject;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 
 public class UCustomizableObject : UObject
 {
-    public ECustomizableObjectVersions Version;
+    public FPackageIndex Private;
+    public ECustomizableObjectVersion Version;
     public FModel Model;
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
         base.Deserialize(Ar, validPos);
 
-        Version = Ar.Read<ECustomizableObjectVersions>();
+        Private = GetOrDefault<FPackageIndex>(nameof(Private));
+        Version = Ar.Read<ECustomizableObjectVersion>();
         Model = new FModel(Ar);
+    }
+
+    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
+    {
+        base.WriteJson(writer, serializer);
+
+        writer.WritePropertyName("Version");
+        serializer.Serialize(writer, $"ECustomizableObjectVersion::{Version.ToString()}");
+
+        writer.WritePropertyName("Model");
+        serializer.Serialize(writer, Model);
     }
 }
 
-public enum ECustomizableObjectVersions : int
+public enum ECustomizableObjectVersion
 {
     FirstEnumeratedVersion = 450,
 
     DeterminisiticMeshVertexIds,
 
-    NumRuntimeReferencedTextures,
+    NumRunFtimeReferencedTextures,
 
     DeterminisiticLayoutBlockIds,
 
@@ -149,6 +165,10 @@ public enum ECustomizableObjectVersions : int
     MeshReferencesExtendedForCompilation,
 
     RemoveObsoleteBoolOps,
+
+    AddOverlayMaterials,
+
+    PrefetchHighQualityMipMaps,
 
     // -----<new versions can be added above this line>--------
     LastCustomizableObjectVersion

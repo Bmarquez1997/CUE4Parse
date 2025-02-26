@@ -8,10 +8,8 @@ public class FSphereBody : FBodyShape
     public FVector Position;
     public float Radius;
 
-    public FSphereBody(FArchive Ar) : base(Ar)
+    public FSphereBody(FMutableArchive Ar) : base(Ar)
     {
-        var version = Ar.Read<int>();
-
         Position = Ar.Read<FVector>();
         Radius = Ar.Read<float>();
     }

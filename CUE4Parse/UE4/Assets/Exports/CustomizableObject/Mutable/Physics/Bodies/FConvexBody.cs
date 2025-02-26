@@ -9,10 +9,8 @@ public class FConvexBody : FBodyShape
     public int[] Indices;
     public FTransform Transform;
 
-    public FConvexBody(FArchive Ar) : base(Ar)
+    public FConvexBody(FMutableArchive Ar) : base(Ar)
     {
-        var version = Ar.Read<int>();
-
         Vertices = Ar.ReadArray<FVector>();
         Indices = Ar.ReadArray<int>();
         Transform = Ar.Read<FTransform>();

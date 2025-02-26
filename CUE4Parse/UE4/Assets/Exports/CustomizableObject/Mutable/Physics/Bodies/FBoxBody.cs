@@ -9,10 +9,8 @@ public class FBoxBody : FBodyShape
     public FQuat Orientation;
     public FVector Size;
 
-    public FBoxBody(FArchive Ar) : base(Ar)
+    public FBoxBody(FMutableArchive Ar) : base(Ar)
     {
-        var version = Ar.Read<int>();
-
         Position = Ar.Read<FVector>();
         Orientation = Ar.Read<FQuat>();
         Size = Ar.Read<FVector>();

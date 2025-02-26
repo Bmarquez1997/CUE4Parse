@@ -1,43 +1,39 @@
-﻿using CUE4Parse.UE4.Exceptions;
+﻿using System;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
-using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Readers;
+using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
 
+[JsonConverter(typeof(FParameterDescConverter))]
 public class FParameterDesc
 {
     public string Name;
-    public FGuid Uid;
+    public FGuid UID;
     public EParameterType Type;
     public object DefaultValue;
     public uint[] Ranges;
     public FIntValueDesc[] PossibleValues;
 
-    public FParameterDesc(FArchive Ar)
+    public FParameterDesc(FMutableArchive Ar)
     {
-        var version = Ar.Read<int>();
-
-        Name = Ar.ReadMutableFString();
-        Uid = Ar.Read<FGuid>();
+        Name = Ar.ReadFString();
+        UID = Ar.Read<FGuid>();
         Type = Ar.Read<EParameterType>();
 
-        //Ar.Position += 1; // I guess TVariant stuff
-        var index = Ar.Read<byte>();
-        
+        Ar.Position += 1;
         DefaultValue = Type switch
         {
-            EParameterType.Bool => Ar.ReadBoolean(),
+            EParameterType.Bool => Ar.ReadFlag(),
             EParameterType.Int => Ar.Read<int>(),
             EParameterType.Float => Ar.Read<float>(),
             EParameterType.Color => Ar.Read<FVector4>(),
             EParameterType.Projector => new FProjector(Ar),
-            EParameterType.Image => new FName(Ar.ReadMutableFString()),
-            EParameterType.String => Ar.ReadMutableFString(),
+            EParameterType.Image => Ar.ReadFName(),
+            EParameterType.String => Ar.ReadFString(),
             EParameterType.Matrix => new FMatrix(Ar, false),
-            _ => throw new ParserException(Ar, $"Unknown EParameterType value '{Type}'")
-
+            _ => throw new NotImplementedException($"Unsupported type: {Type}")
         };
 
         Ranges = Ar.ReadArray<uint>();
@@ -53,7 +49,7 @@ public enum EParameterType : uint
     /** Boolean parameter type (true or false) */
     Bool,
 
-    /** Integer parameter type. It usually has a limited range of possible values that can be queried in the Parameters object. */
+    /** Integer parameter type. It usually has a limited range of possible values that can be queried in the FParameters object. */
     Int,
 
     /** Floating point value in the range of 0.0 to 1.0 */

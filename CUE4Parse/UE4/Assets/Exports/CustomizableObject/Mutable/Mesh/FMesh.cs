@@ -1,13 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Surfaces;
 using CUE4Parse.UE4.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 
-public class FMesh : IMutablePtr
+public class FMesh
 {
     public FMeshBufferSet IndexBuffers;
     public FMeshBufferSet VertexBuffers;
@@ -25,34 +25,33 @@ public class FMesh : IMutablePtr
     public FPhysicsBody[] AdditionalPhysicsBodies;
     public uint MeshIDPrefix;
     public uint ReferenceID;
+    public string ReferencedMorph;
 
-    public bool IsBroken { get; set; }
+    public FMesh(FByteArchive Ar) : this(new FMutableArchive(Ar)) { }
 
-    public FMesh(FArchive Ar)
+    public FMesh(FMutableArchive Ar)
     {
-        var version = Ar.Read<int>();
-        if (version == -1)
-        {
-            IsBroken = true;
-            return;
-        }
-
         IndexBuffers = new FMeshBufferSet(Ar);
         VertexBuffers = new FMeshBufferSet(Ar);
         AdditionalBuffers = Ar.ReadArray(() => new KeyValuePair<EMeshBufferType, FMeshBufferSet>(Ar.Read<EMeshBufferType>(), new FMeshBufferSet(Ar)));
-        Layouts = Ar.ReadMutableArray(() => new FLayout(Ar));
+        Layouts = Ar.ReadPtrArray(() => new FLayout(Ar));
         SkeletonIDs = Ar.ReadArray<uint>();
-        Skeleton = new FSkeleton(Ar);
-        PhysicsBody = new FPhysicsBody(Ar);
+        Skeleton = Ar.ReadPtr(() => new FSkeleton(Ar));
+        PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
         Flags = Ar.Read<EMeshFlags>();
         Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
-        Tags = Ar.ReadArray(Ar.ReadMutableFString);
+        Tags = Ar.ReadArray(Ar.ReadFString);
         StreamedResources = Ar.ReadArray<ulong>();
         BonePoses = Ar.ReadArray(() => new FBonePose(Ar));
         BoneMap = Ar.ReadArray(() => new FBoneName(Ar));
-        AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
+        AdditionalPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
         MeshIDPrefix = Ar.Read<uint>();
-        ReferenceID = Ar.Read<uint>();
+
+        if (Flags.HasFlag(EMeshFlags.IsResourceReference))
+        {
+            ReferenceID = Ar.Read<uint>();
+            ReferencedMorph = Ar.ReadFString();
+        }
     }
 }
 
@@ -68,6 +67,7 @@ public enum EMeshBufferType
     UniqueVertexMap
 }
 
+[Flags]
 public enum EMeshFlags : uint
 {
     None = 0,

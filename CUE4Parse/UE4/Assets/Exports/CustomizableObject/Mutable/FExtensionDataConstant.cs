@@ -6,8 +6,8 @@ public class FExtensionDataConstant
 {
     public FExtensionData Data;
 
-    public FExtensionDataConstant(FArchive Ar)
+    public FExtensionDataConstant(FMutableArchive Ar)
     {
-        Data = new FExtensionData(Ar);
+        Data = Ar.ReadPtr(() => new FExtensionData(Ar));
     }
 }

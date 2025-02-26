@@ -1,17 +1,17 @@
 ﻿using CUE4Parse.UE4.Readers;
+using Newtonsoft.Json;
 using FIntVector2 = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<int>;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
 
-public class FLayout : IMutablePtr
+[JsonConverter(typeof(FLayoutConverter))]
+public class FLayout
 {
     public FIntVector2 Size;
-    public FLayoutBlock[] Blocks;
     public FIntVector2 MaxSize;
+    public FLayoutBlock[] Blocks;
     public EPackStrategy Strategy;
     public EReductionMethod ReductionMethod;
-
-    public bool IsBroken { get; set; }
 
     public FLayout(FArchive Ar)
     {

@@ -1,7 +1,6 @@
-﻿using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Readers;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Surfaces;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 
 public class FMeshSurface
 {
@@ -9,7 +8,7 @@ public class FMeshSurface
     public uint BoneMapIndex;
     public uint BoneMapCount;
     public uint Id;
-    
+
     public FMeshSurface(FArchive Ar)
     {
         SubMeshes = Ar.ReadArray(() => new FSurfaceSubMesh(Ar));

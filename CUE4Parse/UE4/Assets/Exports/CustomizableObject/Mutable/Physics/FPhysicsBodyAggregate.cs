@@ -11,10 +11,8 @@ public class FPhysicsBodyAggregate
     public FSphylBody[] Sphyls;
     public FTaperedCapsuleBody[] TaperedCapsules;
 
-    public FPhysicsBodyAggregate(FArchive Ar)
+    public FPhysicsBodyAggregate(FMutableArchive Ar)
     {
-        var version = Ar.Read<int>();
-
         Spheres = Ar.ReadArray(() => new FSphereBody(Ar));
         Boxes = Ar.ReadArray(() => new FBoxBody(Ar));
         Convex = Ar.ReadArray(() => new FConvexBody(Ar));

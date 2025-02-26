@@ -11,10 +11,8 @@ public class FTaperedCapsuleBody : FBodyShape
     public float Radius1;
     public float Length;
 
-    public FTaperedCapsuleBody(FArchive Ar) : base(Ar)
+    public FTaperedCapsuleBody(FMutableArchive Ar) : base(Ar)
     {
-        var version = Ar.Read<int>();
-
         Position = Ar.Read<FVector>();
         Orientation = Ar.Read<FQuat>();
         Radius0 = Ar.Read<float>();

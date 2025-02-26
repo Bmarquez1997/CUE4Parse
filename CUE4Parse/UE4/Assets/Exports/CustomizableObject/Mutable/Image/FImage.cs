@@ -1,30 +1,28 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿using System;
+using CUE4Parse.UE4.Readers;
+using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 
-public class FImage : IMutablePtr
+[JsonConverter(typeof(FImageConverter))]
+public class FImage
 {
     public FImageDataStorage DataStorage;
     public EImageFlags Flags;
 
-    public bool IsBroken { get; set; }
-
     public FImage(FArchive Ar)
     {
-        var version = Ar.Read<int>();
-        if (version == -1)
-        {
-            IsBroken = true;
-            return;
-        }
-
         DataStorage = new FImageDataStorage(Ar);
-        Flags = Ar.Read<EImageFlags>();
+        Flags = (EImageFlags) Ar.Read<byte>();
     }
 }
 
-public enum EImageFlags : byte
+// Could be Flags too
+public enum EImageFlags
 {
+    NONE = 0,
+
+    // Set if the next flag has been calculated and its value is valid.
     IF_IS_PLAIN_COLOUR_VALID = 1 << 0,
 
     // If the previous flag is set and this one too, the image is single colour.

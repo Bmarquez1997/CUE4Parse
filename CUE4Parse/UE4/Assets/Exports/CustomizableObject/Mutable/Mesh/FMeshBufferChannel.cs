@@ -67,7 +67,7 @@ public enum EMeshBufferSemantic : uint
     Count,
 }
 
-public enum EMeshBufferFormat
+public enum EMeshBufferFormat : uint
 {
     None,
 

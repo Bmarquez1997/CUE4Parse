@@ -1,6 +1,4 @@
-﻿using System;
-using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Readers;
 using FIntVector2 = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<int>;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
@@ -13,6 +11,7 @@ public class FLayoutBlock
     public int Priority;
     public bool bReduceBothAxes;
     public bool bReduceByTwo;
+    public uint UnusedPadding;
 
     public FLayoutBlock(FArchive Ar)
     {
@@ -20,8 +19,11 @@ public class FLayoutBlock
         Size = Ar.Read<FIntVector2>();
         Id = Ar.Read<ulong>();
         Priority = Ar.Read<int>();
-        var flags = Ar.Read<int>();
-        bReduceBothAxes = (flags & 1) == 1;
-        bReduceByTwo = (flags & 2) == 2;
+
+        var packedValue = Ar.Read<uint>();
+
+        bReduceBothAxes = ((packedValue >> 0) & 1) != 0;
+        bReduceByTwo = ((packedValue >> 1) & 1) != 0;
+        UnusedPadding = (packedValue >> 2) & ((1U << 30) - 1);
     }
 }
