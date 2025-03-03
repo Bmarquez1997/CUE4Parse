@@ -124,6 +124,7 @@ public enum EGame
         GAME_Fortnite_S27 = GAME_UE5_4 + 2,
         GAME_InfinityNikki = GAME_UE5_4 + 3,
         GAME_NevernessToEverness = GAME_UE5_4 + 4,
+        GAME_Gothic1Remake = GAME_UE5_4 + 5,
     GAME_UE5_5 = GameUtils.GameUe5Base + 5 << 4,
     GAME_UE5_6 = GameUtils.GameUe5Base + 6 << 4,
 
