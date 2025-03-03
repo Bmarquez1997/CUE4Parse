@@ -120,8 +120,8 @@ public static class MeshConverter
             if (mutSkelMeshLod.VertexColors != null)
                 mutSkelMeshLod.VertexColors[i] = dataConverter.GetColor(colorChannel, colorBuffer, i);
             
-            if (boneIndexChannel == null || weightBuffer == null || boneMap == null) continue;
-            foreach (var (boneId, weight) in dataConverter.GetWeights(weightBuffer, boneIndexChannel, weightChannel, i))
+            if (boneIndexChannel == null || weightChannel == null || boneIndexBuffer == null || weightBuffer == null || boneMap == null) continue;
+            foreach (var (boneId, weight) in dataConverter.GetWeights(boneIndexChannel, weightChannel, boneIndexBuffer, weightBuffer, i))
             {
                 if (weight == 0) continue;
                 var boneIndex = boneMap[boneId];

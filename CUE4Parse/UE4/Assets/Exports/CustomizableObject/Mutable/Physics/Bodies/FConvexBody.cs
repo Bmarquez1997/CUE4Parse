@@ -13,6 +13,6 @@ public class FConvexBody : FBodyShape
     {
         Vertices = Ar.ReadArray<FVector>();
         Indices = Ar.ReadArray<int>();
-        Transform = Ar.Read<FTransform>();
+        Transform = Ar.Read<FTransform>(); // not sure
     }
 }

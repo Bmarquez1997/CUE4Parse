@@ -17,6 +17,7 @@ public class UCustomizableObject : UObject
         base.Deserialize(Ar, validPos);
 
         Private = GetOrDefault<FPackageIndex>(nameof(Private));
+
         Version = Ar.Read<ECustomizableObjectVersion>();
         Model = new FModel(Ar);
     }

@@ -1,8 +1,10 @@
 ﻿using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.Assets.Utils;
 using CUE4Parse.UE4.Objects.UObject;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 
+[StructFallback]
 public class FModelResources
 {
     public FSoftObjectPath[] Skeletons;

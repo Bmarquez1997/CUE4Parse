@@ -10,6 +10,7 @@ public class FModel
 
     public FModel(FArchive Ar)
     {
-        Program = new FProgram(Ar);
+        var mutableAr = new FMutableArchive(Ar);
+        Program = new FProgram(mutableAr);
     }
 }

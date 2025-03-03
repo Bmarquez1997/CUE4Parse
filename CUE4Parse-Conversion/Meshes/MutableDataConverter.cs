@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using AssetRipper.TextureDecoder.Rgb.Channels;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Meshes;
@@ -157,21 +158,33 @@ public class MutableDataConverter
         }
     }
     
-    public List<Tuple<short, byte>> GetWeights(FMeshBuffer? weightBuffer, FMeshBufferChannel? boneIndexChannel, FMeshBufferChannel? weightChannel, int vertIndex)
+    public List<Tuple<short, byte>> GetWeights(FMeshBufferChannel? boneIndexChannel, FMeshBufferChannel? weightChannel, FMeshBuffer? boneIndexBuffer, FMeshBuffer? weightBuffer,  int index)
      {
-         if (weightChannel == null || weightBuffer == null || boneIndexChannel == null)// || boneIndexBuffer == null)
+         if (boneIndexChannel == null || weightChannel == null || boneIndexBuffer == null || weightBuffer == null)
              throw new ArgumentNullException();
 
          if (weightChannel.Format == EMeshBufferFormat.NUInt8 && boneIndexChannel.Format == EMeshBufferFormat.UInt8)
          {
              List<Tuple<short, byte>> weightList = [];
 
-             for (int i = 0; i < boneIndexChannel.ComponentCount; i++)
+             for (var i = 0; i < boneIndexChannel.ComponentCount; i++)
              {
-                 var boneIndex =
-                     weightBuffer.Data[vertIndex * ((int)weightBuffer.ElementSize) + boneIndexChannel.Offset + i];
-                 var weight = weightBuffer.Data[vertIndex * ((int)weightBuffer.ElementSize) + weightChannel.Offset + i];
+                 var boneIndex = boneIndexBuffer.Data[index * ((int)boneIndexBuffer.ElementSize) + boneIndexChannel.Offset + i];
+                 var weight = weightBuffer.Data[index * ((int)weightBuffer.ElementSize) + weightChannel.Offset + i];
                  weightList.Add(new Tuple<short, byte>(boneIndex, weight));
+             }
+
+             return weightList;
+         }
+         if (weightChannel.Format == EMeshBufferFormat.NUInt16 && boneIndexChannel.Format == EMeshBufferFormat.UInt16)
+         {
+             List<Tuple<short, byte>> weightList = [];
+
+             for (var i = 0; i < boneIndexChannel.ComponentCount; i++)
+             {
+                 var boneIndex = BitConverter.ToInt16(boneIndexBuffer.Data, index * (int)boneIndexBuffer.ElementSize + boneIndexChannel.Offset + i);
+                 var weight = BitConverter.ToInt16(weightBuffer.Data, index * (int)weightBuffer.ElementSize + weightChannel.Offset + i);
+                 weightList.Add(new Tuple<short, byte>(boneIndex, (byte) weight));
              }
 
              return weightList;

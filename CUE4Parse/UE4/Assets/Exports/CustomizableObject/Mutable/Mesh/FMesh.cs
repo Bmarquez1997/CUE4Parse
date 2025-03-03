@@ -14,8 +14,8 @@ public class FMesh
     public KeyValuePair<EMeshBufferType, FMeshBufferSet>[] AdditionalBuffers;
     public FLayout[] Layouts;
     public uint[] SkeletonIDs;
-    public FSkeleton Skeleton;
-    public FPhysicsBody PhysicsBody;
+    public FSkeleton? Skeleton;
+    public FPhysicsBody? PhysicsBody;
     public EMeshFlags Flags;
     public FMeshSurface[] Surfaces;
     public string[] Tags;
@@ -26,8 +26,6 @@ public class FMesh
     public uint MeshIDPrefix;
     public uint ReferenceID;
     public string ReferencedMorph;
-
-    public FMesh(FByteArchive Ar) : this(new FMutableArchive(Ar)) { }
 
     public FMesh(FMutableArchive Ar)
     {

@@ -14,9 +14,6 @@ public class UCustomizableObjectPrivate : UObject
         base.Deserialize(Ar, validPos);
 
         ModelStreamableData = GetOrDefault<FPackageIndex>(nameof(ModelStreamableData));
-        if (TryGetValue(out FStructFallback fallback, nameof(ModelResources)))
-        {
-            ModelResources = new FModelResources(fallback);
-        }
+        ModelResources = GetOrDefault<FModelResources>(nameof(ModelResources));
     }
 }

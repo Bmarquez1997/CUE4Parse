@@ -160,7 +160,7 @@ public class MutableExporter : ExporterBase
         var meshName = $"{skeleton.Name.Replace("_Skeleton", "")}_{materialSlotName}";
         // var meshName = materialSlotName;
         if (appendId) meshName = $"{materialSlotName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
-        var exportPath = $"{PackagePath}/{skeleton.Name}/{materialSlotName}";
+        var exportPath = $"{PackagePath}/{skeleton.Name}/{meshName}";
         
         var totalSockets = new List<FPackageIndex>();
         if (Options.SocketFormat != ESocketFormat.None)

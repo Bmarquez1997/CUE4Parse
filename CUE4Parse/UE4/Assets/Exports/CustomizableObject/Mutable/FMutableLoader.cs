@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Exceptions;
@@ -10,11 +11,10 @@ public class FMutableLoader
 {
     private UCustomizableObject CustomizableObject { get; set; }
     private UModelStreamableData ModelStreamableData { get; set; }
-    private Dictionary<uint, FByteArchive> SavedArchives { get; set; }
+    private Dictionary<uint, FMutableArchive> SavedArchives { get; set; }
 
     private Dictionary<uint, FMutableStreamableBlock> ModelStreamables => ModelStreamableData.StreamingData.ModelStreamables;
     private FByteBulkData[] StreamableBulkDataData => ModelStreamableData.StreamingData.StreamableBulkData;
-    //public FProgram Program => CustomizableObject.Model.Program;
 
     public FMutableLoader(UCustomizableObject customizableObject)
     {
@@ -23,23 +23,37 @@ public class FMutableLoader
 
         CustomizableObject = customizableObject;
         ModelStreamableData = coStreamableData;
-        SavedArchives = new Dictionary<uint, FByteArchive>();
+        SavedArchives = new Dictionary<uint, FMutableArchive>();
     }
 
     public FMesh LoadMesh(uint index)
     {
         var block = ModelStreamables[index];
-        if (!SavedArchives.TryGetValue(block.FileId, out var archive))
-        {
-            var bulkData = StreamableBulkDataData[block.FileId];
-            if (bulkData.Data == null)
-                throw new ParserException($"Bulkdata for block: {block.FileId} is null");
-
-            archive = new FByteArchive($"Mesh Data: {block.FileId}", bulkData.Data);
-            SavedArchives[block.FileId] = (FByteArchive) archive.Clone();
-        }
-
+        var archive = GetArchive(block);
         archive.Position = (long) block.Offset;
         return new FMesh(archive);
+    }
+
+    public FImage LoadImage(uint index)
+    {
+        var block = ModelStreamables[index];
+        var archive = GetArchive(block);
+        archive.Position = (long) block.Offset;
+        return new FImage(archive);
+    }
+
+    private FMutableArchive GetArchive(FMutableStreamableBlock block)
+    {
+        if (SavedArchives.TryGetValue(block.FileId, out var archive))
+            return archive;
+
+        var bulkData = StreamableBulkDataData[block.FileId];
+        if (bulkData.Data == null)
+            throw new ParserException($"BulkData is null for block: {block.FileId}");
+
+        archive = new FMutableArchive(new FByteArchive($"Mesh Data: {block.FileId}", bulkData.Data));
+        SavedArchives[block.FileId] = (FMutableArchive) archive.Clone();
+
+        return archive;
     }
 }

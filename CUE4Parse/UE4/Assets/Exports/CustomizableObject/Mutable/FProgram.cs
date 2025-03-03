@@ -1,4 +1,5 @@
-﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+﻿using System;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
@@ -8,6 +9,7 @@ using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Engine.Curves;
 using CUE4Parse.UE4.Readers;
 using Newtonsoft.Json;
+using Serilog;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 
@@ -36,30 +38,36 @@ public class FProgram
     public FRangeDesc[] Ranges;
     public ushort[][] ParameterLists;
 
-    public FProgram(FArchive Ar)
+    public FProgram(FMutableArchive Ar)
     {
-        var mutableAr = new FMutableArchive(Ar, Ar.Versions);
-
         OpAddress = Ar.ReadArray<uint>();
         ByteCode = Ar.ReadArray<byte>();
-        States = Ar.ReadArray(() => new FState(mutableAr));
+        States = Ar.ReadArray(() => new FState(Ar));
         Roms = Ar.ReadArray(() => new FRomDataRuntime(Ar));
         RomsCompileData = Ar.ReadArray(() => new FRomDataCompile(Ar));
-        ConstantImageLODsPermanent = mutableAr.ReadPtrArray(() => new FImage(Ar));
-        ConstantImageLODIndices = Ar.ReadArray(() => new FConstantResourceIndex(Ar));
-        ConstantImages = Ar.ReadArray(() => new FImageLODRange(Ar));
-        ConstantMeshesPermanent = mutableAr.ReadPtrArray(() => new FMesh(mutableAr));
-        ConstantExtensionData = mutableAr.ReadArray(() => new FExtensionDataConstant(mutableAr));
-        ConstantStrings = Ar.ReadArray(mutableAr.ReadFString);
-        ConstantLayouts = mutableAr.ReadPtrArray(() => new FLayout(Ar));
-        ConstantProjectors = Ar.ReadArray(() => new FProjector(Ar));
-        ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
-        ConstantShapes = Ar.ReadArray(() => new FShape(Ar));
-        ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
-        ConstantSkeletons = mutableAr.ReadPtrArray(() => new FSkeleton(Ar));
-        ConstantPhysicsBodies = mutableAr.ReadPtrArray(() => new FPhysicsBody(mutableAr));
-        Parameters = Ar.ReadArray(() => new FParameterDesc(mutableAr));
-        Ranges = Ar.ReadArray(() => new FRangeDesc(mutableAr));
-        ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
+        try
+        {
+            ConstantImageLODsPermanent = Ar.ReadPtrArray(() => new FImage(Ar));
+            ConstantImageLODIndices = Ar.ReadArray(() => new FConstantResourceIndex(Ar));
+            ConstantImages = Ar.ReadArray(() => new FImageLODRange(Ar));
+            ConstantMeshesPermanent = Ar.ReadPtrArray(() => new FMesh(Ar));
+            ConstantExtensionData = Ar.ReadArray(() => new FExtensionDataConstant(Ar));
+            ConstantStrings = Ar.ReadArray(Ar.ReadFString);
+            ConstantLayouts = Ar.ReadPtrArray(() => new FLayout(Ar));
+            ConstantProjectors = Ar.ReadArray(() => new FProjector(Ar));
+            ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
+            ConstantShapes = Ar.ReadArray(() => new FShape(Ar));
+            ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
+            ConstantSkeletons = Ar.ReadPtrArray(() => new FSkeleton(Ar));
+            ConstantPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
+            Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
+            Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
+            ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
+        }
+        catch (Exception e)
+        {
+            Log.Error("Exception thrown while loading FProgram: {}", e);
+        }
+        
     }
 }

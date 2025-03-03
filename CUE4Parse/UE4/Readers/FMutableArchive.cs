@@ -12,7 +12,7 @@ public class FMutableArchive : FArchive
 {
     private readonly FArchive InnerArchive;
 
-    public FMutableArchive(FArchive innerArchive, VersionContainer? versionContainer = null) : base(versionContainer)
+    public FMutableArchive(FArchive innerArchive) : base(innerArchive.Versions)
     {
         InnerArchive = innerArchive;
     }
@@ -30,10 +30,9 @@ public class FMutableArchive : FArchive
         set => InnerArchive.Position = value;
     }
 
-    public override FName ReadFName() => new FName(ReadFString());
     public override string ReadFString()
     {
-        var length = Read<int>() * 2; // one char occupies two bytes
+        var length = Read<int>() * 2;
         string value;
 
         if (length == int.MinValue)
@@ -101,6 +100,8 @@ public class FMutableArchive : FArchive
         var length = Read<int>();
         var array = new T[length];
 
+        var alreadyReadPointer = new List<int>();
+
         for (int i = 0; i < length; i++)
         {
             var id = Read<int>();
@@ -110,17 +111,24 @@ public class FMutableArchive : FArchive
                 continue;
             }
 
+            //if (alreadyReadPointer.Contains(id))
+            //{
+            //    array[i] = array[id];
+            //    continue;
+            //}
+
             array[i] = getter();
+            alreadyReadPointer.Add(id);
         }
 
         return array;
     }
 
-    public T ReadPtr<T>(Func<T> getter) where T : class
+    public T? ReadPtr<T>(Func<T> getter) where T : class
     {
         var id = Read<int>();
         return id == -1 ? null : getter();
     }
 
-    public override object Clone() => InnerArchive.Clone();
+    public override object Clone() => new FMutableArchive((FArchive) InnerArchive.Clone());
 }
