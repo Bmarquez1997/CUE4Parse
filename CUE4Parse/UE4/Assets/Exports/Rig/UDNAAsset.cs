@@ -74,7 +74,6 @@ namespace CUE4Parse.UE4.Assets.Exports.Rig
         // TOffset = uint32t
         public override void Deserialize(FAssetArchive Ar, long validPos)
         {
-            File.WriteAllBytes("B:/workspace_fp/jones.dna", Ar.GetBytes());
             base.Deserialize(Ar, validPos);
             DnaFileName = GetOrDefault<string>(nameof(DnaFileName));
             if (FDNAAssetCustomVersion.Get(Ar) >= FDNAAssetCustomVersion.Type.BeforeCustomVersionWasAdded)
