@@ -66,7 +66,7 @@ public class FProgram
         }
         catch (Exception e)
         {
-            Log.Error("Exception thrown while loading FProgram: {}", e);
+            Log.Error("Exception thrown while loading FProgram: {}", e.Message);
         }
         
     }

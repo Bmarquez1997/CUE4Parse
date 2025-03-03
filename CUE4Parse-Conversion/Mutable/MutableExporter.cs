@@ -111,7 +111,8 @@ public class MutableExporter : ExporterBase
     {
         foreach (var skeletonGroup in meshes)
         {
-            var skeleton = skeletons[skeletonGroup.Key].Load<USkeleton>();
+            var skeletonSoftObject = skeletons[skeletonGroup.Key];
+            var skeleton = skeletonSoftObject.Load<USkeleton>();
             if (filterSkeletonName != null && 
                 !skeleton.Name.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
             
@@ -123,12 +124,12 @@ public class MutableExporter : ExporterBase
                     
                     if (materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeleton.Name.Equals("SK_Figure"))
                         materialGroup.Value.ForEach(mesh =>
-                            ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeleton, boneNameMap, true));
+                            ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeletonSoftObject, boneNameMap, true));
                     else
                     {
                         var sortedList = materialGroup.Value.OrderByDescending(mesh => mesh.VertexBuffers.ElementCount)
                             .ToList();
-                        ExportMutableMesh(originalCustomizableObject, sortedList, materialGroup.Key, skeleton, boneNameMap);
+                        ExportMutableMesh(originalCustomizableObject, sortedList, materialGroup.Key, skeletonSoftObject, boneNameMap);
                     }
                 }
             }
@@ -138,13 +139,13 @@ public class MutableExporter : ExporterBase
                 {
                     var sortedList = materialGroup.Value.OrderByDescending(mesh => mesh.VertexBuffers.ElementCount)
                         .ToList();
-                    ExportMutableMesh(originalCustomizableObject, sortedList, materialGroup.Key, skeleton, boneNameMap);
+                    ExportMutableMesh(originalCustomizableObject, sortedList, materialGroup.Key, skeletonSoftObject, boneNameMap);
                 }
             }
         }
     }
     
-    private void ExportMutableMesh(UCustomizableObject originalCustomizableObject, List<FMesh> meshes, string materialSlotName, USkeleton skeleton, UScriptMap boneNameMap, bool appendId = false)
+    private void ExportMutableMesh(UCustomizableObject originalCustomizableObject, List<FMesh> meshes, string materialSlotName, FSoftObjectPath skeletonSoftObject, UScriptMap boneNameMap, bool appendId = false)
     {
         var mesh = meshes[0];
         meshes.RemoveAt(0);
@@ -156,6 +157,9 @@ public class MutableExporter : ExporterBase
             Log.Logger.Warning($"Mesh '{ExportName}' has no LODs");
             return;
         }
+        
+        
+        var skeleton = skeletonSoftObject.Load<USkeleton>();
         
         var meshName = $"{skeleton.Name.Replace("_Skeleton", "")}_{materialSlotName}";
         // var meshName = materialSlotName;
@@ -171,7 +175,8 @@ public class MutableExporter : ExporterBase
         if (Options.MeshFormat == EMeshFormat.UEFormat)
         {
             using var ueModelArchive = new FArchiveWriter();
-            new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), null, Options).Save(ueModelArchive);
+            var skeletonPackageIndex = new FPackageIndex(skeletonSoftObject.Owner, 0);
+            new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), skeletonPackageIndex, null, Options).Save(ueModelArchive);
             var outputMesh = new Mesh($"{meshName}.uemodel", ueModelArchive.GetBuffer(), convertedMesh.LODs[0].GetMaterials(Options));
             
             if (!Objects.ContainsKey(skeleton.Name))
