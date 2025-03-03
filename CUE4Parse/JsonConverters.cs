@@ -8,8 +8,13 @@ using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.Animation.ACL;
+using CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression;
 using CUE4Parse.UE4.Assets.Exports.BuildData;
 using CUE4Parse.UE4.Assets.Exports.Component.StaticMesh;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
 using CUE4Parse.UE4.Assets.Exports.Engine.Font;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
@@ -39,6 +44,9 @@ using CUE4Parse.UE4.Wwise;
 using CUE4Parse.UE4.Wwise.Objects;
 using CUE4Parse.Utils;
 using Newtonsoft.Json;
+using Type = System.Type;
+
+using static CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression.FExpressionObject;
 #pragma warning disable CS8765
 
 namespace CUE4Parse;
@@ -1963,6 +1971,406 @@ public class FMaterialParameterInfoConverter : JsonConverter<FMaterialParameterI
     }
 }
 
+public class FModelConverter : JsonConverter<FModel>
+{
+    public override void WriteJson(JsonWriter writer, FModel value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("Program");
+        serializer.Serialize(writer, value.Program);
+
+        writer.WriteEndObject();
+    }
+
+    public override FModel ReadJson(JsonReader reader, Type objectType, FModel? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FProgramConverter : JsonConverter<FProgram>
+{
+    public override void WriteJson(JsonWriter writer, FProgram value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("States");
+        writer.WriteStartArray();
+        foreach (var state in value.States)
+        {
+            serializer.Serialize(writer, state);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("Roms");
+        writer.WriteStartArray();
+        foreach (var rom in value.Roms)
+        {
+            serializer.Serialize(writer, rom);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("RomsCompileData");
+        writer.WriteStartArray();
+        foreach (var romCompileData in value.RomsCompileData)
+        {
+            serializer.Serialize(writer, romCompileData);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantImageLODsPermanent");
+        writer.WriteStartArray();
+        foreach (var constantImageLODPermanent in value.ConstantImageLODsPermanent)
+        {
+            serializer.Serialize(writer, constantImageLODPermanent);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantImageLODIndices");
+        writer.WriteStartArray();
+        foreach (var constantImageLodIndex in value.ConstantImageLODIndices)
+        {
+            serializer.Serialize(writer, constantImageLodIndex);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantImages");
+        writer.WriteStartArray();
+        foreach (var constantImage in value.ConstantImages)
+        {
+            serializer.Serialize(writer, constantImage);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantMeshesPermanent");
+        writer.WriteStartArray();
+        foreach (var constantMeshPermanent in value.ConstantMeshesPermanent)
+        {
+            serializer.Serialize(writer, constantMeshPermanent);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantExtensionData");
+        writer.WriteStartArray();
+        foreach (var constantExtensionData in value.ConstantExtensionData)
+        {
+            serializer.Serialize(writer, constantExtensionData);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantStrings");
+        writer.WriteStartArray();
+        foreach (var constantString in value.ConstantStrings)
+        {
+            serializer.Serialize(writer, constantString);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantLayouts");
+        writer.WriteStartArray();
+        foreach (var constantLayout in value.ConstantLayouts)
+        {
+            serializer.Serialize(writer, constantLayout);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantProjectors");
+        writer.WriteStartArray();
+        foreach (var constantProjector in value.ConstantProjectors)
+        {
+            serializer.Serialize(writer, constantProjector);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantProjectors");
+        writer.WriteStartArray();
+        foreach (var constantProjector in value.ConstantProjectors)
+        {
+            serializer.Serialize(writer, constantProjector);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantMatrices");
+        writer.WriteStartArray();
+        foreach (var constantMatrix in value.ConstantMatrices)
+        {
+            serializer.Serialize(writer, constantMatrix);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantShapes");
+        writer.WriteStartArray();
+        foreach (var constantShape in value.ConstantShapes)
+        {
+            serializer.Serialize(writer, constantShape);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantCurves");
+        writer.WriteStartArray();
+        foreach (var constantCurve in value.ConstantCurves)
+        {
+            serializer.Serialize(writer, constantCurve);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantSkeletons");
+        writer.WriteStartArray();
+        foreach (var constantSkeleton in value.ConstantSkeletons)
+        {
+            serializer.Serialize(writer, constantSkeleton);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ConstantPhysicsBodies");
+        writer.WriteStartArray();
+        foreach (var constantPhysicsBody in value.ConstantPhysicsBodies)
+        {
+            serializer.Serialize(writer, constantPhysicsBody);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("Parameters");
+        writer.WriteStartArray();
+        foreach (var parameter in value.Parameters)
+        {
+            serializer.Serialize(writer, parameter);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("Ranges");
+        writer.WriteStartArray();
+        foreach (var range in value.Ranges)
+        {
+            serializer.Serialize(writer, range);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("ParameterLists");
+        writer.WriteStartArray();
+        foreach (var parameterList in value.ParameterLists)
+        {
+            writer.WriteStartArray();
+            foreach (var parameter in parameterList)
+            {
+                serializer.Serialize(writer, parameter);
+            }
+            writer.WriteEndArray();
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+    }
+
+    public override FProgram ReadJson(JsonReader reader, Type objectType, FProgram? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FRomDataRuntimeConverter : JsonConverter<FRomDataRuntime>
+{
+    public override void WriteJson(JsonWriter writer, FRomDataRuntime value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("Size");
+        serializer.Serialize(writer, value.Size);
+
+        writer.WritePropertyName("ResourceType");
+        serializer.Serialize(writer, $"ERomDataType::{value.ResourceType.ToString()}");
+
+        writer.WritePropertyName("IsHighRes");
+        serializer.Serialize(writer, value.IsHighRes);
+
+        writer.WriteEndObject();
+    }
+
+    public override FRomDataRuntime ReadJson(JsonReader reader, Type objectType, FRomDataRuntime? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FImageConverter : JsonConverter<FImage>
+{
+    public override void WriteJson(JsonWriter writer, FImage value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("DataStorage");
+        serializer.Serialize(writer, value.DataStorage);
+
+        writer.WritePropertyName("Flags");
+        serializer.Serialize(writer, $"EImageFlags::{value.Flags.ToString()}");
+
+        writer.WriteEndObject();
+    }
+
+    public override FImage ReadJson(JsonReader reader, Type objectType, FImage? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FImageDataStorageConverter : JsonConverter<FImageDataStorage>
+{
+    public override void WriteJson(JsonWriter writer, FImageDataStorage value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("ImageSize");
+        serializer.Serialize(writer, value.ImageSize);
+
+        writer.WritePropertyName("ImageFormat");
+        serializer.Serialize(writer, $"EImageFormat::{value.ImageFormat.ToString()}");
+
+        writer.WritePropertyName("NumLODs");
+        serializer.Serialize(writer, value.NumLODs);
+
+        writer.WritePropertyName("CompactedTailOffsets");
+        writer.WriteStartArray();
+        foreach (var compactedTailOffset in value.CompactedTailOffsets)
+        {
+            serializer.Serialize(writer, compactedTailOffset);
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+    }
+
+    public override FImageDataStorage ReadJson(JsonReader reader, Type objectType, FImageDataStorage? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FImageLODRangeConverter : JsonConverter<FImageLODRange>
+{
+    public override void WriteJson(JsonWriter writer, FImageLODRange value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("FirstIndex");
+        serializer.Serialize(writer, value.FirstIndex);
+
+        writer.WritePropertyName("ImageSizeX");
+        serializer.Serialize(writer, value.ImageSizeX);
+
+        writer.WritePropertyName("ImageSizeY");
+        serializer.Serialize(writer, value.ImageSizeY);
+
+        writer.WritePropertyName("LODCount");
+        serializer.Serialize(writer, value.LODCount);
+
+        writer.WritePropertyName("ImageFormat");
+        serializer.Serialize(writer, $"EImageFormat::{value.ImageFormat.ToString()}");
+
+        writer.WriteEndObject();
+    }
+
+    public override FImageLODRange ReadJson(JsonReader reader, Type objectType, FImageLODRange? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FExtensionDataConverter : JsonConverter<FExtensionData>
+{
+    public override void WriteJson(JsonWriter writer, FExtensionData value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("Index");
+        serializer.Serialize(writer, value.Index);
+
+        writer.WritePropertyName("Origin");
+        serializer.Serialize(writer, $"EOrigin::{value.Origin.ToString()}");
+
+        writer.WriteEndObject();
+    }
+
+    public override FExtensionData ReadJson(JsonReader reader, Type objectType, FExtensionData? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FLayoutConverter : JsonConverter<FLayout>
+{
+    public override void WriteJson(JsonWriter writer, FLayout value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("Size");
+        serializer.Serialize(writer, value.Size);
+
+        writer.WritePropertyName("MaxSize");
+        serializer.Serialize(writer, value.MaxSize);
+
+        writer.WritePropertyName("Blocks");
+        writer.WriteStartArray();
+        foreach (var block in value.Blocks)
+        {
+            serializer.Serialize(writer, block);
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName("Strategy");
+        serializer.Serialize(writer, $"EPackStrategy::{value.Strategy}");
+
+        writer.WritePropertyName("ReductionMethod");
+        serializer.Serialize(writer, $"EReductionMethod::{value.ReductionMethod}");
+
+        writer.WriteEndObject();
+    }
+
+    public override FLayout ReadJson(JsonReader reader, Type objectType, FLayout? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FParameterDescConverter : JsonConverter<FParameterDesc>
+{
+    public override void WriteJson(JsonWriter writer, FParameterDesc value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("Name");
+        serializer.Serialize(writer, value.Name);
+
+        writer.WritePropertyName("UID");
+        serializer.Serialize(writer, value.UID);
+
+        writer.WritePropertyName("Type");
+        serializer.Serialize(writer, $"EParameterType::{value.Type.ToString()}");
+
+        writer.WritePropertyName("DefaultValue");
+        serializer.Serialize(writer, value.DefaultValue);
+
+        writer.WritePropertyName("PossibleValues");
+        serializer.Serialize(writer, value.PossibleValues);
+
+        writer.WriteEndObject();
+    }
+
+    public override FParameterDesc ReadJson(JsonReader reader, Type objectType, FParameterDesc? existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class FVirtualTextureDataChunkConverter : JsonConverter<FVirtualTextureDataChunk>
 {
     public override void WriteJson(JsonWriter writer, FVirtualTextureDataChunk value, JsonSerializer serializer)
@@ -2346,7 +2754,7 @@ public class FByteBulkDataConverter : JsonConverter<FByteBulkData>
 
 public class FKismetPropertyPointerConverter : JsonConverter<FKismetPropertyPointer>
 {
-    public override FKismetPropertyPointer? ReadJson(JsonReader reader, Type objectType, FKismetPropertyPointer? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override FKismetPropertyPointer ReadJson(JsonReader reader, Type objectType, FKismetPropertyPointer? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         throw new NotImplementedException();
     }
@@ -2862,6 +3270,41 @@ public class FSmartNameConverter : JsonConverter<FSmartName>
     }
 }
 
+public class EOperatorConverter : JsonConverter<EOperator>
+{
+    public override void WriteJson(JsonWriter writer, EOperator value, JsonSerializer serializer)
+    {
+        serializer.Serialize(writer, value.ToString());
+    }
+
+    public override EOperator ReadJson(JsonReader reader, Type objectType, EOperator existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FFunctionRefConverter : JsonConverter<FFunctionRef>
+{
+    public override void WriteJson(JsonWriter writer, FFunctionRef value, JsonSerializer serializer)
+    {
+        if (GBuiltInFunctions.IsValidFunctionIndex(value.Index))
+        {
+            string[] aliases = GBuiltInFunctions.GetNamesByIndex(value.Index);
+            serializer.Serialize(writer, string.Join(" (is alias of) ", aliases));
+        } else
+        {
+            serializer.Serialize(writer, $"<unknown function index {value.Index}>");
+        }
+    }
+
+    public override FFunctionRef ReadJson(JsonReader reader, Type objectType, FFunctionRef existingValue, bool hasExistingValue,
+        JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class FCompressedVisibilityChunkConverter : JsonConverter<FCompressedVisibilityChunk>
 {
     public override void WriteJson(JsonWriter writer, FCompressedVisibilityChunk value, JsonSerializer serializer)
@@ -2962,7 +3405,7 @@ public class FScriptTextConverter : JsonConverter<FScriptText>
         writer.WriteEndObject();
     }
 
-    public override FScriptText? ReadJson(JsonReader reader, Type objectType, FScriptText? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override FScriptText ReadJson(JsonReader reader, Type objectType, FScriptText? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         throw new NotImplementedException();
     }

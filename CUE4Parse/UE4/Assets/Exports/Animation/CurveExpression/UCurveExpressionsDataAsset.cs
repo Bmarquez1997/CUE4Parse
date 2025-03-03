@@ -4,6 +4,7 @@ using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
+using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression;
 
@@ -22,6 +23,32 @@ public class UCurveExpressionsDataAsset : UObject
         }
 
         ExpressionData = new FExpressionData(Ar);
+    }
+    
+    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
+    {
+        base.WriteJson(writer, serializer);
+
+        writer.WritePropertyName(nameof(NamedConstants));
+        writer.WriteStartArray();
+        foreach (var name in NamedConstants)
+            serializer.Serialize(writer, name);
+        writer.WriteEndArray();
+
+
+        writer.WritePropertyName(nameof(ExpressionData));
+        writer.WriteStartObject();
+        foreach (var (name, expression) in ExpressionData.ExpressionMap)
+        {
+            writer.WritePropertyName(name.Text);
+            writer.WriteStartObject();
+            writer.WritePropertyName("Expanded");
+            serializer.Serialize(writer, expression);
+            writer.WritePropertyName("Concise");
+            serializer.Serialize(writer, expression.ToString());
+            writer.WriteEndObject();
+        }
+        writer.WriteEndObject();
     }
 }
 

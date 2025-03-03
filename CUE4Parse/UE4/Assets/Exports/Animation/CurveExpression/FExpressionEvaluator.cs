@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.Utils;
@@ -176,6 +177,14 @@ public static class GBuiltInFunctions
     public static bool IsValidFunctionIndex(int index)
     {
         return index >= 0 && index < Functions.Count;
+    }
+    
+    public static string[] GetNamesByIndex(int inIndex)
+    {
+        return FunctionNameIndex
+            .Where((x) => x.Value == inIndex)
+            .Select((x) => x.Key)
+            .ToArray();
     }
 
     public static FFunctionInfo GetInfoByIndex(int inIndex)
