@@ -14,6 +14,7 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
 using CUE4Parse.UE4.Assets.Objects;
 using Serilog;
+using CUE4Parse.UE4.Assets.Exports.Component.SplineMesh;
 
 namespace CUE4Parse_Conversion.Meshes;
 
@@ -150,6 +151,118 @@ public static class MeshConverter
 
          return boneIndexMap;
      }
+     
+     public static bool TryConvert(this USplineMeshComponent? spline, out CStaticMesh convertedMesh) 
+        {
+            var originalMesh = spline?.GetStaticMesh().Load<UStaticMesh>();
+            if (originalMesh == null)
+            {
+                convertedMesh = new CStaticMesh();
+                return false;
+            }
+            return TryConvert(originalMesh, spline, out convertedMesh);
+        }
+        
+        public static bool TryConvert(this UStaticMesh originalMesh, out CStaticMesh convertedMesh) 
+        {
+            return TryConvert(originalMesh, null, out convertedMesh);
+        }
+
+        public static bool TryConvert(this UStaticMesh originalMesh, USplineMeshComponent? spline, out CStaticMesh convertedMesh)
+        {
+            convertedMesh = new CStaticMesh();
+            if (originalMesh.RenderData == null)
+                return false;
+
+            convertedMesh.BoundingSphere = new FSphere(0f, 0f, 0f, originalMesh.RenderData.Bounds.SphereRadius / 2);
+            convertedMesh.BoundingBox = new FBox(
+                originalMesh.RenderData.Bounds.Origin - originalMesh.RenderData.Bounds.BoxExtent,
+                originalMesh.RenderData.Bounds.Origin + originalMesh.RenderData.Bounds.BoxExtent);
+
+            foreach (var srcLod in originalMesh.RenderData.LODs)
+            {
+                if (srcLod.SkipLod) continue;
+
+                var numTexCoords = srcLod.VertexBuffer!.NumTexCoords;
+                var numVerts = srcLod.PositionVertexBuffer!.Verts.Length;
+                if (numVerts == 0 && numTexCoords == 0)
+                {
+                    continue;
+                }
+
+                if (numTexCoords > Constants.MAX_MESH_UV_SETS)
+                    throw new ParserException($"Static mesh has too many UV sets ({numTexCoords})");
+
+                var staticMeshLod = new CStaticMeshLod
+                {
+                    NumTexCoords = numTexCoords,
+                    HasNormals = true,
+                    HasTangents = true,
+                    IsTwoSided = srcLod.CardRepresentationData?.bMostlyTwoSided ?? false,
+                    Indices = new Lazy<FRawStaticIndexBuffer>(srcLod.IndexBuffer!),
+                    Sections = new Lazy<CMeshSection[]>(() =>
+                    {
+                        var sections = new CMeshSection[srcLod.Sections.Length];
+                        for (var j = 0; j < sections.Length; j++)
+                        {
+                            int materialIndex = srcLod.Sections[j].MaterialIndex;
+                            while (materialIndex >= originalMesh.Materials.Length)
+                            {
+                                materialIndex--;
+                            }
+
+                            if (materialIndex < 0) sections[j] = new CMeshSection(srcLod.Sections[j]);
+                            else
+                            {
+                                sections[j] = new CMeshSection(materialIndex, srcLod.Sections[j],
+                                    originalMesh.StaticMaterials?[materialIndex].MaterialSlotName.Text, // materialName
+                                    originalMesh.Materials[materialIndex]); // numFaces
+                            }
+                        }
+                        return sections;
+                    })
+                };
+
+                staticMeshLod.AllocateVerts(numVerts);
+                if (srcLod.ColorVertexBuffer!.NumVertices != 0)
+                    staticMeshLod.AllocateVertexColorBuffer();
+
+                for (var j = 0; j < numVerts; j++)
+                {
+                    var suv = srcLod.VertexBuffer.UV[j];
+                    if (suv.Normal[1].Data != 0)
+                        throw new ParserException("Not implemented: should only be used in UE3");
+
+                    var pos = srcLod.PositionVertexBuffer.Verts[j];
+                    if (spline != null) // TODO normals
+                    {
+                        var distanceAlong = USplineMeshComponent.GetAxisValueRef(ref pos, spline.ForwardAxis);
+                        var sliceTransform = spline.CalcSliceTransform(distanceAlong);
+                        USplineMeshComponent.SetAxisValueRef(ref pos, spline.ForwardAxis, 0f);
+                        pos = sliceTransform.TransformPosition(pos);
+                    }
+
+                    staticMeshLod.Verts[j].Position = pos;
+                    UnpackNormals(suv.Normal, staticMeshLod.Verts[j]);
+                    staticMeshLod.Verts[j].UV.U = suv.UV[0].U;
+                    staticMeshLod.Verts[j].UV.V = suv.UV[0].V;
+
+                    for (var k = 1; k < numTexCoords; k++)
+                    {
+                        staticMeshLod.ExtraUV.Value[k - 1][j].U = suv.UV[k].U;
+                        staticMeshLod.ExtraUV.Value[k - 1][j].V = suv.UV[k].V;
+                    }
+
+                    if (srcLod.ColorVertexBuffer.NumVertices != 0)
+                        staticMeshLod.VertexColors![j] = srcLod.ColorVertexBuffer.Data[j];
+                }
+
+                convertedMesh.LODs.Add(staticMeshLod);
+            }
+
+            convertedMesh.FinalizeMesh();
+            return true;
+        }
 
     public static bool TryConvert(this USkeletalMesh originalMesh, out CSkeletalMesh convertedMesh)
     {
@@ -346,93 +459,6 @@ public static class MeshConverter
             box.Min = skeletalMeshBone.Position.ComponentMin(box.Min);
             box.Max = skeletalMeshBone.Position.ComponentMax(box.Max);
         }
-        return true;
-    }
-
-    public static bool TryConvert(this UStaticMesh originalMesh, out CStaticMesh convertedMesh)
-    {
-        convertedMesh = new CStaticMesh();
-        if (originalMesh.RenderData == null)
-            return false;
-
-        convertedMesh.BoundingSphere = new FSphere(0f, 0f, 0f, originalMesh.RenderData.Bounds.SphereRadius / 2);
-        convertedMesh.BoundingBox = new FBox(
-            originalMesh.RenderData.Bounds.Origin - originalMesh.RenderData.Bounds.BoxExtent,
-            originalMesh.RenderData.Bounds.Origin + originalMesh.RenderData.Bounds.BoxExtent);
-
-        foreach (var srcLod in originalMesh.RenderData.LODs)
-        {
-            if (srcLod.SkipLod) continue;
-
-            var numTexCoords = srcLod.VertexBuffer!.NumTexCoords;
-            var numVerts = srcLod.PositionVertexBuffer!.Verts.Length;
-            if (numVerts == 0 && numTexCoords == 0)
-            {
-                continue;
-            }
-
-            if (numTexCoords > Constants.MAX_MESH_UV_SETS)
-                throw new ParserException($"Static mesh has too many UV sets ({numTexCoords})");
-
-            var staticMeshLod = new CStaticMeshLod
-            {
-                NumTexCoords = numTexCoords,
-                HasNormals = true,
-                HasTangents = true,
-                IsTwoSided = srcLod.CardRepresentationData?.bMostlyTwoSided ?? false,
-                Indices = new Lazy<FRawStaticIndexBuffer>(srcLod.IndexBuffer!),
-                Sections = new Lazy<CMeshSection[]>(() =>
-                {
-                    var sections = new CMeshSection[srcLod.Sections.Length];
-                    for (var j = 0; j < sections.Length; j++)
-                    {
-                        int materialIndex = srcLod.Sections[j].MaterialIndex;
-                        while (materialIndex >= originalMesh.Materials.Length)
-                        {
-                            materialIndex--;
-                        }
-
-                        if (materialIndex < 0) sections[j] = new CMeshSection(srcLod.Sections[j]);
-                        else
-                        {
-                            sections[j] = new CMeshSection(materialIndex, srcLod.Sections[j],
-                                originalMesh.StaticMaterials?[materialIndex].MaterialSlotName.Text, // materialName
-                                originalMesh.Materials[materialIndex]); // numFaces
-                        }
-                    }
-                    return sections;
-                })
-            };
-
-            staticMeshLod.AllocateVerts(numVerts);
-            if (srcLod.ColorVertexBuffer!.NumVertices != 0)
-                staticMeshLod.AllocateVertexColorBuffer();
-
-            for (var j = 0; j < numVerts; j++)
-            {
-                var suv = srcLod.VertexBuffer.UV[j];
-                if (suv.Normal[1].Data != 0)
-                    throw new ParserException("Not implemented: should only be used in UE3");
-
-                staticMeshLod.Verts[j].Position = srcLod.PositionVertexBuffer.Verts[j];
-                UnpackNormals(suv.Normal, staticMeshLod.Verts[j]);
-                staticMeshLod.Verts[j].UV.U = suv.UV[0].U;
-                staticMeshLod.Verts[j].UV.V = suv.UV[0].V;
-
-                for (var k = 1; k < numTexCoords; k++)
-                {
-                    staticMeshLod.ExtraUV.Value[k - 1][j].U = suv.UV[k].U;
-                    staticMeshLod.ExtraUV.Value[k - 1][j].V = suv.UV[k].V;
-                }
-
-                if (srcLod.ColorVertexBuffer.NumVertices != 0)
-                    staticMeshLod.VertexColors![j] = srcLod.ColorVertexBuffer.Data[j];
-            }
-
-            convertedMesh.LODs.Add(staticMeshLod);
-        }
-
-        convertedMesh.FinalizeMesh();
         return true;
     }
 

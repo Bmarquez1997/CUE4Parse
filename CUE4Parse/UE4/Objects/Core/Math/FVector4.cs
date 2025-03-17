@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Runtime.InteropServices;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
@@ -58,8 +58,18 @@ namespace CUE4Parse.UE4.Objects.Core.Math
 
         public FVector4(FLinearColor color) : this(color.R, color.G, color.B, color.A) { }
 
-        public static implicit operator FVector(FVector4 v) => new FVector(v.X, v.Y, v.Z);
-        public static implicit operator Vector4(FVector4 v) => new Vector4(v.X, v.Y, v.Z, v.W);
+    public static explicit operator FVector(FVector4 v) => new FVector(v.X, v.Y, v.Z);
+    public static explicit operator Vector4(FVector4 v) => new Vector4(v.X, v.Y, v.Z, v.W);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator == (FVector4 v1, FVector4 v2) => v1.X == v2.X && v1.Y == v2.Y && v1.Z == v2.Z && v1.W == v2.W;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool operator !=(FVector4 v1, FVector4 v2) => !(v1 == v2);
+
+    public static ref FVector AsFVector(ref FVector4 v) => ref Unsafe.As<FVector4, FVector>(ref v);
+
+    public bool Equals(FVector4 other) => this == other;
 
         public override string ToString() => $"X={X,3:F3} Y={Y,3:F3} Z={Z,3:F3} W={W,3:F3}";
     }

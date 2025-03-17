@@ -5,7 +5,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Component.SkeletalMesh;
 
 public class USkeletalMeshComponentBudgeted : USkeletalMeshComponent;
 
-public class USkeletalMeshComponent : USceneComponent
+public class USkeletalMeshComponent : USkinnedMeshComponent
 {
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
@@ -19,7 +19,7 @@ public class USkeletalMeshComponent : USceneComponent
         
         return skeletalMesh;
     }
-    
+
     public FPackageIndex GetSkeletalMesh(string parameterName)
     {
         var mesh = new FPackageIndex();
@@ -34,5 +34,20 @@ public class USkeletalMeshComponent : USceneComponent
         }
 
         return mesh;
+    }
+
+    public bool SetSkeletalMeshIfNull(FPackageIndex mesh)
+    {
+        if (GetSkeletalMesh().IsNull)
+        {
+            SetSkeletalMesh(mesh);
+            return true;
+        }
+        return false;
+    }
+    
+    public void SetSkeletalMesh(FPackageIndex mesh)
+    {
+        PropertyUtil.Set(this, "SkeletalMesh", mesh);
     }
 }
