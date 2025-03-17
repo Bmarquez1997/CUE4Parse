@@ -49,6 +49,12 @@ namespace CUE4Parse_Conversion.Animations
             }
         }
 
+        private AnimExporter(ExporterOptions options, USkeleton skeleton, UAnimSequenceBase? animSequence = null)
+            : this(options, animSequence != null ? animSequence : skeleton, skeleton.ConvertAnims(animSequence))
+        {
+
+        }
+
         private AnimExporter(ExporterOptions options, USkeleton skeleton, UAnimSequence? animSequence = null)
             : this(options, animSequence != null ? animSequence : skeleton, skeleton.ConvertAnims(animSequence))
         {
@@ -67,6 +73,7 @@ namespace CUE4Parse_Conversion.Animations
 
         }
 
+        public AnimExporter(UAnimSequenceBase animSequence, ExporterOptions options) : this(options, animSequence.Skeleton.Load<USkeleton>()!, animSequence) { }
         public AnimExporter(UAnimSequence animSequence, ExporterOptions options) : this(options, animSequence.Skeleton.Load<USkeleton>()!, animSequence) { }
         public AnimExporter(UAnimMontage animMontage, ExporterOptions options) : this(options, animMontage.Skeleton.Load<USkeleton>()!, animMontage) { }
         public AnimExporter(UAnimComposite animComposite, ExporterOptions options) : this(options, animComposite.Skeleton.Load<USkeleton>()!, animComposite) { }

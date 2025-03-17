@@ -23,7 +23,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
 
         public FAnimCurveBase(FStructFallback data)
         {
-            CurveName = data.GetOrDefault<FName>(nameof(CurveName));
+            CurveName = data.TryGetValue<FName>(out var curvename, nameof(CurveName)) ? curvename : data.GetOrDefault<FSmartName>("Name").DisplayName;
             CurveTypeFlags = data.GetOrDefault<int>(nameof(CurveTypeFlags));
         }
     }

@@ -102,6 +102,20 @@ namespace CUE4Parse_Conversion.Animations
             return animSet;
         }
 
+        public static CAnimSet ConvertAnims(this USkeleton skeleton, UAnimSequenceBase? animSequence)
+        {
+            var animSet = skeleton.ConvertToAnimSet();
+            if (animSequence == null) return animSet;
+            //
+            // // Store UAnimSequence in 'OriginalAnims' array, we just need it from time to time
+            // //OriginalAnims.Add(animSequence);
+            //
+            // // Create CAnimSequence
+            // animSet.Sequences.Add(new CAnimSequence(animSequence, skeleton));
+            animSet.TotalAnimTime = animSequence.SequenceLength;
+            return animSet;
+        }
+
         public static CAnimSet ConvertAnims(this USkeleton skeleton, UAnimSequence? animSequence)
         {
             var animSet = skeleton.ConvertToAnimSet();
