@@ -56,7 +56,9 @@ namespace CUE4Parse_Conversion.Meshes
         }
 
         public MeshExporter(UStaticMesh originalMesh, ExporterOptions options) : this(originalMesh, null, options){}
-       
+
+        public MeshExporter(USplineMeshComponent splineMeshComponent, ExporterOptions options) : this(splineMeshComponent.GetStaticMesh().Load<UStaticMesh>(), splineMeshComponent, options){ }
+
         public MeshExporter(UStaticMesh originalMesh, USplineMeshComponent? splineMeshComponent, ExporterOptions options) : base(originalMesh, options)
         {
             MeshLods = new List<Mesh>();
