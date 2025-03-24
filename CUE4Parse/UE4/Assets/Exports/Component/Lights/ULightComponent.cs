@@ -172,7 +172,7 @@ public class URectLightComponent : ULocalLightComponent
     }
 }
 
-public class UDirectionalLightComponent : ULocalLightComponent 
+public class UDirectionalLightComponent : ULightComponent 
 {
     [UProperty] public float ShadowCascadeBiasDistribution;
     [UProperty] public uint bEnableLightShaftOcclusion = 1;
