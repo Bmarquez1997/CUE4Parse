@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using AssetRipper.TextureDecoder.Rgb.Channels;
 using CUE4Parse_Conversion.Meshes.PSK;
 using CUE4Parse_Conversion.Meshes.UEFormat.Collision;
 using CUE4Parse_Conversion.UEFormat;
@@ -56,6 +57,45 @@ public class UEModel : UEFormatExport
 
     public UEModel(string name, CSkeletalMesh mesh, FPackageIndex[]? morphTargets, FPackageIndex[] sockets, FPackageIndex skeletonLazy, FPackageIndex physicsAssetLazy, ExporterOptions options) : base(name, options)
     {
+        SerializeLODs(mesh, morphTargets, options);
+        
+        if (skeletonLazy.TryLoad(out USkeleton skeleton))
+            SerializeSkeleton(skeleton, mesh.RefSkeleton, sockets, []);
+
+        /*if (physicsAssetLazy.TryLoad(out UPhysicsAsset physicsAsset))
+        {
+            using var physicsChunk = new FDataChunk("PHYSICS", 1);
+
+            SerializePhysicsData(physicsChunk, physicsAsset);
+
+            physicsChunk.Serialize(Ar);
+        }*/
+    }
+
+    public UEModel(string name, CSkeletalMesh mesh, FPackageIndex[]? morphTargets, FPackageIndex[] sockets, FSoftObjectPath skeletonLazy, FPackageIndex physicsAssetLazy, ExporterOptions options) : base(name, options)
+    {
+        SerializeLODs(mesh, morphTargets, options);
+        
+        if (skeletonLazy.TryLoad(out USkeleton skeleton))
+            SerializeSkeleton(skeleton, mesh.RefSkeleton, sockets, []);
+
+        /*if (physicsAssetLazy.TryLoad(out UPhysicsAsset physicsAsset))
+        {
+            using var physicsChunk = new FDataChunk("PHYSICS", 1);
+
+            SerializePhysicsData(physicsChunk, physicsAsset);
+
+            physicsChunk.Serialize(Ar);
+        }*/
+    }
+
+    public UEModel(string name, USkeleton skeleton, List<CSkelMeshBone> bones, FPackageIndex[] sockets, FVirtualBone[] virtualBones, ExporterOptions options) : base(name, options)
+    {
+        SerializeSkeleton(skeleton, bones, sockets, virtualBones);
+    }
+
+    private void SerializeLODs(CSkeletalMesh mesh, FPackageIndex[]? morphTargets, ExporterOptions options)
+    {
         using (var lodChunk = new FDataChunk("LODS"))
         {
             for (var lodIdx = 0; lodIdx < mesh.LODs.Count; lodIdx++)
@@ -75,32 +115,14 @@ public class UEModel : UEFormatExport
 
             lodChunk.Serialize(Ar);
         }
-
-        using (var skeletonChunk = new FDataChunk("SKELETON", 1))
-        {
-            SerializeSkeletonData(skeletonChunk, skeletonLazy.Load<USkeleton>(), mesh.RefSkeleton, sockets, []);
-
-            skeletonChunk.Serialize(Ar);
-        }
-
-        /*if (physicsAssetLazy.TryLoad(out UPhysicsAsset physicsAsset))
-        {
-            using var physicsChunk = new FDataChunk("PHYSICS", 1);
-
-            SerializePhysicsData(physicsChunk, physicsAsset);
-
-            physicsChunk.Serialize(Ar);
-        }*/
     }
 
-    public UEModel(string name, USkeleton skeleton, List<CSkelMeshBone> bones, FPackageIndex[] sockets, FVirtualBone[] virtualBones, ExporterOptions options) : base(name, options)
+    private void SerializeSkeleton(USkeleton skeleton, List<CSkelMeshBone> bones, FPackageIndex[] sockets, FVirtualBone[] virtualBones)
     {
-        using (var skeletonChunk = new FDataChunk("SKELETON", 1))
-        {
-            SerializeSkeletonData(skeletonChunk, skeleton, bones, sockets, virtualBones);
+        using var skeletonChunk = new FDataChunk("SKELETON", 1);
+        SerializeSkeletonData(skeletonChunk, skeleton,bones, sockets, virtualBones);
 
-            skeletonChunk.Serialize(Ar);
-        }
+        skeletonChunk.Serialize(Ar);
     }
 
     private void SerializeStaticMeshData(FArchiveWriter archive, IReadOnlyCollection<CMeshVertex> verts, FRawStaticIndexBuffer indices, FColor[]? vertexColors, CVertexColor[]? extraVertexColors, CMeshSection[] sections, FMeshUVFloat[][] extraUVs)

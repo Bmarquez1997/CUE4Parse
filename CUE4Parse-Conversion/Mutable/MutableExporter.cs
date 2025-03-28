@@ -108,17 +108,17 @@ public class MutableExporter : ExporterBase
         foreach (var skeletonGroup in meshes)
         {
             var skeletonSoftObject = skeletons[skeletonGroup.Key];
-            var skeleton = skeletonSoftObject.Load<USkeleton>();
+            var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
             if (filterSkeletonName != null && 
-                !skeleton.Name.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
+                !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
             
-            if (skeleton.Name.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeleton.Name.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
+            if (skeletonName.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeletonName.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
             {
                 foreach (var materialGroup in skeletonGroup.Value)
                 {
                     if (materialGroup.Key.Contains("LOD", StringComparison.OrdinalIgnoreCase)) continue;
                     
-                    if (materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeleton.Name.Equals("SK_Figure"))
+                    if (materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeletonName.Equals("SK_Figure"))
                         materialGroup.Value.ForEach(mesh =>
                             ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeletonSoftObject, true));
                     else
@@ -153,17 +153,21 @@ public class MutableExporter : ExporterBase
             Log.Logger.Warning($"Mesh '{ExportName}' has no LODs");
             return;
         }
+
+        USkeleton skeleton = null;
+        var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
+        if (skeletonSoftObject.TryLoad(out skeleton))
+        {
+            skeletonName = skeleton.Name;
+        }
         
-        
-        var skeleton = skeletonSoftObject.Load<USkeleton>();
-        
-        var meshName = $"{skeleton.Name.Replace("_Skeleton", "")}_{materialSlotName}";
+        var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{materialSlotName}";
         // var meshName = materialSlotName;
         if (appendId) meshName = $"{materialSlotName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
-        var exportPath = $"{skeleton.Name}/{meshName}";
+        var exportPath = $"{skeletonName}/{meshName}";
         
         var totalSockets = new List<FPackageIndex>();
-        if (Options.SocketFormat != ESocketFormat.None)
+        if (Options.SocketFormat != ESocketFormat.None && skeleton != null)
         {
             totalSockets.AddRange(skeleton.Sockets);
         }
@@ -171,14 +175,14 @@ public class MutableExporter : ExporterBase
         if (Options.MeshFormat == EMeshFormat.UEFormat)
         {
             using var ueModelArchive = new FArchiveWriter();
-            var skeletonPackageIndex = new FPackageIndex(skeletonSoftObject.Owner, 0);
-            new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), skeletonPackageIndex, null, Options).Save(ueModelArchive);
+            // var skeletonPackageIndex = new FPackageIndex(skeletonSoftObject.Owner, 0);
+            new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), skeletonSoftObject, null, Options).Save(ueModelArchive);
             var outputMesh = new Mesh($"{meshName}.uemodel", ueModelArchive.GetBuffer(), convertedMesh.LODs[0].GetMaterials(Options));
             
-            if (!Objects.ContainsKey(skeleton.Name))
-                Objects.Add(skeleton.Name, []);
+            if (!Objects.ContainsKey(skeletonName))
+                Objects.Add(skeletonName, []);
                 
-            Objects[skeleton.Name].Add(new Tuple<string, Mesh>(exportPath, outputMesh));
+            Objects[skeletonName].Add(new Tuple<string, Mesh>(exportPath, outputMesh));
             return;
         }
         // TODO: other types

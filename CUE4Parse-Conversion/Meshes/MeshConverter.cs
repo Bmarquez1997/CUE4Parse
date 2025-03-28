@@ -415,7 +415,7 @@ public static class MeshConverter
         var vertexCount = originalMesh.VertexBuffers.ElementCount;
         mutSkelMeshLod.AllocateVerts((int) vertexCount);
         
-        var boneMap = BuildBoneIndexMap(originalMesh.BoneMap, coPrivate.ModelResources.BoneNamesMap, skeleton.ReferenceSkeleton.FinalNameToIndexMap);
+        var boneMap = BuildBoneIndexMap(originalMesh.BoneMap, coPrivate.ModelResources.BoneNamesMap, skeleton?.ReferenceSkeleton.FinalNameToIndexMap);
         
         if (colorBuffer != null)
             mutSkelMeshLod.AllocateVertexColorBuffer();
@@ -450,9 +450,9 @@ public static class MeshConverter
     }
     
      private static Dictionary<short, short>? BuildBoneIndexMap(FBoneName[] meshBoneMap,
-         UScriptMap? boneNameMap, Dictionary<string, int> finalNameToIndexMap)
+         UScriptMap? boneNameMap, Dictionary<string, int>? finalNameToIndexMap)
      {
-         if (boneNameMap == null) return null;
+         if (boneNameMap == null || finalNameToIndexMap == null) return null;
          Dictionary<short, short> boneIndexMap = [];
          for (var i = 0; i < meshBoneMap.Length; i++)
          {
