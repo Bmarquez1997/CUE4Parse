@@ -1995,173 +1995,61 @@ public class FProgramConverter : JsonConverter<FProgram>
     public override void WriteJson(JsonWriter writer, FProgram value, JsonSerializer serializer)
     {
         writer.WriteStartObject();
-
-        writer.WritePropertyName("States");
-        writer.WriteStartArray();
-        foreach (var state in value.States)
-        {
-            serializer.Serialize(writer, state);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("Roms");
-        writer.WriteStartArray();
-        foreach (var rom in value.Roms)
-        {
-            serializer.Serialize(writer, rom);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("RomsCompileData");
-        writer.WriteStartArray();
-        foreach (var romCompileData in value.RomsCompileData)
-        {
-            serializer.Serialize(writer, romCompileData);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantImageLODsPermanent");
-        writer.WriteStartArray();
-        foreach (var constantImageLODPermanent in value.ConstantImageLODsPermanent)
-        {
-            serializer.Serialize(writer, constantImageLODPermanent);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantImageLODIndices");
-        writer.WriteStartArray();
-        foreach (var constantImageLodIndex in value.ConstantImageLODIndices)
-        {
-            serializer.Serialize(writer, constantImageLodIndex);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantImages");
-        writer.WriteStartArray();
-        foreach (var constantImage in value.ConstantImages)
-        {
-            serializer.Serialize(writer, constantImage);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantMeshesPermanent");
-        writer.WriteStartArray();
-        foreach (var constantMeshPermanent in value.ConstantMeshesPermanent)
-        {
-            serializer.Serialize(writer, constantMeshPermanent);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantExtensionData");
-        writer.WriteStartArray();
-        foreach (var constantExtensionData in value.ConstantExtensionData)
-        {
-            serializer.Serialize(writer, constantExtensionData);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantStrings");
-        writer.WriteStartArray();
-        foreach (var constantString in value.ConstantStrings)
-        {
-            serializer.Serialize(writer, constantString);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantLayouts");
-        writer.WriteStartArray();
-        foreach (var constantLayout in value.ConstantLayouts)
-        {
-            serializer.Serialize(writer, constantLayout);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantProjectors");
-        writer.WriteStartArray();
-        foreach (var constantProjector in value.ConstantProjectors)
-        {
-            serializer.Serialize(writer, constantProjector);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantProjectors");
-        writer.WriteStartArray();
-        foreach (var constantProjector in value.ConstantProjectors)
-        {
-            serializer.Serialize(writer, constantProjector);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantMatrices");
-        writer.WriteStartArray();
-        foreach (var constantMatrix in value.ConstantMatrices)
-        {
-            serializer.Serialize(writer, constantMatrix);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantShapes");
-        writer.WriteStartArray();
-        foreach (var constantShape in value.ConstantShapes)
-        {
-            serializer.Serialize(writer, constantShape);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantCurves");
-        writer.WriteStartArray();
-        foreach (var constantCurve in value.ConstantCurves)
-        {
-            serializer.Serialize(writer, constantCurve);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantSkeletons");
-        writer.WriteStartArray();
-        foreach (var constantSkeleton in value.ConstantSkeletons)
-        {
-            serializer.Serialize(writer, constantSkeleton);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("ConstantPhysicsBodies");
-        writer.WriteStartArray();
-        foreach (var constantPhysicsBody in value.ConstantPhysicsBodies)
-        {
-            serializer.Serialize(writer, constantPhysicsBody);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("Parameters");
-        writer.WriteStartArray();
-        foreach (var parameter in value.Parameters)
-        {
-            serializer.Serialize(writer, parameter);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("Ranges");
-        writer.WriteStartArray();
-        foreach (var range in value.Ranges)
-        {
-            serializer.Serialize(writer, range);
-        }
-        writer.WriteEndArray();
+        WriteArray(writer, serializer, value.States, "States");
+        WriteArray(writer, serializer, value.Roms, "Roms");
+        WriteArray(writer, serializer, value.RomsCompileData, "RomsCompileData");
+        WriteArray(writer, serializer, value.ConstantImageLODsPermanent, "ConstantImageLODsPermanent");
+        WriteArray(writer, serializer, value.ConstantImageLODIndices, "ConstantImageLODIndices");
+        WriteArray(writer, serializer, value.ConstantImages, "ConstantImages");
+        WriteArray(writer, serializer, value.ConstantMeshesPermanent, "ConstantMeshesPermanent");
+        WriteArray(writer, serializer, value.ConstantExtensionData, "ConstantExtensionData");
+        WriteArray(writer, serializer, value.ConstantStrings, "ConstantStrings");
+        WriteArray(writer, serializer, value.ConstantLayouts, "ConstantLayouts");
+        WriteArray(writer, serializer, value.ConstantProjectors, "ConstantProjectors");
+        WriteArray(writer, serializer, value.ConstantMatrices, "ConstantMatrices");
+        WriteArray(writer, serializer, value.ConstantShapes, "ConstantShapes");
+        WriteArray(writer, serializer, value.ConstantCurves, "ConstantCurves");
+        WriteArray(writer, serializer, value.ConstantSkeletons, "ConstantSkeletons");
+        WriteArray(writer, serializer, value.ConstantPhysicsBodies, "ConstantPhysicsBodies");
+        WriteArray(writer, serializer, value.Parameters, "Parameters");
+        WriteArray(writer, serializer, value.Ranges, "Ranges");
 
         writer.WritePropertyName("ParameterLists");
         writer.WriteStartArray();
-        foreach (var parameterList in value.ParameterLists)
+        if (value.ParameterLists == null)
         {
-            writer.WriteStartArray();
-            foreach (var parameter in parameterList)
+            writer.WriteValue("Null");
+        }
+        else
+        {
+            foreach (var parameter in value.ParameterLists)
             {
-                serializer.Serialize(writer, parameter);
+                WriteArray(writer, serializer, [parameter]);
             }
-            writer.WriteEndArray();
         }
         writer.WriteEndArray();
 
         writer.WriteEndObject();
+    }
+
+    private static void WriteArray(JsonWriter writer, JsonSerializer serializer, object[]? objArray, string? arrayName = null)
+    {
+        if (arrayName != null)
+            writer.WritePropertyName(arrayName);
+        
+        writer.WriteStartArray();
+        if (objArray == null)
+        {
+            writer.WriteValue("Null");
+        }
+        else
+        {
+            foreach (var parameter in objArray)
+            {
+                serializer.Serialize(writer, parameter);
+            }
+        }
+        writer.WriteEndArray();
     }
 
     public override FProgram ReadJson(JsonReader reader, Type objectType, FProgram? existingValue, bool hasExistingValue,
