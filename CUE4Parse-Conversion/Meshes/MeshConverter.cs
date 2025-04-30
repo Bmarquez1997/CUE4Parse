@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
+using CUE4Parse_Conversion.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;
@@ -14,7 +18,14 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
 using CUE4Parse.UE4.Assets.Objects;
 using Serilog;
+using CUE4Parse.UE4.Assets.Exports.Actor;
+using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Component.SplineMesh;
+using CUE4Parse.UE4.Assets.Exports.Material;
+using CUE4Parse.Utils;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 
 namespace CUE4Parse_Conversion.Meshes;
 
@@ -197,11 +208,10 @@ public static class MeshConverter
                         {
                             materialIndex = 0;
                         }
-                        else
-                            while (materialIndex >= originalMesh.Materials?.Length)
-                            {
-                                materialIndex--;
-                            }
+                        else while (materialIndex >= originalMesh.Materials?.Length)
+                        {
+                            materialIndex--;
+                        }
 
                         if (materialIndex < 0) sections[j] = new CMeshSection(srcLod.Sections[j]);
                         else
@@ -335,6 +345,270 @@ public static class MeshConverter
         return true;
     }
 
+    private static void UnpackNormals(FPackedNormal[] normal, CMeshVertex v)
+    {
+        // tangents: convert to FVector (unpack) then cast to CVec3
+        v.Tangent = normal[0];
+        v.Normal = normal[2];
+
+        // new UE3 version - binormal is not serialized and restored in vertex shader
+        if (normal[1] is not null && normal[1].Data != 0)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public static bool TryConvert(this ALandscapeProxy landscape, ULandscapeComponent[]? landscapeComponents, ELandscapeExportFlags flags, out CStaticMesh? convertedMesh, out Dictionary<string,Image> heightMaps, out Dictionary<string, SKBitmap> weightMaps)
+    {
+        heightMaps = [];
+        weightMaps = [];
+        convertedMesh = null;
+
+        if (landscapeComponents == null)
+        {
+            var comps = landscape.LandscapeComponents;
+            landscapeComponents = new ULandscapeComponent[comps.Length];
+            for (var i = 0; i < comps.Length; i++)
+                landscapeComponents[i] = comps[i].Load<ULandscapeComponent>()!;
+        }
+
+        var componentSize = landscape.ComponentSizeQuads;
+
+        int minX = int.MaxValue, minY = int.MaxValue;
+        int maxX = int.MinValue, maxY = int.MinValue;
+
+        foreach (var comp in landscapeComponents)
+        {
+            if (componentSize == -1)
+                componentSize = comp.ComponentSizeQuads;
+            else
+            {
+                Debug.Assert(componentSize == comp.ComponentSizeQuads);
+            }
+
+            comp.GetComponentExtent(ref minX, ref minY, ref maxX, ref maxY);
+        }
+
+        // Create and fill in the vertex position data source.
+        int componentSizeQuads = ((componentSize + 1) >> 0 /*Landscape->ExportLOD*/) - 1;
+        float scaleFactor = (float)componentSizeQuads / componentSize;
+        int numComponents = landscapeComponents.Length;
+        int vertexCountPerComponent = (componentSizeQuads + 1) * (componentSizeQuads + 1);
+        int vertexCount = numComponents * vertexCountPerComponent;
+        int triangleCount = numComponents * (componentSizeQuads * componentSizeQuads) * 2;
+
+        FVector2D uvScale = new FVector2D(1.0f, 1.0f) / new FVector2D((maxX - minX) + 1, (maxY - minY) + 1);
+
+        // For image export
+        int width = maxX - minX + 1;
+        int height = maxY - minY + 1;
+
+        CStaticMeshLod? landscapeLod = null;
+        if (flags.HasFlag(ELandscapeExportFlags.Mesh))
+        {
+            landscapeLod = new CStaticMeshLod();
+            landscapeLod.NumTexCoords = 2; // TextureUV and weightmapUV
+            landscapeLod.AllocateVerts(vertexCount);
+            landscapeLod.AllocateVertexColorBuffer();
+        }
+
+        var extraVertexColorMap = new ConcurrentDictionary<string, CVertexColor>();
+
+        var weightMapsInternal = new Dictionary<string, SKBitmap>();
+        var weightMapsPixels = new Dictionary<int, IntPtr>();
+        var weightMapLock = new object();
+        var heightMapData = new L16[height * width];
+
+        // https://github.com/EpicGames/UnrealEngine/blob/5de4acb1f05e289620e0a66308ebe959a4d63468/Engine/Source/Editor/UnrealEd/Private/Fbx/FbxMainExport.cpp#L4549
+        var tasks = new Task[landscapeComponents.Length];
+        for (int i = 0, selectedComponentIndex = 0; i < landscapeComponents.Length; i++)
+        {
+            var comp = landscapeComponents[i];
+
+            var CDI = new FLandscapeComponentDataInterface(comp, 0);
+            CDI.EnsureWeightmapTextureDataCache();
+
+            int baseVertIndex = selectedComponentIndex++ * vertexCountPerComponent;
+
+            var weightMapAllocs = comp.GetWeightmapLayerAllocations();
+
+            var compTransform = comp.GetComponentTransform();
+            var relLoc = comp.GetRelativeLocation();
+
+            var task = Task.Run(() =>
+            {
+                for (int vertIndex = 0; vertIndex < vertexCountPerComponent; vertIndex++)
+                {
+                    CDI.VertexIndexToXY(vertIndex, out var vertX, out var vertY);
+
+                    var vertCoord = CDI.GetLocalVertex(vertX, vertY);
+                    var position = vertCoord + relLoc;
+
+                    CDI.GetLocalTangentVectors(vertIndex, out var tangentX, out var biNormal, out var normal);
+
+                    normal /= compTransform.Scale3D;
+                    normal.Normalize();
+                    FVector4.AsFVector(ref tangentX) /= compTransform.Scale3D;
+                    FVector4.AsFVector(ref tangentX).Normalize();
+                    biNormal /= compTransform.Scale3D;
+                    biNormal.Normalize();
+
+                    var textureUv = new FVector2D(vertX * scaleFactor + comp.SectionBaseX,
+                        vertY * scaleFactor + comp.SectionBaseY);
+                    var textureUv2 = new TIntVector2<int>((int)textureUv.X - minX, (int)textureUv.Y - minY);
+
+                    var weightmapUv = (textureUv - new FVector2D(minX, minY)) * uvScale;
+
+                    heightMapData[textureUv2.X + textureUv2.Y * width] = new L16((ushort)(CDI.GetVertex(vertX, vertY) + relLoc).Z);
+
+                    foreach (var allocationInfo in weightMapAllocs)
+                    {
+                        var weight = CDI.GetLayerWeight(vertX, vertY, allocationInfo);
+                        if (weight == 0) continue;
+
+                        var layerName = allocationInfo.GetLayerName();
+
+                        // weight as Mesh Vertex colors
+                        if (flags.HasFlag(ELandscapeExportFlags.Mesh))
+                        {
+                            // ReSharper disable once CanSimplifyDictionaryLookupWithTryAdd
+                            if (!extraVertexColorMap.ContainsKey(layerName))
+                            {
+                                var shortName = layerName.SubstringBefore("_LayerInfo");
+                                shortName = shortName.Substring(0, Math.Min(20 - 6, shortName.Length));
+                                extraVertexColorMap.TryAdd(layerName, new CVertexColor(shortName, new FColor[vertexCount]));
+                            }
+
+                            extraVertexColorMap[layerName].ColorData[baseVertIndex + vertIndex] = new FColor(weight, weight, weight, weight);
+                        }
+
+                        var pixelX = textureUv2.X;
+                        var pixelY = textureUv2.Y;
+
+                        if (flags.HasFlag(ELandscapeExportFlags.Weightmap))
+                        {
+                            lock (weightMapLock)
+                            {
+                                if (!weightMapsInternal.ContainsKey(layerName))
+                                {
+                                    var bitmap = new SKBitmap(width, height, SKColorType.Gray8, SKAlphaType.Unpremul);
+                                    weightMapsInternal.TryAdd(layerName, bitmap);
+                                    weightMapsPixels.TryAdd(allocationInfo.GetLayerNameHash(), bitmap.GetPixels());
+                                }
+                            }
+
+                            // weightMaps[layerName].SetPixel((int)pixelX, (int)pixelY, new SKColor(weight, weight, weight, 255)); // slow
+                            unsafe
+                            {
+                                var pixels =
+                                    (byte*)weightMapsPixels[
+                                        allocationInfo
+                                            .GetLayerNameHash()]; // possible race condition but it doesn't matter
+                                pixels[pixelY * width + pixelX] = weight;
+                            }
+
+                            // debug color
+                            // var infoObject = allocationInfo.LayerInfo.Load<ULandscapeLayerInfoObject>();
+                            // var cl = infoObject.LayerUsageDebugColor.ToFColor(true);
+                            // weightMapsData[allocationInfo.LayerInfo.Name].SetPixel((int)pixel_x, (int)pixel_y, new SKColor(cl.R, cl.G, cl.B, weight));
+                        }
+                    }
+
+                    if (flags.HasFlag(ELandscapeExportFlags.Mesh) && landscapeLod != null)
+                    {
+                        var vert = landscapeLod.Verts[baseVertIndex + vertIndex];
+                        vert.Position = position;
+                        vert.Normal = new FVector4(normal); // this might be broken
+                        vert.Tangent = tangentX;
+                        vert.UV = (FMeshUVFloat)textureUv;
+
+                        landscapeLod.ExtraUV.Value[0][baseVertIndex + vertIndex] = (FMeshUVFloat)weightmapUv;
+                    }
+                }
+            });
+            tasks[i] = task;
+        }
+
+        Task.WaitAll(tasks);
+
+        // image.Save(File.OpenWrite("heightmap.png"), new PngEncoder());
+        if (flags.HasFlag(ELandscapeExportFlags.Heightmap))
+        {
+            var image = Image.LoadPixelData<L16>(heightMapData, width, height);
+            heightMaps.Add("heightmap", image);
+        }
+
+        // skimage
+        //var heightMap = new SKBitmap(Width, Height, SKColorType.RgbaF16, SKAlphaType.Unpremul);
+        // heightMap.Encode(SKEncodedImageFormat.Png, 100).SaveTo(File.OpenWrite("heightmap.png"));
+        if (flags.HasFlag(ELandscapeExportFlags.Weightmap))
+        {
+            weightMaps = weightMapsInternal.ToDictionary(x => x.Key, x => x.Value);
+        }
+
+        if (flags.HasFlag(ELandscapeExportFlags.Mesh) && landscapeLod != null)
+        {
+            landscapeLod.ExtraVertexColors = extraVertexColorMap.Values.ToArray();
+            extraVertexColorMap.Clear();
+            var landscapeMaterial = landscape.LandscapeMaterial;
+            var mat = landscapeMaterial.Load<UMaterialInterface>();
+            landscapeLod.Sections = new Lazy<CMeshSection[]>(new[] {
+                new CMeshSection(0, 0, triangleCount, mat?.Name ?? "DefaultMaterial", landscapeMaterial.ResolvedObject)
+            });
+        }
+        else
+        {
+            return false;
+        }
+
+        var meshIndices = new List<uint>(triangleCount * 3); // TODO: replace with ArrayPool.Shared.Rent
+        // https://github.com/EpicGames/UnrealEngine/blob/5de4acb1f05e289620e0a66308ebe959a4d63468/Engine/Source/Editor/UnrealEd/Private/Fbx/FbxMainExport.cpp#L4657
+        for (int componentIndex = 0; componentIndex < numComponents; componentIndex++)
+        {
+            int baseVertIndex = componentIndex * vertexCountPerComponent;
+
+            for (int Y = 0; Y < componentSizeQuads; Y++)
+            {
+                for (int X = 0; X < componentSizeQuads; X++)
+                {
+                    if (true) // (VisibilityData[BaseVertIndex + Y * (ComponentSizeQuads + 1) + X] < VisThreshold)
+                    {
+                        var w1 = baseVertIndex + (X + 0) + (Y + 0) * (componentSizeQuads + 1);
+                        var w2 = baseVertIndex + (X + 1) + (Y + 1) * (componentSizeQuads + 1);
+                        var w3 = baseVertIndex + (X + 1) + (Y + 0) * (componentSizeQuads + 1);
+
+                        meshIndices.Add((uint)w1);
+                        meshIndices.Add((uint)w2);
+                        meshIndices.Add((uint)w3);
+
+                        var w4 = baseVertIndex + (X + 0) + (Y + 0) * (componentSizeQuads + 1);
+                        var w5 = baseVertIndex + (X + 0) + (Y + 1) * (componentSizeQuads + 1);
+                        var w6 = baseVertIndex + (X + 1) + (Y + 1) * (componentSizeQuads + 1);
+
+                        meshIndices.Add((uint)w4);
+                        meshIndices.Add((uint)w5);
+                        meshIndices.Add((uint)w6);
+                    }
+                }
+            }
+        }
+
+        landscapeLod.Indices = new Lazy<FRawStaticIndexBuffer>(new FRawStaticIndexBuffer { Indices32 = meshIndices.ToArray() });
+        meshIndices.Clear();
+
+        convertedMesh = new CStaticMesh();
+
+        FVector min = new(minX, minY, 0);
+        FVector max = new(maxX + 1, maxY + 1, Math.Max(maxX - minX, maxY - minY));
+
+        convertedMesh.BoundingBox = new FBox(min, max);
+
+        FVector extent = (max - min) * 0.5f;
+        convertedMesh.BoundingSphere = new FSphere(0f, 0f, 0f, extent.Size());
+
+        convertedMesh.LODs.Add(landscapeLod);
+        return true;
+    }
     
     public static bool TryConvert(this FMesh originalMesh, UCustomizableObject co, string materialSlotName, out CSkeletalMesh convertedMesh, List<FMesh>? additionalLods = null)
      {
@@ -490,18 +764,5 @@ public static class MeshConverter
 
         channel = null;
         vertexBuffer = null;
-    }
-
-    private static void UnpackNormals(FPackedNormal[] normal, CMeshVertex v)
-    {
-        // tangents: convert to FVector (unpack) then cast to CVec3
-        v.Tangent = normal[0];
-        v.Normal = normal[2];
-
-        // new UE3 version - binormal is not serialized and restored in vertex shader
-        if (normal[1] is not null && normal[1].Data != 0)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
