@@ -62,7 +62,7 @@ public class FSkinWeightVertexBuffer
             {
                 bUse16BitBoneIndex = Ar.ReadBoolean();
             }
-            if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.IncreasedSkinWeightPrecision)
+            if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.IncreasedSkinWeightPrecision && Ar.Game is not EGame.GAME_Fortnite_S24)
             {
                 bUse16BitBoneWeight = Ar.ReadBoolean();
             }
@@ -147,7 +147,7 @@ public class FSkinWeightVertexBuffer
             numBytes = 4 * 4;
             if (FAnimObjectVersion.Get(Ar) >= FAnimObjectVersion.Type.IncreaseBoneIndexLimitPerChunk)
                 numBytes += 4;
-            if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.IncreasedSkinWeightPrecision)
+            if (FUE5MainStreamObjectVersion.Get(Ar) >= FUE5MainStreamObjectVersion.Type.IncreasedSkinWeightPrecision && Ar.Game is not EGame.GAME_Fortnite_S24)
                 numBytes += 4;
         }
 
