@@ -24,7 +24,7 @@ public class MutableExporter : ExporterBase
 {
     // <SkeletonName, (MeshName, Mesh)>
     public readonly Dictionary<string, List<Tuple<string, Mesh>>> Objects;
-    public readonly List<SKBitmap> Images;
+    public readonly List<CTexture> Images;
     
     public MutableExporter(UCustomizableObject originalCustomizableObject, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(originalCustomizableObject, options)
     {

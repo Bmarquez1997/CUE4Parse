@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -12,7 +13,7 @@ namespace CUE4Parse.UE4.Objects.Core.Math
     /// USE Ar.Read<FVector4> FOR FLOATS AND new FVector4(Ar) FOR DOUBLES
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    public struct FVector4 : IUStruct
+    public struct FVector4 : IUStruct, IEquatable<FVector4>
     {
         public readonly float X;
         public readonly float Y;

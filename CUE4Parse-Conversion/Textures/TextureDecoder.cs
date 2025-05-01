@@ -37,6 +37,7 @@ public static class TextureDecoder
         {
             sizeX = sizeX.Align(4);
             sizeY = sizeY.Align(4);
+            sizeZ = sizeZ.Align(4);
         }
 
         DecodeTexture(mip, sizeX, sizeY, sizeZ, texture.Format, texture.IsNormalMap, platform, out var data, out var colorType);
@@ -171,6 +172,7 @@ public static class TextureDecoder
         {
             sizeX = sizeX.Align(4);
             sizeY = sizeY.Align(4);
+            // sizeZ = sizeZ.Align(4);
         }
 
         DecodeTexture(mip, sizeX, sizeY, sizeZ, texture.Format, texture.IsNormalMap, platform, out var data, out var colorType);
@@ -221,7 +223,7 @@ public static class TextureDecoder
         DecodeBytes(bytes, sizeX, sizeY, sizeZ, formatInfo, isNormalMap, out data, out colorType);
     }
     
-    public static SKBitmap Decode(this FImage image)
+    public static unsafe CTexture Decode(this FImage image)
     {
         var dataStorage = image.DataStorage;
 
@@ -248,22 +250,27 @@ public static class TextureDecoder
         
         var imageFormat = dataStorage.ImageFormat switch
         {
-            EImageFormat.BC5 => SKColorType.Rgb888x,
-            EImageFormat.BC4 => SKColorType.Gray8,
-            EImageFormat.BC3 => SKColorType.Rgba8888,
-            EImageFormat.BC1 => SKColorType.Rgba8888,
-            EImageFormat.L_UByte => SKColorType.Gray8,
-            EImageFormat.L_UByteRLE => SKColorType.Gray8,
-            EImageFormat.RGB_UByte => SKColorType.Rgb888x,
-            EImageFormat.RGB_UByteRLE => SKColorType.Rgb888x,
-            EImageFormat.RGBA_UByte => SKColorType.Rgba8888,
-            EImageFormat.RGBA_UByteRLE => SKColorType.Rgba8888,
-            _ => SKColorType.Gray8
+            EImageFormat.BC5 => EPixelFormat.PF_BC5,
+            EImageFormat.BC4 => EPixelFormat.PF_G8,
+            EImageFormat.BC3 => EPixelFormat.PF_R8G8B8A8,
+            EImageFormat.BC1 => EPixelFormat.PF_R8G8B8A8,
+            EImageFormat.L_UByte => EPixelFormat.PF_G8,
+            EImageFormat.L_UByteRLE => EPixelFormat.PF_G8,
+            EImageFormat.RGB_UByte => EPixelFormat.PF_R8G8B8A8,
+            EImageFormat.RGB_UByteRLE => EPixelFormat.PF_R8G8B8A8,
+            EImageFormat.RGBA_UByte => EPixelFormat.PF_R8G8B8A8,
+            EImageFormat.RGBA_UByteRLE => EPixelFormat.PF_R8G8B8A8,
+            _ => EPixelFormat.PF_G8
             // _ => throw new NotImplementedException($"Mutable image format not supported: {dataStorage.ImageFormat}")
         };
 
-        var imageInfo = new SKImageInfo(size.X, size.Y, imageFormat);
-        return InstallPixels(decodedBytes, imageInfo);
+        CTexture? returnTex = null;
+        fixed (byte* dataPtr = decodedBytes)
+        {
+            returnTex = new CTexture(size.X, size.Y, imageFormat, GetSliceData(dataPtr, size.X, size.Y, 4, 0).ToArray());
+        }
+
+        return returnTex;
     } 
     
     public static byte[] UncompressRLE_L(int width, int rows, byte[] baseData)
@@ -482,28 +489,18 @@ public static class TextureDecoder
             case EPixelFormat.PF_DXT1:
             {
                 if (UseAssetRipperTextureDecoder)
-                {
                     Bc1.Decompress(bytes, sizeX, sizeY, out data);
-                    colorType = EPixelFormat.PF_B8G8R8A8;
-                }
                 else
-                {
                     data = DXTDecoder.DXT1(bytes, sizeX, sizeY, sizeZ);
-                    colorType = EPixelFormat.PF_R8G8B8A8;
-                }
+                colorType = UseAssetRipperTextureDecoder ? EPixelFormat.PF_B8G8R8A8 : EPixelFormat.PF_R8G8B8A8;
                 break;
             }
             case EPixelFormat.PF_DXT5:
                 if (UseAssetRipperTextureDecoder)
-                {
                     Bc3.Decompress(bytes, sizeX, sizeY, out data);
-                    colorType = EPixelFormat.PF_B8G8R8A8;
-                }
                 else
-                {
                     data = DXTDecoder.DXT5(bytes, sizeX, sizeY, sizeZ);
-                    colorType = EPixelFormat.PF_R8G8B8A8;
-                }
+                colorType = UseAssetRipperTextureDecoder ? EPixelFormat.PF_B8G8R8A8 : EPixelFormat.PF_R8G8B8A8;
                 break;
             case EPixelFormat.PF_ASTC_4x4:
             case EPixelFormat.PF_ASTC_6x6:
@@ -536,7 +533,8 @@ public static class TextureDecoder
                     Bc4.Decompress(bytes, sizeX, sizeY, out data);
                 else
                     data = BCDecoder.BC4(bytes, sizeX, sizeY, sizeZ);
-                colorType = EPixelFormat.PF_B8G8R8A8;
+
+                colorType = UseAssetRipperTextureDecoder ? EPixelFormat.PF_B8G8R8A8 : EPixelFormat.PF_R8G8B8A8;
                 break;
             case EPixelFormat.PF_BC5:
                 if (UseAssetRipperTextureDecoder)
@@ -545,7 +543,8 @@ public static class TextureDecoder
                     data = BCDecoder.BC5(bytes, sizeX, sizeY, sizeZ);
                 for (var i = 0; i < sizeX * sizeY; i++)
                     data[i * 4] = BCDecoder.GetZNormal(data[i * 4 + 2], data[i * 4 + 1]);
-                colorType = EPixelFormat.PF_B8G8R8A8;
+
+                colorType = UseAssetRipperTextureDecoder ? EPixelFormat.PF_B8G8R8A8 : EPixelFormat.PF_R8G8B8A8;
                 break;
             case EPixelFormat.PF_BC6H:
                 if (UseAssetRipperTextureDecoder)
@@ -566,7 +565,8 @@ public static class TextureDecoder
                     Bc7.Decompress(bytes, sizeX, sizeY, out data);
                 else
                     data = DetexHelper.DecodeDetexLinear(bytes, sizeX, sizeY * sizeZ, false, DetexTextureFormat.DETEX_TEXTURE_FORMAT_BPTC, DetexPixelFormat.DETEX_PIXEL_FORMAT_BGRA8);
-                colorType = EPixelFormat.PF_B8G8R8A8;
+
+                colorType = UseAssetRipperTextureDecoder ? EPixelFormat.PF_B8G8R8A8 : EPixelFormat.PF_R8G8B8A8;
                 break;
             case EPixelFormat.PF_ETC1:
                 data = DetexHelper.DecodeDetexLinear(bytes, sizeX, sizeY, false, DetexTextureFormat.DETEX_TEXTURE_FORMAT_ETC1, DetexPixelFormat.DETEX_PIXEL_FORMAT_BGRA8);
