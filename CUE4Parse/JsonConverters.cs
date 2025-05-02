@@ -1408,7 +1408,6 @@ public class WwiseConverter : JsonConverter<WwiseReader>
         throw new NotImplementedException();
     }
 }
-
 public class FReferenceSkeletonConverter : JsonConverter<FReferenceSkeleton>
 {
     public override void WriteJson(JsonWriter writer, FReferenceSkeleton value, JsonSerializer serializer)
@@ -1655,28 +1654,36 @@ public class FFontDataConverter : JsonConverter<FFontData>
     {
         writer.WriteStartObject();
 
-        if (value.LocalFontFaceAsset != null)
+        if (value.FallbackStruct is null)
         {
-            writer.WritePropertyName("LocalFontFaceAsset");
-            serializer.Serialize(writer, value.LocalFontFaceAsset);
+            if (value.LocalFontFaceAsset != null)
+            {
+                writer.WritePropertyName("LocalFontFaceAsset");
+                serializer.Serialize(writer, value.LocalFontFaceAsset);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(value.FontFilename))
+                {
+                    writer.WritePropertyName("FontFilename");
+                    writer.WriteValue(value.FontFilename);
+                }
+
+                writer.WritePropertyName("Hinting");
+                writer.WriteValue(value.Hinting);
+
+                writer.WritePropertyName("LoadingPolicy");
+                writer.WriteValue(value.LoadingPolicy);
+            }
+
+            writer.WritePropertyName("SubFaceIndex");
+            writer.WriteValue(value.SubFaceIndex);
         }
         else
         {
-            if (!string.IsNullOrEmpty(value.FontFilename))
-            {
-                writer.WritePropertyName("FontFilename");
-                writer.WriteValue(value.FontFilename);
-            }
-
-            writer.WritePropertyName("Hinting");
-            writer.WriteValue(value.Hinting);
-
-            writer.WritePropertyName("LoadingPolicy");
-            writer.WriteValue(value.LoadingPolicy);
+            writer.WritePropertyName("FallbackStruct");
+            serializer.Serialize(writer, value.FallbackStruct);
         }
-
-        writer.WritePropertyName("SubFaceIndex");
-        writer.WriteValue(value.SubFaceIndex);
 
         writer.WriteEndObject();
     }
@@ -2911,8 +2918,16 @@ public class FAssetPackageDataConverter : JsonConverter<FAssetPackageData>
         writer.WritePropertyName("DiskSize");
         serializer.Serialize(writer, value.DiskSize);
 
-        writer.WritePropertyName("PackageGuid");
-        serializer.Serialize(writer, value.PackageGuid);
+        if (value.PackageGuid.IsValid())
+        {
+            writer.WritePropertyName("PackageGuid");
+            serializer.Serialize(writer, value.PackageGuid);
+        }
+        else
+        {
+            writer.WritePropertyName("PackageSavedHash");
+            serializer.Serialize(writer, value.PackageSavedHash);
+        }
 
         if (value.CookedHash != null)
         {
