@@ -1,19 +1,21 @@
 using CUE4Parse.GameTypes.Brickadia.Objects;
 using CUE4Parse.GameTypes.FN.Objects;
 using CUE4Parse.GameTypes.Gothic1R.Assets.Objects;
+using CUE4Parse.GameTypes.L2KD.Objects;
 using CUE4Parse.GameTypes.MA.Objects;
 using CUE4Parse.GameTypes.NetEase.MAR.Objects;
-using CUE4Parse.GameTypes.SWJS.Objects;
-using CUE4Parse.GameTypes.TSW.Objects;
-using CUE4Parse.GameTypes.TL.Objects;
-using CUE4Parse.GameTypes.L2KD.Objects;
+using CUE4Parse.GameTypes.OtherGames.Objects;
 using CUE4Parse.GameTypes.SG2.Objects;
+using CUE4Parse.GameTypes.SWJS.Objects;
+using CUE4Parse.GameTypes.TL.Objects;
+using CUE4Parse.GameTypes.TSW.Objects;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.Engine.Font;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Objects.Properties;
 using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Objects.ChaosCaching;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.Engine;
@@ -29,11 +31,12 @@ using CUE4Parse.UE4.Objects.MovieScene;
 using CUE4Parse.UE4.Objects.MovieScene.Evaluation;
 using CUE4Parse.UE4.Objects.Niagara;
 using CUE4Parse.UE4.Objects.PCG;
+using CUE4Parse.UE4.Objects.StateTree;
+using CUE4Parse.UE4.Objects.StructUtils;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Objects.WorldCondition;
 using CUE4Parse.UE4.Versions;
 using Newtonsoft.Json;
-using CUE4Parse.UE4.Objects.StructUtils;
 
 namespace CUE4Parse.UE4.Assets.Objects;
 
@@ -63,8 +66,8 @@ public class FScriptStruct
             "SimpleCurveKey" => type == ReadType.ZERO ? new FSimpleCurveKey() : Ar.Read<FSimpleCurveKey>(),
             "ScalarMaterialInput" => type == ReadType.ZERO ? new FMaterialInput<float>() : new FMaterialInput<float>(Ar),
             //"ShadingModelMaterialInput" => type == ReadType.ZERO ? new FMaterialInput<uint>() : new FMaterialInput<uint>(Ar),
-            "VectorMaterialInput" => type == ReadType.ZERO ? new FMaterialInputVector() : new FMaterialInputVector(Ar),
-            "Vector2MaterialInput" => type == ReadType.ZERO ? new FMaterialInputVector2D() : new FMaterialInputVector2D(Ar),
+            "VectorMaterialInput" => type == ReadType.ZERO ? new FMaterialInputVector() : new FMaterialInput<FVector>(Ar),
+            "Vector2MaterialInput" => type == ReadType.ZERO ? new FMaterialInputVector2D() : new FMaterialInput<FVector2D>(Ar),
             "MaterialAttributesInput" => type == ReadType.ZERO ? new FExpressionInput() : new FExpressionInput(Ar),
             "SkeletalMeshSamplingLODBuiltData" => type == ReadType.ZERO ? new FSkeletalMeshSamplingLODBuiltData() : new FSkeletalMeshSamplingLODBuiltData(Ar),
             "SkeletalMeshSamplingRegionBuiltData" => type == ReadType.ZERO ? new FSkeletalMeshSamplingRegionBuiltData() : new FSkeletalMeshSamplingRegionBuiltData(Ar),
@@ -101,6 +104,7 @@ public class FScriptStruct
             "MovieSceneSequenceID" => type == ReadType.ZERO ? new FMovieSceneSequenceID() : Ar.Read<FMovieSceneSequenceID>(),
             "MovieSceneSequenceInstanceDataPtr" => type == ReadType.ZERO ? new FMovieSceneSequenceInstanceDataPtr() : new FMovieSceneSequenceInstanceDataPtr(Ar),
             "MovieSceneSubSequenceTree" => type == ReadType.ZERO ? new FMovieSceneSubSequenceTree() : new FMovieSceneSubSequenceTree(Ar),
+            "MovieSceneTimeWarpVariant" => type == ReadType.ZERO ? new FStructFallback() : new FMovieSceneTimeWarpVariant(Ar),
             "MovieSceneTrackFieldData" => type == ReadType.ZERO ? new FMovieSceneTrackFieldData() : new FMovieSceneTrackFieldData(Ar),
             "MovieSceneTrackIdentifier" => type == ReadType.ZERO ? new FMovieSceneTrackIdentifier() : Ar.Read<FMovieSceneTrackIdentifier>(),
             "MovieSceneTrackImplementationPtr" => new FMovieSceneTrackImplementationPtr(Ar),
@@ -144,6 +148,7 @@ public class FScriptStruct
             "ClothLODDataCommon" => type == ReadType.ZERO ? new FClothLODDataCommon() : new FClothLODDataCommon(Ar),
             "ClothTetherData" => type == ReadType.ZERO ? new FClothTetherData() : new FClothTetherData(Ar),
             "Matrix" => type == ReadType.ZERO ? new FMatrix() : new FMatrix(Ar),
+            "Matrix44f" => type == ReadType.ZERO ? new FMatrix() : new FMatrix(Ar, false),
             "InstancedStruct" => new FInstancedStruct(Ar),
             "InstancedStructContainer" => new FInstancedStructContainer(Ar),
             "InstancedPropertyBag" => new FInstancedPropertyBag(Ar),
@@ -154,6 +159,8 @@ public class FScriptStruct
             "AnimationAttributeIdentifier" => new FAnimationAttributeIdentifier(Ar),
             "AttributeCurve" => new FAttributeCurve(Ar),
             "PCGPoint" => FFortniteReleaseBranchCustomObjectVersion.Get(Ar) < FFortniteReleaseBranchCustomObjectVersion.Type.PCGPointStructuredSerializer ? new FStructFallback(Ar, "PCGPoint") : new FPCGPoint(Ar),
+            "CacheEventTrack" => type == ReadType.ZERO ? new FStructFallback() : new FCacheEventTrack(Ar),
+            "StateTreeInstanceData" => type == ReadType.ZERO ? new FStructFallback() : new FStateTreeInstanceData(Ar),
 
             // FortniteGame
             "ConnectivityCube" => new FConnectivityCube(Ar),
@@ -213,6 +220,14 @@ public class FScriptStruct
             // Brickadia
             "BrickStudGroup" when Ar.Game == EGame.GAME_Brickadia => new FBrickStudGroup(Ar),
             "BRGuid" when Ar.Game == EGame.GAME_Brickadia => type == ReadType.ZERO ? new FGuid() : Ar.Read<FGuid>(),
+
+            // Deadside
+            "SoundAttenuationPluginSettingsWithOverride" => new FSoundAttenuationPluginSettingsWithOverride(Ar),
+
+            // Tempest Rising
+            "OffsetCoords" when Ar.Game == EGame.GAME_TempestRising => type == ReadType.ZERO ? new TIntVector2<float>() : Ar.Read<TIntVector2<float>>(),
+            "TedInstancedStruct" => new FInstancedStruct(Ar),
+            "TedMarkerHandle" or "FoWAgentHandle" => type == ReadType.ZERO ? new TIntVector1<int>() : Ar.Read<TIntVector1<int>>(),
 
             _ => type == ReadType.ZERO ? new FStructFallback() : struc != null ? new FStructFallback(Ar, struc) : new FStructFallback(Ar, structName)
         };

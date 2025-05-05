@@ -42,7 +42,7 @@ public class FMorphTargetDelta
 public class FMorphTargetLODModel
 {
     /** vertex data for a single LOD morph mesh */
-    public FMorphTargetDelta[] Vertices;
+    [JsonIgnore] public FMorphTargetDelta[] Vertices;
     /** number of original verts in the base mesh */
     public int NumBaseMeshVerts;
     /** list of sections this morph is used */
@@ -87,7 +87,7 @@ public class FMorphTargetLODModel
             }
 
             var bVerticesAreStrippedForCookedBuilds = false;
-            if (FUE5PrivateFrostyStreamObjectVersion.Get(Ar) >= FUE5PrivateFrostyStreamObjectVersion.Type.StripMorphTargetSourceDataForCookedBuilds)
+            if (FUE5SpecialProjectStreamObjectVersion.Get(Ar) >= FUE5SpecialProjectStreamObjectVersion.Type.StripMorphTargetSourceDataForCookedBuilds)
             {
                 // Strip source morph data for cooked build if targets don't include mobile. Mobile uses CPU morphing which needs the source morph data.
                 bVerticesAreStrippedForCookedBuilds = Ar.ReadBoolean();

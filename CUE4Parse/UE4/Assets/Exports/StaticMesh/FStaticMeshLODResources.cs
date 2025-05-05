@@ -16,7 +16,7 @@ public class FStaticMeshLODResources
     public FStaticMeshSection[] Sections { get; }
     public FCardRepresentationData? CardRepresentationData { get; set; }
     public float MaxDeviation { get; }
-    public FPositionVertexBuffer? PositionVertexBuffer { get; private set; }
+    public FPositionVertexBuffer? PositionVertexBuffer { get; set; }
     public FStaticMeshVertexBuffer? VertexBuffer { get; private set; }
     public FColorVertexBuffer? ColorVertexBuffer { get; set; }
     public FRawStaticIndexBuffer? IndexBuffer { get; private set; }
@@ -47,6 +47,8 @@ public class FStaticMeshLODResources
 
         Sections = Ar.ReadArray(() => new FStaticMeshSection(Ar));
         MaxDeviation = Ar.Read<float>();
+
+        if (Ar.Game == EGame.GAME_ThePathless) Ar.Position += 4;
 
         if (!Ar.Versions["StaticMesh.UseNewCookedFormat"])
         {
@@ -204,6 +206,7 @@ public class FStaticMeshLODResources
         {
             _ = new FColorVertexBuffer(Ar);
         }
+        if (Ar.Game == EGame.GAME_ThePathless) Ar.Position += 20;
 
         IndexBuffer = new FRawStaticIndexBuffer(Ar);
 

@@ -23,6 +23,7 @@ public enum EGame : uint
         GAME_SeaOfThieves = GAME_UE4_10 + 1,
     GAME_UE4_11 = GameUtils.GameUe4Base + (11 << 16),
         GAME_GearsOfWar4 = GAME_UE4_11 + 1,
+        GAME_DaysGone = GAME_UE4_11 + 2,
     GAME_UE4_12 = GameUtils.GameUe4Base + (12 << 16),
     GAME_UE4_13 = GameUtils.GameUe4Base + (13 << 16),
         GAME_StateOfDecay2 = GAME_UE4_13 + 1,
@@ -52,6 +53,7 @@ public enum EGame : uint
         GAME_ApexLegendsMobile = GAME_UE4_23 + 1,
     GAME_UE4_24 = GameUtils.GameUe4Base + (24 << 16),
         GAME_TonyHawkProSkater12 = GAME_UE4_24 + 1,
+        GAME_BigRumbleBoxingCreedChampions = GAME_UE4_24 + 2,
     GAME_UE4_25 = GameUtils.GameUe4Base + (25 << 16),
         GAME_UE4_25_Plus = GAME_UE4_25 + 1,
         GAME_RogueCompany = GAME_UE4_25 + 2,
@@ -62,6 +64,7 @@ public enum EGame : uint
         GAME_OperationApocalypse = GAME_UE4_25 + 7,
         GAME_Farlight84 = GAME_UE4_25 + 8,
         GAME_StarWarsHunters = GAME_UE4_25 + 9,
+        GAME_ThePathless = GAME_UE4_25 + 10,
     GAME_UE4_26 = GameUtils.GameUe4Base + (26 << 16),
         GAME_GTATheTrilogyDefinitiveEdition = GAME_UE4_26 + 1,
         GAME_ReadyOrNot = GAME_UE4_26 + 2,
@@ -132,10 +135,15 @@ public enum EGame : uint
         GAME_Gothic1Remake = GAME_UE5_4 + 4,
         GAME_SplitFiction = GAME_UE5_4 + 5,
         GAME_WildAssault = GAME_UE5_4 + 6,
+        GAME_InZOI = GAME_UE5_4 + 7,
+        GAME_TempestRising = GAME_UE5_4 + 8,
     GAME_UE5_5 = GameUtils.GameUe5Base + (5 << 16),
         GAME_Brickadia = GAME_UE5_5 + 1,
         GAME_Splitgate2 = GAME_UE5_5 + 2,
+        GAME_DeadzoneRogue = GAME_UE5_5 + 3,
+        GAME_MotoGP25 = GAME_UE5_5 + 4,
     GAME_UE5_6 = GameUtils.GameUe5Base + (6 << 16),
+    GAME_UE5_7 = GameUtils.GameUe5Base + (7 << 16),
 
     GAME_UE5_LATEST = GAME_UE5_6
 }
@@ -167,6 +175,7 @@ public static class GameUtils
                     EGame.GAME_TheFirstDescendant => new FPackageFileVersion(522, 1002),
                 < EGame.GAME_UE5_4 => new FPackageFileVersion(522, 1009),
                 < EGame.GAME_UE5_5 => new FPackageFileVersion(522, 1012),
+                < EGame.GAME_UE5_6 => new FPackageFileVersion(522, 1013),
                 _ => new FPackageFileVersion((int) EUnrealEngineObjectUE4Version.AUTOMATIC_VERSION, (int) EUnrealEngineObjectUE5Version.AUTOMATIC_VERSION)
             };
         }
