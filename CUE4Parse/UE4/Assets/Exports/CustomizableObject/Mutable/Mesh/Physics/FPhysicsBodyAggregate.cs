@@ -1,7 +1,7 @@
-﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics.Bodies;
-using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics.Bodies;
+using CUE4Parse.UE4.Assets.Readers;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 
 public class FPhysicsBodyAggregate
 {

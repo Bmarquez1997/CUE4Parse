@@ -1,16 +1,13 @@
-﻿using CUE4Parse.UE4.Readers;
-using Newtonsoft.Json;
+﻿using CUE4Parse.UE4.Assets.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 
-[JsonConverter(typeof(FModelConverter))]
 public class FModel
 {
     public FProgram Program;
 
-    public FModel(FArchive Ar)
+    public FModel(FMutableArchive Ar)
     {
-        var mutableAr = new FMutableArchive(Ar);
-        Program = new FProgram(mutableAr);
+        Program = new FProgram(Ar);
     }
 }

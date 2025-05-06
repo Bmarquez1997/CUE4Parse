@@ -11,10 +11,7 @@ using CUE4Parse.UE4.Assets.Exports.Animation.ACL;
 using CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression;
 using CUE4Parse.UE4.Assets.Exports.BuildData;
 using CUE4Parse.UE4.Assets.Exports.Component.StaticMesh;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Assets.Exports.Engine.Font;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Rig;
@@ -46,8 +43,6 @@ using CUE4Parse.UE4.Wwise.Objects;
 using CUE4Parse.Utils;
 using Newtonsoft.Json;
 using Type = System.Type;
-
-using static CUE4Parse.UE4.Assets.Exports.Animation.CurveExpression.FExpressionObject;
 #pragma warning disable CS8765
 
 namespace CUE4Parse;
@@ -450,6 +445,31 @@ public class FUECompressedAnimDataConverter : JsonConverter<FUECompressedAnimDat
 
     public override FUECompressedAnimData ReadJson(JsonReader reader, Type objectType, FUECompressedAnimData existingValue, bool hasExistingValue,
         JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FMutableStreamableBlockConverter : JsonConverter<FMutableStreamableBlock>
+{
+    public override void WriteJson(JsonWriter writer, FMutableStreamableBlock value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName("FileId");
+        serializer.Serialize(writer, value.FileId);
+
+        writer.WritePropertyName("Flags");
+        serializer.Serialize(writer, value.Flags.ToStringBitfield());
+
+        writer.WritePropertyName("Offset");
+        serializer.Serialize(writer, value.Offset);
+
+        writer.WriteEndObject();
+    }
+
+    public override FMutableStreamableBlock ReadJson(JsonReader reader, Type objectType, FMutableStreamableBlock? existingValue,
+        bool hasExistingValue, JsonSerializer serializer)
     {
         throw new NotImplementedException();
     }
@@ -2061,294 +2081,6 @@ public class FMaterialParameterInfoConverter : JsonConverter<FMaterialParameterI
     }
 }
 
-public class FModelConverter : JsonConverter<FModel>
-{
-    public override void WriteJson(JsonWriter writer, FModel value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("Program");
-        serializer.Serialize(writer, value.Program);
-
-        writer.WriteEndObject();
-    }
-
-    public override FModel ReadJson(JsonReader reader, Type objectType, FModel? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FProgramConverter : JsonConverter<FProgram>
-{
-    public override void WriteJson(JsonWriter writer, FProgram value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-        WriteArray(writer, serializer, value.States, "States");
-        WriteArray(writer, serializer, value.Roms, "Roms");
-        WriteArray(writer, serializer, value.RomsCompileData, "RomsCompileData");
-        WriteArray(writer, serializer, value.ConstantImageLODsPermanent, "ConstantImageLODsPermanent");
-        WriteArray(writer, serializer, value.ConstantImageLODIndices, "ConstantImageLODIndices");
-        WriteArray(writer, serializer, value.ConstantImages, "ConstantImages");
-        WriteArray(writer, serializer, value.ConstantMeshesPermanent, "ConstantMeshesPermanent");
-        WriteArray(writer, serializer, value.ConstantExtensionData, "ConstantExtensionData");
-        WriteArray(writer, serializer, value.ConstantStrings, "ConstantStrings");
-        WriteArray(writer, serializer, value.ConstantLayouts, "ConstantLayouts");
-        WriteArray(writer, serializer, value.ConstantProjectors, "ConstantProjectors");
-        WriteArray(writer, serializer, value.ConstantMatrices, "ConstantMatrices");
-        WriteArray(writer, serializer, value.ConstantShapes, "ConstantShapes");
-        WriteArray(writer, serializer, value.ConstantCurves, "ConstantCurves");
-        WriteArray(writer, serializer, value.ConstantSkeletons, "ConstantSkeletons");
-        WriteArray(writer, serializer, value.ConstantPhysicsBodies, "ConstantPhysicsBodies");
-        WriteArray(writer, serializer, value.Parameters, "Parameters");
-        WriteArray(writer, serializer, value.Ranges, "Ranges");
-
-        writer.WritePropertyName("ParameterLists");
-        writer.WriteStartArray();
-        if (value.ParameterLists == null)
-        {
-            writer.WriteValue("Null");
-        }
-        else
-        {
-            foreach (var parameter in value.ParameterLists)
-            {
-                WriteArray(writer, serializer, [parameter]);
-            }
-        }
-        writer.WriteEndArray();
-
-        writer.WriteEndObject();
-    }
-
-    private static void WriteArray(JsonWriter writer, JsonSerializer serializer, object[]? objArray, string? arrayName = null)
-    {
-        if (arrayName != null)
-            writer.WritePropertyName(arrayName);
-        
-        writer.WriteStartArray();
-        if (objArray == null)
-        {
-            writer.WriteValue("Null");
-        }
-        else
-        {
-            foreach (var parameter in objArray)
-            {
-                serializer.Serialize(writer, parameter);
-            }
-        }
-        writer.WriteEndArray();
-    }
-
-    public override FProgram ReadJson(JsonReader reader, Type objectType, FProgram? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FRomDataRuntimeConverter : JsonConverter<FRomDataRuntime>
-{
-    public override void WriteJson(JsonWriter writer, FRomDataRuntime value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("Size");
-        serializer.Serialize(writer, value.Size);
-
-        writer.WritePropertyName("ResourceType");
-        serializer.Serialize(writer, $"ERomDataType::{value.ResourceType.ToString()}");
-
-        writer.WritePropertyName("IsHighRes");
-        serializer.Serialize(writer, value.IsHighRes);
-
-        writer.WriteEndObject();
-    }
-
-    public override FRomDataRuntime ReadJson(JsonReader reader, Type objectType, FRomDataRuntime? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FImageConverter : JsonConverter<FImage>
-{
-    public override void WriteJson(JsonWriter writer, FImage value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("DataStorage");
-        serializer.Serialize(writer, value.DataStorage);
-
-        writer.WritePropertyName("Flags");
-        serializer.Serialize(writer, $"EImageFlags::{value.Flags.ToString()}");
-
-        writer.WriteEndObject();
-    }
-
-    public override FImage ReadJson(JsonReader reader, Type objectType, FImage? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FImageDataStorageConverter : JsonConverter<FImageDataStorage>
-{
-    public override void WriteJson(JsonWriter writer, FImageDataStorage value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("ImageSize");
-        serializer.Serialize(writer, value.ImageSize);
-
-        writer.WritePropertyName("ImageFormat");
-        serializer.Serialize(writer, $"EImageFormat::{value.ImageFormat.ToString()}");
-
-        writer.WritePropertyName("NumLODs");
-        serializer.Serialize(writer, value.NumLODs);
-
-        writer.WritePropertyName("CompactedTailOffsets");
-        writer.WriteStartArray();
-        foreach (var compactedTailOffset in value.CompactedTailOffsets)
-        {
-            serializer.Serialize(writer, compactedTailOffset);
-        }
-        writer.WriteEndArray();
-
-        writer.WriteEndObject();
-    }
-
-    public override FImageDataStorage ReadJson(JsonReader reader, Type objectType, FImageDataStorage? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FImageLODRangeConverter : JsonConverter<FImageLODRange>
-{
-    public override void WriteJson(JsonWriter writer, FImageLODRange value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("FirstIndex");
-        serializer.Serialize(writer, value.FirstIndex);
-
-        writer.WritePropertyName("ImageSizeX");
-        serializer.Serialize(writer, value.ImageSizeX);
-
-        writer.WritePropertyName("ImageSizeY");
-        serializer.Serialize(writer, value.ImageSizeY);
-
-        writer.WritePropertyName("LODCount");
-        serializer.Serialize(writer, value.LODCount);
-
-        writer.WritePropertyName("ImageFormat");
-        serializer.Serialize(writer, $"EImageFormat::{value.ImageFormat.ToString()}");
-
-        writer.WriteEndObject();
-    }
-
-    public override FImageLODRange ReadJson(JsonReader reader, Type objectType, FImageLODRange? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FExtensionDataConverter : JsonConverter<FExtensionData>
-{
-    public override void WriteJson(JsonWriter writer, FExtensionData value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("Index");
-        serializer.Serialize(writer, value.Index);
-
-        writer.WritePropertyName("Origin");
-        serializer.Serialize(writer, $"EOrigin::{value.Origin.ToString()}");
-
-        writer.WriteEndObject();
-    }
-
-    public override FExtensionData ReadJson(JsonReader reader, Type objectType, FExtensionData? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FLayoutConverter : JsonConverter<FLayout>
-{
-    public override void WriteJson(JsonWriter writer, FLayout value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("Size");
-        serializer.Serialize(writer, value.Size);
-
-        writer.WritePropertyName("MaxSize");
-        serializer.Serialize(writer, value.MaxSize);
-
-        writer.WritePropertyName("Blocks");
-        writer.WriteStartArray();
-        foreach (var block in value.Blocks)
-        {
-            serializer.Serialize(writer, block);
-        }
-        writer.WriteEndArray();
-
-        writer.WritePropertyName("Strategy");
-        serializer.Serialize(writer, $"EPackStrategy::{value.Strategy}");
-
-        writer.WritePropertyName("ReductionMethod");
-        serializer.Serialize(writer, $"EReductionMethod::{value.ReductionMethod}");
-
-        writer.WriteEndObject();
-    }
-
-    public override FLayout ReadJson(JsonReader reader, Type objectType, FLayout? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class FParameterDescConverter : JsonConverter<FParameterDesc>
-{
-    public override void WriteJson(JsonWriter writer, FParameterDesc value, JsonSerializer serializer)
-    {
-        writer.WriteStartObject();
-
-        writer.WritePropertyName("Name");
-        serializer.Serialize(writer, value.Name);
-
-        writer.WritePropertyName("UID");
-        serializer.Serialize(writer, value.UID);
-
-        writer.WritePropertyName("Type");
-        serializer.Serialize(writer, $"EParameterType::{value.Type.ToString()}");
-
-        writer.WritePropertyName("DefaultValue");
-        serializer.Serialize(writer, value.DefaultValue);
-
-        writer.WritePropertyName("PossibleValues");
-        serializer.Serialize(writer, value.PossibleValues);
-
-        writer.WriteEndObject();
-    }
-
-    public override FParameterDesc ReadJson(JsonReader reader, Type objectType, FParameterDesc? existingValue, bool hasExistingValue,
-        JsonSerializer serializer)
-    {
-        throw new NotImplementedException();
-    }
-}
-
 public class FVirtualTextureDataChunkConverter : JsonConverter<FVirtualTextureDataChunk>
 {
     public override void WriteJson(JsonWriter writer, FVirtualTextureDataChunk value, JsonSerializer serializer)
@@ -2732,7 +2464,7 @@ public class FByteBulkDataConverter : JsonConverter<FByteBulkData>
 
 public class FKismetPropertyPointerConverter : JsonConverter<FKismetPropertyPointer>
 {
-    public override FKismetPropertyPointer ReadJson(JsonReader reader, Type objectType, FKismetPropertyPointer? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override FKismetPropertyPointer? ReadJson(JsonReader reader, Type objectType, FKismetPropertyPointer? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         throw new NotImplementedException();
     }
@@ -3391,7 +3123,7 @@ public class FScriptTextConverter : JsonConverter<FScriptText>
         writer.WriteEndObject();
     }
 
-    public override FScriptText ReadJson(JsonReader reader, Type objectType, FScriptText? existingValue, bool hasExistingValue, JsonSerializer serializer)
+    public override FScriptText? ReadJson(JsonReader reader, Type objectType, FScriptText? existingValue, bool hasExistingValue, JsonSerializer serializer)
     {
         throw new NotImplementedException();
     }

@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
-using CUE4Parse.UE4.Readers;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Surface;
+using CUE4Parse.UE4.Assets.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 
@@ -40,15 +41,15 @@ public class FMesh
         Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
         Tags = Ar.ReadArray(Ar.ReadFString);
         StreamedResources = Ar.ReadArray<ulong>();
-        BonePoses = Ar.ReadArray(() => new FBonePose(Ar));
-        BoneMap = Ar.ReadArray(() => new FBoneName(Ar));
+        BonePoses = Ar.ReadArray<FBonePose>();
+        BoneMap = Ar.ReadArray<FBoneName>();
         AdditionalPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
         MeshIDPrefix = Ar.Read<uint>();
 
         if (Flags.HasFlag(EMeshFlags.IsResourceReference))
         {
             ReferenceID = Ar.Read<uint>();
-            ReferencedMorph = Ar.ReadFString();
+            ReferencedMorph = Ar.ReadString();
         }
     }
 }

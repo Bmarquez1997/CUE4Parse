@@ -1,21 +1,15 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using CUE4Parse.UE4.Objects.Core.Math;
-using CUE4Parse.UE4.Readers;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 
-public class FBonePose
+[StructLayout(LayoutKind.Sequential)]
+public struct FBonePose
 {
-    public FBoneName BoneId;
+    public FBoneName Id;
     public EBoneUsageFlags BoneUsageFlags;
     public FTransform BoneTransform;
-
-    public FBonePose(FArchive Ar)
-    {
-        BoneId = new FBoneName(Ar);
-        BoneUsageFlags = Ar.Read<EBoneUsageFlags>();
-        BoneTransform = Ar.Read<FTransform>();
-    }
 }
 
 [Flags]

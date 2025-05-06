@@ -14,6 +14,6 @@ public class UCustomizableObjectPrivate : UObject
         base.Deserialize(Ar, validPos);
 
         ModelStreamableData = GetOrDefault<FPackageIndex>(nameof(ModelStreamableData));
-        ModelResources = GetOrDefault<FModelResources>(nameof(ModelResources));
+        ModelResources = new FModelResources(GetOrDefault<FPackageIndex>(nameof(ModelResources)));
     }
 }

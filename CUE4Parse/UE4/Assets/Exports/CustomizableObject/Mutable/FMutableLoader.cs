@@ -4,6 +4,7 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Exceptions;
+using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Readers;
 using Serilog;
 

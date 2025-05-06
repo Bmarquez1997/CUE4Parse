@@ -17,9 +17,9 @@ public class MutableDataConverter
         _indexBufferElementCount = indexBufferElementCount;
     }
 
-    public uint[] GetIndices(FMeshBufferChannel? channel, FMeshBuffer? indexBuffer)
+    public uint[] GetIndices(FMeshBufferChannel channel, FMeshBuffer? indexBuffer)
     {
-        if (channel == null || indexBuffer == null)
+        if (channel.ComponentCount == 0 || indexBuffer == null)
             throw new ArgumentNullException();
 
         var indices = new uint[_indexBufferElementCount];
@@ -39,9 +39,9 @@ public class MutableDataConverter
         return indices;
     }
 
-    public FVector GetVertices(FMeshBufferChannel? channel, FMeshBuffer? vertexBuffer, int index)
+    public FVector GetVertices(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
     {
-        if (channel == null || vertexBuffer == null)
+        if (channel.ComponentCount == 0  || vertexBuffer == null)
             throw new ArgumentNullException();
 
         switch (channel.Format)
@@ -59,9 +59,9 @@ public class MutableDataConverter
         }
     }
 
-    public FPackedNormal GetNormals(FMeshBufferChannel? channel, FMeshBuffer? vertexBuffer, int index)
+    public FPackedNormal GetNormals(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
     {
-        if (channel == null || vertexBuffer == null)
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
             throw new ArgumentNullException();
 
         switch (channel.Format)
@@ -88,9 +88,9 @@ public class MutableDataConverter
         }
     }
 
-    public FPackedNormal GetTangent(FMeshBufferChannel? channel, FMeshBuffer? vertexBuffer, int index)
+    public FPackedNormal GetTangent(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
     {
-        if (channel == null || vertexBuffer == null)
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
             throw new ArgumentNullException();
 
         switch (channel.Format)
@@ -118,9 +118,9 @@ public class MutableDataConverter
         }
     }
 
-    public FMeshUVFloat GetUVs(FMeshBufferChannel? channel, FMeshBuffer? vertexBuffer, int index)
+    public FMeshUVFloat GetUVs(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
     {
-        if (channel == null || vertexBuffer == null)
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
             throw new ArgumentNullException();
 
         switch (channel.Format)
@@ -137,9 +137,9 @@ public class MutableDataConverter
         }
     }
     
-    public FColor GetColor(FMeshBufferChannel? channel, FMeshBuffer? vertexBuffer, int index)
+    public FColor GetColor(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
     {
-        if (channel == null || vertexBuffer == null)
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
             throw new ArgumentNullException();
 
         switch (channel.Format)
@@ -158,9 +158,9 @@ public class MutableDataConverter
         }
     }
     
-    public List<Tuple<short, byte>> GetWeights(FMeshBufferChannel? boneIndexChannel, FMeshBufferChannel? weightChannel, FMeshBuffer? boneIndexBuffer, FMeshBuffer? weightBuffer,  int index)
+    public List<Tuple<short, byte>> GetWeights(FMeshBufferChannel boneIndexChannel, FMeshBufferChannel weightChannel, FMeshBuffer? boneIndexBuffer, FMeshBuffer? weightBuffer,  int index)
      {
-         if (boneIndexChannel == null || weightChannel == null || boneIndexBuffer == null || weightBuffer == null)
+         if (boneIndexChannel.ComponentCount == 0 || weightChannel.ComponentCount == 0 || boneIndexBuffer == null || weightBuffer == null)
              throw new ArgumentNullException();
 
          if (weightChannel.Format == EMeshBufferFormat.NUInt8 && boneIndexChannel.Format == EMeshBufferFormat.UInt8)

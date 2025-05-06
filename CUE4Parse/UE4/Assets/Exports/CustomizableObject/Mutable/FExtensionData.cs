@@ -1,17 +1,11 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Assets.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 
-public class FExtensionData
+public struct FExtensionData
 {
     public short Index;
     public EOrigin Origin;
-
-    public FExtensionData(FArchive Ar)
-    {
-        Index = Ar.Read<short>();
-        Origin = Ar.Read<EOrigin>();
-    }
 }
 
 public enum EOrigin : byte

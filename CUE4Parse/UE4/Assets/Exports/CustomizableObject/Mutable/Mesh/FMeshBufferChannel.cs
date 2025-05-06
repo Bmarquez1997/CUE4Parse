@@ -1,23 +1,12 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
-
-public class FMeshBufferChannel
+public struct FMeshBufferChannel
 {
     public EMeshBufferSemantic Semantic;
     public EMeshBufferFormat Format;
     public int SemanticIndex;
     public ushort Offset;
     public ushort ComponentCount;
-
-    public FMeshBufferChannel(FArchive Ar)
-    {
-        Semantic = Ar.Read<EMeshBufferSemantic>();
-        Format = Ar.Read<EMeshBufferFormat>();
-        SemanticIndex = Ar.Read<int>();
-        Offset = Ar.Read<ushort>();
-        ComponentCount = Ar.Read<ushort>();
-    }
 }
 
 public enum EMeshBufferSemantic : uint

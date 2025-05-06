@@ -1,6 +1,6 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Assets.Readers;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics.Bodies;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics.Bodies;
 
 public class FBodyShape
 {

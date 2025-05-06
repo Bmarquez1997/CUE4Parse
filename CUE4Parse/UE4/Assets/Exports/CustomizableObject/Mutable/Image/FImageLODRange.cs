@@ -1,25 +1,14 @@
-﻿using CUE4Parse.UE4.Readers;
-using Newtonsoft.Json;
+﻿using System.Runtime.InteropServices;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 
-[JsonConverter(typeof(FImageLODRangeConverter))]
-public class FImageLODRange
+[StructLayout(LayoutKind.Sequential)]
+public struct FImageLODRange
 {
     public int FirstIndex;
     public ushort ImageSizeX;
     public ushort ImageSizeY;
-    public ushort Padding;
+    public ushort _Padding;
     public byte LODCount;
     public EImageFormat ImageFormat;
-
-    public FImageLODRange(FArchive Ar)
-    {
-        FirstIndex = Ar.Read<int>();
-        ImageSizeX = Ar.Read<ushort>();
-        ImageSizeY = Ar.Read<ushort>();
-        Padding = Ar.Read<ushort>();
-        LODCount = Ar.Read<byte>();
-        ImageFormat = Ar.Read<EImageFormat>();
-    }
 }

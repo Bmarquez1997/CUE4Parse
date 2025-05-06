@@ -1,4 +1,4 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Assets.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 
@@ -8,9 +8,9 @@ public class FMeshBuffer
     public byte[] Data;
     public uint ElementSize;
 
-    public FMeshBuffer(FArchive Ar)
+    public FMeshBuffer(FMutableArchive Ar)
     {
-        Channels = Ar.ReadArray(() => new FMeshBufferChannel(Ar));
+        Channels = Ar.ReadArray<FMeshBufferChannel>();
         Data = Ar.ReadArray<byte>();
         ElementSize = Ar.Read<uint>();
     }

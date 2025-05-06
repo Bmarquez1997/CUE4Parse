@@ -1,7 +1,7 @@
-﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
-using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
+using CUE4Parse.UE4.Assets.Readers;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Physics;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 
 public class FPhysicsBody
 {
@@ -15,7 +15,7 @@ public class FPhysicsBody
     {
         CustomId = Ar.Read<int>();
         Bodies = Ar.ReadArray(() => new FPhysicsBodyAggregate(Ar));
-        BoneIds = Ar.ReadArray(() => new FBoneName(Ar));
+        BoneIds = Ar.ReadArray<FBoneName>();
         BodiesCustomIds = Ar.ReadArray<int>();
         bBodiesModified = Ar.ReadFlag();
     }

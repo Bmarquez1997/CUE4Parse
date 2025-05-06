@@ -1,10 +1,8 @@
-﻿using CUE4Parse.UE4.Readers;
-using Newtonsoft.Json;
+﻿using CUE4Parse.UE4.Assets.Readers;
 using FIntVector2 = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<int>;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
 
-[JsonConverter(typeof(FLayoutConverter))]
 public class FLayout
 {
     public FIntVector2 Size;
@@ -13,7 +11,7 @@ public class FLayout
     public EPackStrategy Strategy;
     public EReductionMethod ReductionMethod;
 
-    public FLayout(FArchive Ar)
+    public FLayout(FMutableArchive Ar)
     {
         Size = Ar.Read<FIntVector2>();
         Blocks = Ar.ReadArray(() => new FLayoutBlock(Ar));

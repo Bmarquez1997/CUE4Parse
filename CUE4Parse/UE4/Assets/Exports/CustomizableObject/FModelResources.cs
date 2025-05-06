@@ -14,6 +14,18 @@ public class FModelResources
     public UScriptMap? MeshMetadata;
     public UScriptMap? SurfaceMetadata;
 
+    public FModelResources(FPackageIndex package)
+    {
+        if (!package.TryLoad(out var obj)) return;
+        
+        Skeletons = obj.GetOrDefault<FSoftObjectPath[]>(nameof(Skeletons), []);
+        Materials = obj.GetOrDefault<FSoftObjectPath[]>(nameof(Materials), []);
+        PhysicsAssets = obj.GetOrDefault<FSoftObjectPath[]>(nameof(PhysicsAssets), []);
+        BoneNamesMap = obj.GetOrDefault<UScriptMap>(nameof(BoneNamesMap));
+        MeshMetadata = obj.GetOrDefault<UScriptMap>(nameof(MeshMetadata));
+        SurfaceMetadata = obj.GetOrDefault<UScriptMap>(nameof(SurfaceMetadata));
+    }
+
     public FModelResources(FStructFallback fallback)
     {
         Skeletons = fallback.GetOrDefault<FSoftObjectPath[]>(nameof(Skeletons), []);

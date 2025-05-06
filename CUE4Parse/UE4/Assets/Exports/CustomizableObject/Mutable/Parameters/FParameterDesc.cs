@@ -1,12 +1,11 @@
 ﻿using System;
+using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
-using CUE4Parse.UE4.Readers;
-using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
 
-[JsonConverter(typeof(FParameterDescConverter))]
 public class FParameterDesc
 {
     public string Name;
@@ -25,15 +24,13 @@ public class FParameterDesc
         Ar.Position += 1;
         DefaultValue = Type switch
         {
-            EParameterType.Bool => Ar.ReadFlag(),
             EParameterType.Int => Ar.Read<int>(),
             EParameterType.Float => Ar.Read<float>(),
             EParameterType.Color => Ar.Read<FVector4>(),
-            EParameterType.Projector => new FProjector(Ar),
+            EParameterType.Projector => Ar.Read<FProjector>(),
             EParameterType.Image => Ar.ReadFName(),
-            EParameterType.String => Ar.ReadFString(),
             EParameterType.Matrix => new FMatrix(Ar, false),
-            _ => throw new NotImplementedException($"Unsupported type: {Type}")
+            _ => throw new NotSupportedException($"Type '{Type}' is currently not supported")
         };
 
         Ranges = Ar.ReadArray<uint>();
@@ -63,6 +60,9 @@ public enum EParameterType : uint
 
     /** An externally provided image. */
     Image,
+
+    /** An externally provided mesh. */
+    Mesh,
 
     /** A text string. */
     String,

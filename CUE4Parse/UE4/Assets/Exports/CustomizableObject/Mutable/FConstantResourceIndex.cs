@@ -1,4 +1,4 @@
-﻿using CUE4Parse.UE4.Readers;
+﻿using CUE4Parse.UE4.Assets.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 
@@ -7,11 +7,11 @@ public class FConstantResourceIndex
     public uint Index;
     public bool Streamable;
 
-    public FConstantResourceIndex(FArchive Ar)
+    public FConstantResourceIndex(FMutableArchive Ar)
     {
-        var packedValue = Ar.Read<uint>();
+        var bitfield = Ar.Read<uint>();
 
-        Index = packedValue & (1U << 31) - 1;
-        Streamable = ((packedValue >> 31) & 1) != 0;
+        Index = bitfield & 0x7FFFFFFF;
+        Streamable = (bitfield & 0x80000000) >> 31 != 0;
     }
 }

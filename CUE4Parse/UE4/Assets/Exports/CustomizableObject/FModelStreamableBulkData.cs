@@ -11,16 +11,19 @@ public class FModelStreamableBulkData
     public Dictionary<uint, FRealTimeMorphStreamable> RealTimeMorphStreamables;
     public FByteBulkData[] StreamableBulkData;
 
-    public FModelStreamableBulkData(FAssetArchive Ar)
+    public FModelStreamableBulkData(FAssetArchive Ar, bool bCooked)
     {
         ModelStreamables = Ar.ReadMap(() => (Ar.Read<uint>(), new FMutableStreamableBlock(Ar)));
         ClothingStreamables = Ar.ReadMap(() => (Ar.Read<uint>(), new FClothingStreamable(Ar)));
         RealTimeMorphStreamables = Ar.ReadMap(() => (Ar.Read<uint>(), new FRealTimeMorphStreamable(Ar)));
 
-        StreamableBulkData = new FByteBulkData[Ar.Read<int>()];
-        for (int i = 0; i < StreamableBulkData.Length; i++)
+        if (bCooked)
         {
-            StreamableBulkData[i] = new FByteBulkData(Ar);
+            StreamableBulkData = new FByteBulkData[Ar.Read<int>()];
+            for (int i = 0; i < StreamableBulkData.Length; i++)
+            {
+                StreamableBulkData[i] = new FByteBulkData(Ar);
+            }
         }
     }
 }

@@ -15,12 +15,12 @@ using CUE4Parse.UE4.Objects.RenderCore;
 using CUE4Parse_Conversion.Meshes.PSK;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Skeleton;
 using CUE4Parse.UE4.Assets.Objects;
 using Serilog;
 using CUE4Parse.UE4.Assets.Exports.Actor;
 using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Component.SplineMesh;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.Utils;
 using SixLabors.ImageSharp;
@@ -711,7 +711,7 @@ public static class MeshConverter
             if (mutSkelMeshLod.VertexColors != null)
                 mutSkelMeshLod.VertexColors[i] = dataConverter.GetColor(colorChannel, colorBuffer, i);
             
-            if (boneIndexChannel == null || weightChannel == null || boneIndexBuffer == null || weightBuffer == null || boneMap == null) continue;
+            if (boneIndexChannel.ComponentCount == 0 || weightChannel.ComponentCount == 0 || boneIndexBuffer == null || weightBuffer == null || boneMap == null || boneMap.Count == 0) continue;
             foreach (var (boneId, weight) in dataConverter.GetWeights(boneIndexChannel, weightChannel, boneIndexBuffer, weightBuffer, i))
             {
                 if (weight == 0) continue;
@@ -742,12 +742,12 @@ public static class MeshConverter
          return boneIndexMap;
      }
 
-    private static void GetBuffer(EMeshBufferSemantic bufferType, FMesh mesh, out FMeshBufferChannel? channel, out FMeshBuffer? vertexBuffer, int semanticIndex = 0)
+    private static void GetBuffer(EMeshBufferSemantic bufferType, FMesh mesh, out FMeshBufferChannel channel, out FMeshBuffer? vertexBuffer, int semanticIndex = 0)
     {
         foreach (var buffer in mesh.IndexBuffers.Buffers)
         {
             channel = buffer.Channels.FirstOrDefault(c => c.Semantic == bufferType && c.SemanticIndex == semanticIndex);
-            if (channel is null) continue;
+            if (channel.ComponentCount == 0) continue;
 
             vertexBuffer = buffer;
             return;
@@ -756,13 +756,13 @@ public static class MeshConverter
         foreach (var buffer in mesh.VertexBuffers.Buffers)
         {
             channel = buffer.Channels.FirstOrDefault(c => c.Semantic == bufferType && c.SemanticIndex == semanticIndex);
-            if (channel is null) continue;
+            if (channel.ComponentCount == 0) continue;
 
             vertexBuffer = buffer;
             return;
         }
 
-        channel = null;
+        channel = new FMeshBufferChannel();
         vertexBuffer = null;
     }
 }

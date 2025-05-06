@@ -1,9 +1,10 @@
-﻿using CUE4Parse.UE4.Objects.Core.Math;
-using CUE4Parse.UE4.Readers;
+﻿using System.Runtime.InteropServices;
+using CUE4Parse.UE4.Objects.Core.Math;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
 
-public class FProjector
+[StructLayout(LayoutKind.Sequential)]
+public struct FProjector
 {
     public EProjectorType Type;
     public FVector Position;
@@ -11,16 +12,6 @@ public class FProjector
     public FVector Up;
     public FVector Scale;
     public float ProjectionAngle;
-
-    public FProjector(FArchive Ar)
-    {
-        Type = Ar.Read<EProjectorType>();
-        Position = Ar.Read<FVector>();
-        Direction = Ar.Read<FVector>();
-        Up = Ar.Read<FVector>();
-        Scale = Ar.Read<FVector>();
-        ProjectionAngle = Ar.Read<float>();
-    }
 }
 
 public enum EProjectorType : uint

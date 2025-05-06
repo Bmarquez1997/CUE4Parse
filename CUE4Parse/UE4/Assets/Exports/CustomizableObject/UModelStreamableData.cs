@@ -14,7 +14,9 @@ public class UModelStreamableData : UObject
 
         bCooked = Ar.ReadBoolean();
         if (bCooked)
-            StreamingData = new FModelStreamableBulkData(Ar);
+        {
+            StreamingData = new FModelStreamableBulkData(Ar, bCooked);
+        }
     }
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)

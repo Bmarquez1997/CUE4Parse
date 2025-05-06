@@ -1,28 +1,26 @@
-﻿using CUE4Parse.UE4.Readers;
-using Newtonsoft.Json;
+﻿using CUE4Parse.UE4.Assets.Readers;
 using FImageSize = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<ushort>;
 using FImageArray = byte[];
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 
-[JsonConverter(typeof(FImageDataStorageConverter))]
 public class FImageDataStorage
 {
-    public FImageArray[] Buffers;
     public FImageSize ImageSize;
     public EImageFormat ImageFormat;
     public byte NumLODs;
+    public FImageArray[] Buffers;
     public ushort[] CompactedTailOffsets;
 
     private const int NumLODsInCompactedTail = 7;
 
-    public FImageDataStorage(FArchive Ar)
+    public FImageDataStorage(FMutableArchive Ar)
     {
         ImageSize = Ar.Read<FImageSize>();
         ImageFormat = Ar.Read<EImageFormat>();
         NumLODs = Ar.Read<byte>();
 
-        Ar.Position += 3;
+        Ar.Position += 3; // is NumLODs an uint?
 
         var buffersNum = Ar.Read<int>();
         Buffers = new FImageArray[buffersNum];
