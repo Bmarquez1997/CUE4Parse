@@ -112,14 +112,16 @@ public class MutableExporter : ExporterBase
             var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
             if (filterSkeletonName != null && 
                 !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
+
+            var exportAll = false;
             
-            if (skeletonName.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeletonName.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
+            if (exportAll || skeletonName.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeletonName.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
             {
                 foreach (var materialGroup in skeletonGroup.Value)
                 {
                     if (materialGroup.Key.Contains("LOD", StringComparison.OrdinalIgnoreCase)) continue;
                     
-                    if (materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeletonName.Equals("SK_Figure"))
+                    if (exportAll || materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeletonName.Equals("SK_Figure"))
                         materialGroup.Value.ForEach(mesh =>
                             ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeletonSoftObject, true));
                     else
