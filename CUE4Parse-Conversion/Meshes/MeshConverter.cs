@@ -315,8 +315,8 @@ public static class MeshConverter
                         continue;
                     }
                     
-                    var bone = (short)boneMap[boneIndex];
-                    skeletalMeshLod.Verts[vert].AddInfluence(bone, weight);
+                    var bone = boneMap[boneIndex];
+                    skeletalMeshLod.Verts[vert].AddInfluence(bone, weight, weight * scale);
                 }
             }
 
