@@ -718,23 +718,26 @@ public static class MeshConverter
             if (mutSkelMeshLod.VertexColors != null)
                 mutSkelMeshLod.VertexColors[i] = dataConverter.GetColor(colorChannel, colorBuffer, i);
             
+            // TODO: figure out where this comes from for mutables
+            // var scale = mutSkelMeshLod.Verts[i].Infs.bUse16BitBoneWeight ? Constants.UShort_Bone_Scale : Constants.Byte_Bone_Scale;
+            var scale = Constants.Byte_Bone_Scale;
             if (boneIndexChannel.ComponentCount == 0 || weightChannel.ComponentCount == 0 || boneIndexBuffer == null || weightBuffer == null || boneMap == null || boneMap.Count == 0) continue;
             foreach (var (boneId, weight) in dataConverter.GetWeights(boneIndexChannel, weightChannel, boneIndexBuffer, weightBuffer, i))
             {
-                if (weight == 0) continue;
+                if (weight == 0f) continue;
                 var boneIndex = boneMap[boneId];
-                mutSkelMeshLod.Verts[i].AddInfluence(boneIndex, weight);
+                mutSkelMeshLod.Verts[i].AddInfluence(boneIndex, weight, weight * scale);
             }
         }
 
         return mutSkelMeshLod;
     }
     
-     private static Dictionary<short, short>? BuildBoneIndexMap(FBoneName[] meshBoneMap,
+     private static Dictionary<short, ushort>? BuildBoneIndexMap(FBoneName[] meshBoneMap,
          UScriptMap? boneNameMap, Dictionary<string, int>? finalNameToIndexMap)
      {
          if (boneNameMap == null || finalNameToIndexMap == null) return null;
-         Dictionary<short, short> boneIndexMap = [];
+         Dictionary<short, ushort> boneIndexMap = [];
          for (var i = 0; i < meshBoneMap.Length; i++)
          {
              var boneID = meshBoneMap[i].Id;
@@ -743,7 +746,7 @@ public static class MeshConverter
              if (boneName == null) continue;
              var boneIndex = finalNameToIndexMap.First(indexMapEntry =>
                  indexMapEntry.Key.Equals(boneName, StringComparison.OrdinalIgnoreCase)).Value;
-             boneIndexMap[(short)i] = (short)boneIndex;
+             boneIndexMap[(short)i] = (ushort)boneIndex;
          }
 
          return boneIndexMap;
