@@ -41,8 +41,24 @@ public static class TextureDecoder
         }
 
         DecodeTexture(mip, sizeX, sizeY, sizeZ, texture.Format, texture.IsNormalMap, platform, out var data, out var colorType);
-        return new CTexture( sizeX, sizeY, colorType, data);
+        return new CTexture( sizeX, sizeY, colorType, GetSliceDataAsArray(data, sizeX, sizeY, GetBytesPerPixel(colorType), zLayer));
+    }
 
+    private static int GetBytesPerPixel(EPixelFormat pixelFormat)
+    {
+        var tempFormatInfo = PixelFormatUtils.PixelFormats.ElementAtOrDefault((int) pixelFormat)!;
+        return tempFormatInfo.BlockBytes / (tempFormatInfo.BlockSizeX * tempFormatInfo.BlockSizeY * tempFormatInfo.BlockSizeZ);
+    }
+
+    private static unsafe byte[] GetSliceDataAsArray(byte[] data, int sizeX, int sizeY, int bytesPerPixel, int zLayer = 0)
+    {
+        Span<byte> returnSpan;
+        fixed (byte* dataPtr = data)
+        {
+            returnSpan = GetSliceData(dataPtr, sizeX, sizeY, bytesPerPixel, zLayer);
+        }
+
+        return returnSpan.ToArray();
     }
 
     private static unsafe Span<byte> GetSliceData(byte* data, int sizeX, int sizeY, int bytesPerPixel, int zLayer = 0)
@@ -127,8 +143,7 @@ public static class TextureDecoder
                     if (pixelDataPtr is null)
                     {
                         colorType = tileColorType;
-                        var tempFormatInfo = PixelFormatUtils.PixelFormats.ElementAtOrDefault((int) tileColorType)!;
-                        bytesPerPixel = tempFormatInfo.BlockBytes / (tempFormatInfo.BlockSizeX * tempFormatInfo.BlockSizeY * tempFormatInfo.BlockSizeZ);
+                        bytesPerPixel = GetBytesPerPixel(tileColorType);
                         rowBytes = bytesPerPixel * bitmapWidth;
                         tileRowBytes = tileSize * bytesPerPixel;
                         var imageBytes = bitmapHeight * bitmapWidth * bytesPerPixel;
@@ -178,7 +193,8 @@ public static class TextureDecoder
         DecodeTexture(mip, sizeX, sizeY, sizeZ, texture.Format, texture.IsNormalMap, platform, out var data, out var colorType);
 
         var bitmaps = new CTexture[sizeZ];
-        var offset = sizeX * sizeY * 4;
+        var bytesPerPixel = GetBytesPerPixel(colorType);
+        var offset = sizeX * sizeY * bytesPerPixel;
 
         fixed (byte* dataPtr = data)
         {
@@ -186,7 +202,7 @@ public static class TextureDecoder
             {
                 if (offset * (i + 1) > data.Length)
                     break;
-                bitmaps[i] = new CTexture(sizeX, sizeY, colorType, GetSliceData(dataPtr, sizeX, sizeY, 4, i).ToArray());
+                bitmaps[i] = new CTexture(sizeX, sizeY, colorType, GetSliceData(dataPtr, sizeX, sizeY, bytesPerPixel, i).ToArray());
             }
         }
         return bitmaps;
@@ -562,7 +578,7 @@ public static class TextureDecoder
                 break;
             case EPixelFormat.PF_BC7:
                 if (UseAssetRipperTextureDecoder)
-                    Bc7.Decompress(bytes, sizeX, sizeY, out data);
+                    Bc7.Decompress(bytes, sizeX, sizeY * sizeZ, out data);
                 else
                     data = DetexHelper.DecodeDetexLinear(bytes, sizeX, sizeY * sizeZ, false, DetexTextureFormat.DETEX_TEXTURE_FORMAT_BPTC, DetexPixelFormat.DETEX_PIXEL_FORMAT_BGRA8);
 
