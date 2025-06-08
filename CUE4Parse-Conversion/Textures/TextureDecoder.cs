@@ -578,7 +578,7 @@ public static class TextureDecoder
                 break;
             case EPixelFormat.PF_BC7:
                 if (UseAssetRipperTextureDecoder)
-                    Bc7.Decompress(bytes, sizeX, sizeY * sizeZ, out data);
+                    Bc7.Decompress(bytes, sizeX, sizeY, out data);
                 else
                     data = DetexHelper.DecodeDetexLinear(bytes, sizeX, sizeY * sizeZ, false, DetexTextureFormat.DETEX_TEXTURE_FORMAT_BPTC, DetexPixelFormat.DETEX_PIXEL_FORMAT_BGRA8);
 

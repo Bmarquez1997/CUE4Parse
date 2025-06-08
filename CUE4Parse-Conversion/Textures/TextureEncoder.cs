@@ -378,13 +378,13 @@ public static class TextureEncoder
                 convertedData = Convert16To8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
                 break;
             case EPixelFormat.PF_G16R16F:
-                convertedData = ConvertTo8<Half>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertHalfTo8, true);
+                convertedData = ConvertHalfTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
                 break;
             case EPixelFormat.PF_G32R32F:
-                convertedData = ConvertTo8<float>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertFloatTo8, true);
+                convertedData = ConvertFloatTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
                 break;
             case EPixelFormat.PF_R16F:
-                convertedData = ConvertTo8<Half>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertHalfTo8);
+                convertedData = ConvertHalfTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan);
                 break;
             default:
                 throw new NotImplementedException("Unsupported pixel format: " + texture.PixelFormat);
