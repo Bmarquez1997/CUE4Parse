@@ -128,15 +128,7 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
                     else
                         SerializeCompressedData3(Ar);
 
-                    try
-                    {
-                        bUseRawDataOnly = Ar.ReadBoolean();
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Warning("UAnimSequence {0} didn't have a bUseRawDataOnlyFlag, skipping", Name);
-                    }
-                    
+                    if (Ar.Position + 4 <= validPos) bUseRawDataOnly = Ar.ReadBoolean();
                 }
             }
 
