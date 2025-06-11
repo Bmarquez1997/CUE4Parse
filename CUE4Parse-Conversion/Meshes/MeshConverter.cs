@@ -80,7 +80,8 @@ public static class MeshConverter
         out CStaticMesh convertedMesh)
     {
         convertedMesh = new CStaticMesh();
-        if (originalMesh.RenderData?.Bounds == null || originalMesh.RenderData?.LODs is null)
+            // if (originalMesh.RenderData?.Bounds == null || originalMesh.RenderData?.LODs is null)
+        if (originalMesh.RenderData == null)
             return false;
 
         convertedMesh.BoundingSphere = new FSphere(0f, 0f, 0f, originalMesh.RenderData.Bounds.SphereRadius / 2);
@@ -88,11 +89,11 @@ public static class MeshConverter
             originalMesh.RenderData.Bounds.Origin - originalMesh.RenderData.Bounds.BoxExtent,
             originalMesh.RenderData.Bounds.Origin + originalMesh.RenderData.Bounds.BoxExtent);
 
-        if (TryConvertNaniteMesh(originalMesh, out CStaticMeshLod? naniteMesh) && naniteMesh is not null)
-        {
-            // the nanite full quality mesh will always be the highest quality version of the mesh
-            convertedMesh.LODs.Add(naniteMesh);
-        }
+        // if (TryConvertNaniteMesh(originalMesh, out CStaticMeshLod? naniteMesh) && naniteMesh is not null)
+        // {
+        //     // the nanite full quality mesh will always be the highest quality version of the mesh
+        //     convertedMesh.LODs.Add(naniteMesh);
+        // }
 
         foreach (var srcLod in originalMesh.RenderData.LODs)
         {

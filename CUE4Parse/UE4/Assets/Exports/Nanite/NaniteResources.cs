@@ -1427,17 +1427,17 @@ public class FNaniteResources
             }
             if (Ar.Game >= EGame.GAME_UE5_1) NumClusters = Ar.Read<uint>();
 
-            if (PageStreamingStates.Length > 0)
-            {
-                LoadedPages = new FNaniteStreamableData[PageStreamingStates.Length];
-                RootData = new FNaniteStreamableData[NumRootPages];
-
-                // the format does allow for more than one
-                for (int pageIndex = 0; pageIndex < NumRootPages; pageIndex++)
-                {
-                    RootData[pageIndex] = GetPage(pageIndex);
-                }
-            }
+            // if (PageStreamingStates.Length > 0)
+            // {
+            //     LoadedPages = new FNaniteStreamableData[PageStreamingStates.Length];
+            //     RootData = new FNaniteStreamableData[NumRootPages];
+            //
+            //     // the format does allow for more than one
+            //     for (int pageIndex = 0; pageIndex < NumRootPages; pageIndex++)
+            //     {
+            //         RootData[pageIndex] = GetPage(pageIndex);
+            //     }
+            // }
         }
     }
 
