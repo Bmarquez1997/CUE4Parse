@@ -1,5 +1,4 @@
-﻿using System;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
@@ -9,7 +8,6 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Roms;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Engine.Curves;
-using Serilog;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 

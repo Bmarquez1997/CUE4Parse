@@ -26,25 +26,26 @@ public class MutableExporter : ExporterBase
     // <SkeletonName, (MeshName, Mesh)>
     public readonly Dictionary<string, List<Tuple<string, Mesh>>> Objects;
     public readonly List<CTexture> Images;
-    
-    public MutableExporter(UCustomizableObject originalCustomizableObject, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(originalCustomizableObject, options)
+
+    public MutableExporter(UCustomizableObject original, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(original, options)
     {
         Objects = [];
         Images = [];
 
         // <skeletonIndex, <MaterialSlot, Meshes>>
         Dictionary<uint, Dictionary<string, List<FMesh>>> meshes = [];
-        
-        var loader = new FMutableLoader(originalCustomizableObject);
+
+        var loader = new FMutableLoader(original);
         //var opCodes = loader.ReadByteCode();
-        
-        var coPrivate = originalCustomizableObject.Private.Load<UCustomizableObjectPrivate>();
-        var modelResources = coPrivate.ModelResources;
+
+        if (!original.Private.TryLoad(out UCustomizableObjectPrivate coPrivate) || !coPrivate.ModelResources.TryLoad(out UModelResources modelResources))
+            return;
+
         var surfaceNameMap = GetSurfaceNameMap(modelResources);
 
-        for (uint index = 0; index < originalCustomizableObject.Model.Program.Roms.Length; index++)
+        for (uint index = 0; index < original.Model.Program.Roms.Length; index++)
         {
-            var rom = originalCustomizableObject.Model.Program.Roms[index];
+            var rom = original.Model.Program.Roms[index];
             switch (rom.ResourceType)
             {
                 case ERomDataType.Image:
@@ -62,13 +63,13 @@ public class MutableExporter : ExporterBase
         }
 
         if (meshes.Count > 0)
-            ExportMutableMeshes(originalCustomizableObject, meshes, modelResources.Skeletons, filterSkeletonName);
+            ExportMutableMeshes(original, meshes, modelResources.Skeletons, filterSkeletonName);
     }
-    
-    private Dictionary<uint, string> GetSurfaceNameMap(FModelResources modelResources)
+
+    private Dictionary<uint, string> GetSurfaceNameMap(UModelResources modelResources)
     {
         Dictionary<uint, string> surfaceNameMap = [];
-        
+
         var meshMetadata = modelResources.MeshMetadata;
         var surfaceMetadata = modelResources.SurfaceMetadata;
         if (meshMetadata == null || surfaceMetadata == null) return surfaceNameMap;
@@ -83,14 +84,14 @@ public class MutableExporter : ExporterBase
 
         return surfaceNameMap;
     }
-    
+
     private void StoreMutableMesh(FMesh mesh, Dictionary<uint, Dictionary<string, List<FMesh>>> meshes, Dictionary<uint, string> surfaceNameMap)
     {
         var skeletonIndex = mesh.SkeletonIDs.LastOrDefault(0u);
 
-        if (mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 || 
+        if (mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 ||
             !surfaceNameMap.TryGetValue(mesh.Surfaces[0].SubMeshes[0].ExternalId, out var materialSlotName)) return;
-        
+
         // TODO: Remove temp limit
         if (materialSlotName.Contains("LOD", StringComparison.OrdinalIgnoreCase)) return;
 
@@ -110,17 +111,17 @@ public class MutableExporter : ExporterBase
         {
             var skeletonSoftObject = skeletons[skeletonGroup.Key];
             var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
-            if (filterSkeletonName != null && 
+            if (filterSkeletonName != null &&
                 !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
 
             var exportAll = false;
-            
+
             if (exportAll || skeletonName.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeletonName.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
             {
                 foreach (var materialGroup in skeletonGroup.Value)
                 {
                     if (materialGroup.Key.Contains("LOD", StringComparison.OrdinalIgnoreCase)) continue;
-                    
+
                     if (exportAll || materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeletonName.Equals("SK_Figure"))
                         materialGroup.Value.ForEach(mesh =>
                             ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeletonSoftObject, true));
@@ -143,14 +144,14 @@ public class MutableExporter : ExporterBase
             }
         }
     }
-    
+
     private void ExportMutableMesh(UCustomizableObject originalCustomizableObject, List<FMesh> meshes, string materialSlotName, FSoftObjectPath skeletonSoftObject, bool appendId = false)
     {
         var mesh = meshes[0];
         meshes.RemoveAt(0);
 
         if (meshes.Count == 0 && mesh.VertexBuffers.ElementCount <= 800) return;
-        
+
         if (!mesh.TryConvert(originalCustomizableObject, materialSlotName, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         {
             Log.Logger.Warning($"Mesh '{ExportName}' has no LODs");
@@ -163,12 +164,12 @@ public class MutableExporter : ExporterBase
         {
             skeletonName = skeleton.Name;
         }
-        
+
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{materialSlotName}";
         // var meshName = materialSlotName;
         if (appendId) meshName = $"{materialSlotName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
         var exportPath = $"{skeletonName}/{meshName}";
-        
+
         var totalSockets = new List<FPackageIndex>();
         if (Options.SocketFormat != ESocketFormat.None && skeleton != null)
         {
@@ -181,10 +182,10 @@ public class MutableExporter : ExporterBase
             // var skeletonPackageIndex = new FPackageIndex(skeletonSoftObject.Owner, 0);
             new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), skeletonSoftObject, null, Options).Save(ueModelArchive);
             var outputMesh = new Mesh($"{meshName}.uemodel", ueModelArchive.GetBuffer(), convertedMesh.LODs[0].GetMaterials(Options));
-            
+
             if (!Objects.ContainsKey(skeletonName))
                 Objects.Add(skeletonName, []);
-                
+
             Objects[skeletonName].Add(new Tuple<string, Mesh>(exportPath, outputMesh));
             return;
         }

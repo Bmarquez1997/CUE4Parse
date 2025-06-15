@@ -282,7 +282,7 @@ public static class MeshConverter
         outMesh.AllocateVertexColorBuffer();
 
         // Write vertices and the tri buffer
-        
+
         uint vertOffsetTracker = 0;
         Parallel.ForEach(goodClusters, (c) =>
         {
@@ -825,16 +825,16 @@ public static class MeshConverter
         convertedMesh.LODs.Add(landscapeLod);
         return true;
     }
-    
+
     public static bool TryConvert(this FMesh originalMesh, UCustomizableObject co, string materialSlotName, out CSkeletalMesh convertedMesh, List<FMesh>? additionalLods = null)
      {
          convertedMesh = new CSkeletalMesh();
-         
-         if (!co.Private.TryLoad(out var ueExport) || ueExport is not UCustomizableObjectPrivate coPrivate)
+
+         if (!co.Private.TryLoad(out UCustomizableObjectPrivate coPrivate) || !coPrivate.ModelResources.TryLoad(out UModelResources modelResources))
              return false;
 
          USkeleton? skeleton = null;
-         var skeletonPath = coPrivate.ModelResources.Skeletons[originalMesh.SkeletonIDs.LastOrDefault(0u)];
+         var skeletonPath = modelResources.Skeletons[originalMesh.SkeletonIDs.LastOrDefault(0u)];
          if (skeletonPath.TryLoad(out var skeletonExport)
              && skeletonExport is USkeleton skeletonCast
              && skeletonCast.TryConvert(out var bones, out var box))
@@ -843,9 +843,9 @@ public static class MeshConverter
              convertedMesh.RefSkeleton.AddRange(bones);
          }
 
-         var lod0 = BuildLodObject(originalMesh, coPrivate, skeleton, materialSlotName);
+         var lod0 = BuildLodObject(originalMesh, coPrivate, modelResources, skeleton, materialSlotName);
          if (lod0 == null) return false;
-         
+
          convertedMesh.LODs.Add(lod0);
          if (additionalLods != null)
          {
@@ -853,24 +853,24 @@ public static class MeshConverter
              {
                  GetBuffer(EMeshBufferSemantic.Position, lod, out var vertChannel, out var vertBuffer);
                  if (vertBuffer == null) continue;
-                 
-                 var lodMesh = BuildLodObject(lod, coPrivate, skeleton, materialSlotName);
+
+                 var lodMesh = BuildLodObject(lod, coPrivate, modelResources, skeleton, materialSlotName);
                  if (lodMesh == null) continue;
-                 
+
                  convertedMesh.LODs.Add(lodMesh);
              }
          }
-             
+
 
          convertedMesh.FinalizeMesh();
          return true;
      }
 
     // public static CSkelMeshLod TryConvert(this FMesh originalMesh, UCustomizableObject co, out CSkeletalMesh convertedMesh)
-    private static CSkelMeshLod? BuildLodObject(FMesh originalMesh, UCustomizableObjectPrivate coPrivate, USkeleton? skeleton, string materialSlotName)
+    private static CSkelMeshLod? BuildLodObject(FMesh originalMesh, UCustomizableObjectPrivate coPrivate, UModelResources modelResources, USkeleton? skeleton, string materialSlotName)
     {
         // convertedMesh = new CSkeletalMesh();
-        
+
         GetBuffer(EMeshBufferSemantic.VertexIndex, originalMesh, out var indexChannel, out var indexBuffer);
         GetBuffer(EMeshBufferSemantic.Position, originalMesh, out var vertexChannel, out var vertexBuffer);
         GetBuffer(EMeshBufferSemantic.Normal, originalMesh, out var normalChannel, out var normalBuffer);
@@ -904,9 +904,9 @@ public static class MeshConverter
 
         var vertexCount = originalMesh.VertexBuffers.ElementCount;
         mutSkelMeshLod.AllocateVerts((int) vertexCount);
-        
-        var boneMap = BuildBoneIndexMap(originalMesh.BoneMap, coPrivate.ModelResources.BoneNamesMap, skeleton?.ReferenceSkeleton.FinalNameToIndexMap);
-        
+
+        var boneMap = BuildBoneIndexMap(originalMesh.BoneMap, modelResources.BoneNamesMap, skeleton?.ReferenceSkeleton.FinalNameToIndexMap);
+
         if (colorBuffer != null)
             mutSkelMeshLod.AllocateVertexColorBuffer();
 
@@ -926,7 +926,7 @@ public static class MeshConverter
 
             if (mutSkelMeshLod.VertexColors != null)
                 mutSkelMeshLod.VertexColors[i] = dataConverter.GetColor(colorChannel, colorBuffer, i);
-            
+
             // TODO: figure out where this comes from for mutables
             // var scale = mutSkelMeshLod.Verts[i].Infs.bUse16BitBoneWeight ? Constants.UShort_Bone_Scale : Constants.Byte_Bone_Scale;
             var scale = Constants.Byte_Bone_Scale;
@@ -941,7 +941,7 @@ public static class MeshConverter
 
         return mutSkelMeshLod;
     }
-    
+
      private static Dictionary<short, ushort>? BuildBoneIndexMap(FBoneName[] meshBoneMap,
          UScriptMap? boneNameMap, Dictionary<string, int>? finalNameToIndexMap)
      {

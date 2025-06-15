@@ -17,30 +17,21 @@ public class UCustomizableObject : UObject
     {
         base.Deserialize(Ar, validPos);
 
-        var mutableArchive = new FMutableArchive(Ar, Ar.Versions);
+        var mutableArchive = new FMutableArchive(Ar);
 
         Private = GetOrDefault<FPackageIndex>(nameof(Private));
         Version = Ar.Read<ulong>();
         Model = new FModel(mutableArchive);
     }
-    
+
     public void ReadByteCode()
     {
         var bytecodeReader = new FByteArchive("Mutable ByteCode", Model.Program.ByteCode);
         foreach (var address in Model.Program.OpAddress)
         {
             bytecodeReader.Position = address;
-
             var opType = bytecodeReader.Read<EOpType>();
         }
-    }
-
-    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
-    {
-        base.WriteJson(writer, serializer);
-
-        writer.WritePropertyName("Version");
-        serializer.Serialize(writer, $"ECustomizableObjectVersions::{Version}");
     }
 }
 
@@ -147,11 +138,11 @@ public enum EOpType : ushort
 	// Image operations
 	//-----------------------------------------------------------------------------------------
 
-	//! Combine an image on top of another one using a specific effect (Blend, SoftLight, 
+	//! Combine an image on top of another one using a specific effect (Blend, SoftLight,
 	//! Hardlight, Burn...). And optionally a mask.
 	IM_LAYER,
 
-	//! Apply a colour on top of an image using a specific effect (Blend, SoftLight, 
+	//! Apply a colour on top of an image using a specific effect (Blend, SoftLight,
 	//! Hardlight, Burn...), optionally using a mask.
 	IM_LAYERCOLOUR,
 
@@ -239,7 +230,7 @@ public enum EOpType : ushort
 	//! The meshes must have the same topology, etc.
 	ME_DIFFERENCE,
 
-	//! Apply a one morphs on a base. 
+	//! Apply a one morphs on a base.
 	ME_MORPH,
 
 	//! Merge a mesh to a mesh

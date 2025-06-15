@@ -9,7 +9,7 @@ public class FMutableArchive : FArchive
 {
     private readonly FArchive _baseArchive;
 
-    public FMutableArchive(FArchive baseArchive, VersionContainer? versions = null) : base(versions)
+    public FMutableArchive(FArchive baseArchive) : base(baseArchive.Versions)
     {
         _baseArchive = baseArchive;
     }
