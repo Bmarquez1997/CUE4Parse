@@ -50,7 +50,7 @@ public class FStaticMeshLODResources
 
         Sections = Ar.ReadArray(() => new FStaticMeshSection(Ar));
 
-        if (Ar.Game >= EGame.GAME_UE5_6)
+        if (Ar.Game >= EGame.GAME_UE5_6 && Ar.Game != EGame.GAME_FORTNITE_S35)
         {
             SourceMeshBounds = new FBoxSphereBounds(Ar);
         }
