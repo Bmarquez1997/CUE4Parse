@@ -1,6 +1,7 @@
 using System.Linq;
 using CUE4Parse_Conversion.PoseAsset.Conversion;
 using CUE4Parse.UE4.Objects.Engine.Animation;
+using Serilog;
 
 namespace CUE4Parse_Conversion.PoseAsset;
 
@@ -20,7 +21,7 @@ public static class PoseAssetConverter
         if (poseNames.Length == 0) return false;
         
         var boneTrackNames = poseContainer.Tracks;
-        if (boneTrackNames.Length == 0) return false;
+        if (boneTrackNames.Length == 0) Log.Warning("PoseAsset does not have any bone tracks");
 
         convertedPoseAsset.CurveNames = [..poseAsset.PoseContainer.Curves.Select(curve => curve.CurveName.Text)];
         
