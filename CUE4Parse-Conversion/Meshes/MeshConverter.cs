@@ -80,8 +80,7 @@ public static class MeshConverter
         out CStaticMesh convertedMesh, ENaniteMeshFormat naniteFormat = ENaniteMeshFormat.OnlyNormalLODs)
     {
         convertedMesh = new CStaticMesh();
-            // if (originalMesh.RenderData?.Bounds == null || originalMesh.RenderData?.LODs is null)
-        if (originalMesh.RenderData == null)
+        if (originalMesh.RenderData?.Bounds == null || originalMesh.RenderData?.LODs is null)
             return false;
 
         convertedMesh.BoundingSphere = new FSphere(0f, 0f, 0f, originalMesh.RenderData.Bounds.SphereRadius / 2);
