@@ -114,7 +114,8 @@ public class MutableExporter : ExporterBase
             if (filterSkeletonName != null &&
                 !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
 
-            var exportAll = false;
+            // Flag to disable makeshift LOD grouping logic
+            var exportAll = true;
 
             if (exportAll || skeletonName.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeletonName.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
             {
