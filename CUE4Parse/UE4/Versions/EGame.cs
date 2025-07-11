@@ -29,6 +29,7 @@ public enum EGame : uint
         GAME_StateOfDecay2 = GAME_UE4_13 + 1,
     GAME_UE4_14 = GameUtils.GameUe4Base + (14 << 16),
         GAME_TEKKEN7 = GAME_UE4_14 + 1,
+        GAME_TransformersOnline = GAME_UE4_14 + 2,
     GAME_UE4_15 = GameUtils.GameUe4Base + (15 << 16),
     GAME_UE4_16 = GameUtils.GameUe4Base + (16 << 16),
         GAME_PlayerUnknownsBattlegrounds = GAME_UE4_16 + 1,
@@ -105,6 +106,9 @@ public enum EGame : uint
         GAME_CrystalOfAtlan = GAME_UE4_27 + 16,
         GAME_PromiseMascotAgency = GAME_UE4_27 + 17,
         GAME_TerminullBrigade = GAME_UE4_27 + 18,
+        GAME_AshEchoes = GAME_UE4_27 + 19,
+        GAME_NeedForSpeedMobile = GAME_UE4_27 + 20,
+        GAME_TonyHawkProSkater34 = GAME_UE4_27 + 21,
     GAME_UE4_28 = GameUtils.GameUe4Base + (28 << 16),
 
     GAME_UE4_LATEST = GAME_UE4_28,
@@ -139,8 +143,8 @@ public enum EGame : uint
     GAME_UE5_4 = GameUtils.GameUe5Base + (4 << 16),
         GAME_FunkoFusion = GAME_UE5_4 + 1,
         GAME_InfinityNikki = GAME_UE5_4 + 2,
-        GAME_NevernessToEverness_CBT1 = GAME_UE5_4 + 3, // keep for now, will be removed later 
-    GAME_Gothic1Remake = GAME_UE5_4 + 4,
+        GAME_NevernessToEverness_CBT1 = GAME_UE5_4 + 3, // keep for now, will be removed later
+        GAME_Gothic1Remake = GAME_UE5_4 + 4,
         GAME_SplitFiction = GAME_UE5_4 + 5,
         GAME_WildAssault = GAME_UE5_4 + 6,
         GAME_InZOI = GAME_UE5_4 + 7,

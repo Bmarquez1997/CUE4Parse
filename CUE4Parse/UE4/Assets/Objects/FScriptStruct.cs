@@ -88,7 +88,9 @@ public class FScriptStruct
             "IntVector2" => type == ReadType.ZERO ? new TIntVector2<int>() : Ar.Read<TIntVector2<int>>(),
             "UintVector2" => type == ReadType.ZERO ? new TIntVector2<uint>() : Ar.Read<TIntVector2<uint>>(),
             "IntVector" => type == ReadType.ZERO ? new FIntVector() : Ar.Read<FIntVector>(),
+            "UintVector" => type == ReadType.ZERO ? new TIntVector3<uint>() : Ar.Read<TIntVector3<uint>>(),
             "IntVector4" => type == ReadType.ZERO ? new TIntVector4<int>() : Ar.Read<TIntVector4<int>>(),
+            "UintVector4" => type == ReadType.ZERO ? new TIntVector4<uint>() : Ar.Read<TIntVector4<uint>>(),
             "LevelSequenceObjectReferenceMap" => type == ReadType.ZERO ? new FLevelSequenceObjectReferenceMap() : new FLevelSequenceObjectReferenceMap(Ar),
             "LinearColor" => type == ReadType.ZERO ? new FLinearColor() : Ar.Read<FLinearColor>(),
             "NiagaraVariable" => new FNiagaraVariable(Ar),
@@ -172,7 +174,7 @@ public class FScriptStruct
 
             // FortniteGame
             "ConnectivityCube" => new FConnectivityCube(Ar),
-            //"FortActorRecord" => new FFortActorRecord(Ar),
+            "FortActorRecord" => new FFortActorRecord(Ar),
 
             // Train Sim World
             "DistanceQuantity" => Ar.Read<FDistanceQuantity>(),
