@@ -117,8 +117,7 @@ public class UEAnim : UEFormatExport
             metaDataChunk.Write(animStreamable.NumFrames);
             metaDataChunk.Write(framesPerSecond);
             
-            var referencePath = "empty";
-            metaDataChunk.WriteFString(referencePath);
+            metaDataChunk.WriteFString(animStreamable.RetargetSource.PlainText);
             
             metaDataChunk.Write((byte) EAdditiveAnimationType.AAT_None); // EAdditiveAnimationType
             metaDataChunk.Write((byte) EAdditiveBasePoseType.ABPT_None); // EAdditiveBasePoseType
