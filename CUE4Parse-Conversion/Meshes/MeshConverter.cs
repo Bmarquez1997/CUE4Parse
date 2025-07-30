@@ -877,6 +877,8 @@ public static class MeshConverter
         var dataConverter = new MutableDataConverter(originalMesh.IndexBuffers.ElementCount);
         var indices = dataConverter.GetIndices(indexChannel, indexBuffer);
 
+        if (indices.Length == 0) return null;
+        
         var mutSkelMeshLod = new CSkelMeshLod
         {
             NumTexCoords = uv1Buffer == null ? 1 : uv2Buffer == null ? 2 : 3,

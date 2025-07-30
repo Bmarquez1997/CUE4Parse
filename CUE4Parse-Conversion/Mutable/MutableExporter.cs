@@ -155,7 +155,7 @@ public class MutableExporter : ExporterBase
 
         if (!mesh.TryConvert(originalCustomizableObject, materialSlotName, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         {
-            Log.Logger.Warning($"Mesh '{ExportName}' has no LODs");
+            Log.Logger.Warning($"Mesh '{ExportName}.{skeletonSoftObject.AssetPathName.PlainText}.{materialSlotName}' has no LODs");
             return;
         }
 
@@ -168,7 +168,7 @@ public class MutableExporter : ExporterBase
 
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{materialSlotName}";
         // var meshName = materialSlotName;
-        if (appendId) meshName = $"{materialSlotName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
+        if (appendId) meshName = $"{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
         var exportPath = $"{skeletonName}/{meshName}";
 
         var totalSockets = new List<FPackageIndex>();

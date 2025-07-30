@@ -5,6 +5,7 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Meshes;
 using CUE4Parse.UE4.Objects.RenderCore;
+using Serilog;
 
 namespace CUE4Parse_Conversion.Meshes;
 
@@ -19,22 +20,39 @@ public class MutableDataConverter
 
     public uint[] GetIndices(FMeshBufferChannel channel, FMeshBuffer? indexBuffer)
     {
-        if (channel.ComponentCount == 0 || indexBuffer == null)
-            throw new ArgumentNullException();
+        if (channel.ComponentCount == 0 || indexBuffer == null || indexBuffer.Data.Length == 0)
+        {
+            // throw new ArgumentNullException("Index component count == 0 or indexBuffer null/empty");
+            Log.Warning("Index component count == 0 or indexBuffer null/empty");
+            return [];
+        }
 
         var indices = new uint[_indexBufferElementCount];
 
-        for (int i = 0; i < indices.Length; i++)
+        try
         {
-            indices[i] = channel.Format switch
+            for (int i = 0; i < indices.Length; i++)
             {
-                EMeshBufferFormat.UInt32 => BitConverter.ToUInt32(indexBuffer.Data, i * (int)indexBuffer.ElementSize + channel.Offset),
-                _ => throw new NotImplementedException($"Format {channel.Format} is currently not supported")
-            };
+                indices[i] = channel.Format switch
+                {
+                    EMeshBufferFormat.UInt32 => BitConverter.ToUInt32(indexBuffer.Data, i * (int)indexBuffer.ElementSize + channel.Offset),
+                    _ => throw new NotImplementedException($"Format {channel.Format} is currently not supported")
+                };
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Warning("Exception thrown reading indices");
+            return [];
         }
 
+
         if (indices.Length != _indexBufferElementCount)
-            throw new ArgumentException("indices.Length != IndexBufferElementCount");
+        {
+            // throw new ArgumentException("indices.Length != IndexBufferElementCount");
+            Log.Warning("indices.Length != IndexBufferElementCount");
+            return [];
+        }
 
         return indices;
     }
