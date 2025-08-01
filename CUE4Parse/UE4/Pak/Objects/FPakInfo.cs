@@ -63,6 +63,8 @@ public partial class FPakInfo
 
     private FPakInfo(FArchive Ar, OffsetsToTry offsetToTry)
     {
+        var startPosition = Ar.Position;
+
         var hottaVersion = 0u;
         if (Ar.Game == EGame.GAME_TowerOfFantasy && offsetToTry == OffsetsToTry.SizeHotta)
         {
@@ -234,10 +236,22 @@ public partial class FPakInfo
             IndexSize = (long) ((ulong) IndexSize ^ 0x6DB425B4BC084B4B) - 0xA8;
         }
 
-        if (Ar.Game == EGame.GAME_DeadByDaylight)
+        if (Ar.Game is EGame.GAME_DeadByDaylight or EGame.GAME_DeadByDaylight_Old)
         {
             CustomEncryptionData = Ar.ReadBytes(28);
             _ = Ar.Read<uint>();
+        }
+
+        if (Ar.Game == EGame.GAME_OnePieceAmbition)
+        {
+            var currentPosition = Ar.Position;
+            Ar.Position = IndexOffset;
+            var shift = Ar.Read<long>();
+            IndexOffset = Ar.Read<long>();
+            shift = ~shift;
+            IndexOffset ^= shift;
+            IndexSize = startPosition - IndexOffset - 17;
+            Ar.Position = currentPosition;
         }
 
         if (Version == EPakFileVersion.PakFile_Version_FrozenIndex)
@@ -320,10 +334,10 @@ public partial class FPakInfo
         Size8 = Size8_3 + 32, // added size of CompressionMethods as char[32]
         Size8a = Size8 + 32, // UE4.23 - also has version 8 (like 4.22) but different pak file structure
         Size9 = Size8a + 1, // UE4.25
-        SizeB1 = Size9 + 1, // UE4.25
+        SizeB1 = Size9 + 1, // plus 1
         //Size10 = Size8a
 
-        SiseRacingMaster = Size8 + 4, // additional int
+        SizeRacingMaster = Size8 + 4, // additional int
         SizeFTT = Size + 4, // additional int for extra magic
         SizeHotta = Size8a + 4, // additional int for custom pak version
         SizeARKSurvivalAscended = Size8a + 8, // additional 8 bytes
@@ -382,13 +396,13 @@ public partial class FPakInfo
             {
                 EGame.GAME_TowerOfFantasy or EGame.GAME_MeetYourMaker or EGame.GAME_TorchlightInfinite or EGame.GAME_EtheriaRestart => [OffsetsToTry.SizeHotta],
                 EGame.GAME_FridayThe13th => [OffsetsToTry.SizeFTT],
-                EGame.GAME_DeadByDaylight => [OffsetsToTry.SizeDbD],
+                EGame.GAME_DeadByDaylight or EGame.GAME_DeadByDaylight_Old => [OffsetsToTry.SizeDbD],
                 EGame.GAME_Farlight84 => [OffsetsToTry.SizeFarlight],
                 EGame.GAME_QQ or EGame.GAME_DreamStar => [OffsetsToTry.SizeDreamStar, OffsetsToTry.SizeQQ],
                 EGame.GAME_GameForPeace => [OffsetsToTry.SizeGameForPeace],
                 EGame.GAME_BlackMythWukong => [OffsetsToTry.SizeB1],
                 EGame.GAME_Rennsport => [OffsetsToTry.SizeRennsport],
-                EGame.GAME_RacingMaster => [OffsetsToTry.SiseRacingMaster],
+                EGame.GAME_RacingMaster => [OffsetsToTry.SizeRacingMaster],
                 EGame.GAME_ARKSurvivalAscended or EGame.GAME_PromiseMascotAgency => [OffsetsToTry.SizeARKSurvivalAscended],
                 EGame.GAME_KartRiderDrift => [.._offsetsToTry, OffsetsToTry.SizeKartRiderDrift],
                 EGame.GAME_DuneAwakening => [OffsetsToTry.SizeDuneAwakening],
@@ -397,7 +411,18 @@ public partial class FPakInfo
             foreach (var offset in offsetsToTry)
             {
                 reader.Seek(-(long) offset, SeekOrigin.End);
-                var info = new FPakInfo(reader, offset);
+                FPakInfo info;
+                if (Ar.Game == EGame.GAME_OnePieceAmbition)
+                {
+                    var currentOffset = Ar.Position;
+                    Ar.Position -= (long)offset;
+                    info = new FPakInfo(Ar, offset);
+                    Ar.Position = currentOffset;
+                }
+                else
+                {
+                    info = new FPakInfo(reader, offset);
+                }
 
                 var found = Ar.Game switch
                 {

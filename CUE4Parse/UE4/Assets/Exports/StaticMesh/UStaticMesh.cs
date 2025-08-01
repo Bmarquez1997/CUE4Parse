@@ -89,6 +89,8 @@ public class UStaticMesh : UObject
             }
         }
 
+        if (Ar.Game == EGame.GAME_FateTrigger) Ar.Position += 4;
+
         if (Ar.Game >= EGame.GAME_UE4_14)
         {
             var bHasSpeedTreeWind = Ar.ReadBoolean();
@@ -126,6 +128,17 @@ public class UStaticMesh : UObject
             EGame.GAME_DaysGone => Ar.Read<int>() * 4,
             _ => 0
         };
+    }
+
+    public void OverrideMaterials(FPackageIndex[] materials)
+    {
+        for (var i = 0; i < materials.Length; i++)
+        {
+            if (i >= Materials.Length) break;
+            if (materials[i].IsNull) continue;
+
+            Materials[i] = materials[i].ResolvedObject;
+        }
     }
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
