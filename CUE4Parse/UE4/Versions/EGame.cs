@@ -171,7 +171,7 @@ public enum EGame : uint
         GAME_FORTNITE_S35 = GAME_UE5_6 + 1,
     GAME_UE5_7 = GameUtils.GameUe5Base + (7 << 16),
 
-    GAME_UE5_LATEST = GAME_UE5_6
+    GAME_UE5_LATEST = GAME_UE5_7
 }
 
 public static class GameUtils
