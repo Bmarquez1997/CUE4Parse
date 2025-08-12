@@ -1,4 +1,5 @@
-﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+﻿using System;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
@@ -8,6 +9,7 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Roms;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Engine.Curves;
+using Serilog;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 
@@ -54,17 +56,24 @@ public class FProgram
         ConstantMeshes = Ar.ReadArray(() => new FMeshContentRange(Ar));
         ConstantExtensionData = Ar.ReadArray(() => new FExtensionDataConstant(Ar));
         ConstantStrings = Ar.ReadArray(Ar.ReadFString);
-        // ConstantUInt32Lists = Ar.ReadArray(Ar.ReadArray<uint>);
-        // ConstantUInt64Lists = Ar.ReadArray(Ar.ReadArray<ulong>);
-        ConstantLayouts = Ar.ReadPtrArray(() => new FLayout(Ar));
-        ConstantProjectors = Ar.ReadArray<FProjector>();
-        ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
-        ConstantShapes = Ar.ReadArray<FShape>();
-        ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
-        ConstantSkeletons = Ar.ReadPtrArray(() => new FSkeleton(Ar));
-        ConstantPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
-        Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
-        Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
-        ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
+        ConstantUInt32Lists = Ar.ReadArray(Ar.ReadArray<uint>);
+        ConstantUInt64Lists = Ar.ReadArray(Ar.ReadArray<ulong>);
+        try
+        {
+            ConstantLayouts = Ar.ReadPtrArray(() => new FLayout(Ar));
+            ConstantProjectors = Ar.ReadArray<FProjector>();
+            ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
+            ConstantShapes = Ar.ReadArray<FShape>();
+            ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
+            ConstantSkeletons = Ar.ReadPtrArray(() => new FSkeleton(Ar));
+            //ConstantPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
+            Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
+            Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
+            ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
+        }
+        catch (Exception e)
+        {
+            Log.Warning("Exception thrown reading FProgram: {0}", e);
+        }
     }
 }

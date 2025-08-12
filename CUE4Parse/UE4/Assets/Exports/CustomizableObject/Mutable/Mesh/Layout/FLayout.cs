@@ -1,4 +1,5 @@
-﻿using CUE4Parse.UE4.Assets.Readers;
+﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Readers;
 using FIntVector2 = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<int>;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
@@ -10,14 +11,16 @@ public class FLayout
     public FLayoutBlock[] Blocks;
     public EPackStrategy Strategy;
     public EReductionMethod ReductionMethod;
+    public FImage[] Masks;
 
     public FLayout(FMutableArchive Ar)
     {
         Size = Ar.Read<FIntVector2>();
-        Blocks = Ar.ReadArray(() => new FLayoutBlock(Ar));
         MaxSize = Ar.Read<FIntVector2>();
         Strategy = Ar.Read<EPackStrategy>();
         ReductionMethod = Ar.Read<EReductionMethod>();
+        Blocks = Ar.ReadArray(() => new FLayoutBlock(Ar));
+        Masks = Ar.ReadPtrArray(() => new FImage(Ar));
     }
 }
 
