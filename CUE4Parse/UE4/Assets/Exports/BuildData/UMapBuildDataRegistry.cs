@@ -26,6 +26,7 @@ public class UMapBuildDataRegistry : UObject
         base.Deserialize(Ar, validPos);
 
         var stripFlags = new FStripDataFlags(Ar);
+        if (Ar.Game is EGame.GAME_Farlight84) return;
 
         if (!stripFlags.IsAudioVisualDataStripped())
         {
@@ -497,6 +498,7 @@ public class FShadowMap2D : FShadowMap
             const float LegacyValue = 1.0f / .05f;
             InvUniformPenumbraSize = new FVector4(LegacyValue);
         }
+        if (Ar.Game == EGame.GAME_Snowbreak) Ar.Position += 20;
     }
 }
 
