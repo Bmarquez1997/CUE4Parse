@@ -23,6 +23,7 @@ public class ULandscapeComponent: UPrimitiveComponent
     public FGuid MapBuildDataId;
     
     public Lazy<UTexture2D[]> WeightmapTextures;
+    [UProperty] public UTexture2D HeightmapTexture;
     
     public FMeshMapBuildData? LegacyMapBuildData;
     public FLandscapeComponentGrassData GrassData;
