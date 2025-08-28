@@ -26,11 +26,13 @@ public class MutableExporter : ExporterBase
     // <SkeletonName, (MeshName, Mesh)>
     public readonly Dictionary<string, List<Tuple<string, Mesh>>> Objects;
     public readonly List<CTexture> Images;
+    public int meshIndex;
 
     public MutableExporter(UCustomizableObject original, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(original, options)
     {
         Objects = [];
         Images = [];
+        meshIndex = 0;
 
         // <skeletonIndex, <MaterialSlot, Meshes>>
         Dictionary<uint, Dictionary<string, List<FMesh>>> meshes = [];
@@ -168,7 +170,7 @@ public class MutableExporter : ExporterBase
 
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{materialSlotName}";
         // var meshName = materialSlotName;
-        if (appendId) meshName = $"{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
+        if (appendId) meshName = $"{meshIndex++}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
         var exportPath = $"{skeletonName}/{meshName}";
 
         var totalSockets = new List<FPackageIndex>();

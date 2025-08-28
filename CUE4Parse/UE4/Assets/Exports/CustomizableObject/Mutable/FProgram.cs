@@ -2,6 +2,7 @@
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Material;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
@@ -40,6 +41,7 @@ public class FProgram
     public FParameterDesc[] Parameters;
     public FRangeDesc[] Ranges;
     public ushort[][] ParameterLists;
+    public FMaterial[] ConstantMaterials;
 
     public FProgram(FMutableArchive Ar)
     {
@@ -70,6 +72,7 @@ public class FProgram
             Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
             Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
             ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
+            ConstantMaterials = Ar.ReadPtrArray(() => new FMaterial(Ar));
         }
         catch (Exception e)
         {
