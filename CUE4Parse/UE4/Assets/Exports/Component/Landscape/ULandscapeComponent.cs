@@ -1,5 +1,6 @@
 using System;
 using CUE4Parse.UE4.Assets.Exports.BuildData;
+using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
@@ -24,6 +25,7 @@ public class ULandscapeComponent: UPrimitiveComponent
     
     public Lazy<UTexture2D[]> WeightmapTextures;
     [UProperty] public UTexture2D HeightmapTexture;
+    [UProperty] public UMaterialInterface OverrideMaterial;
     
     public FMeshMapBuildData? LegacyMapBuildData;
     public FLandscapeComponentGrassData GrassData;
