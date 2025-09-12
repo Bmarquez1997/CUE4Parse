@@ -1,6 +1,5 @@
 ﻿using System;
 using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
 
@@ -11,7 +10,7 @@ public class FParameterDesc
     public string Name;
     public FGuid UID;
     public EParameterType Type;
-    public object DefaultValue;
+    public object? DefaultValue;
     public uint[] Ranges;
     public FIntValueDesc[] PossibleValues;
 
@@ -24,13 +23,15 @@ public class FParameterDesc
         Ar.Position += 1;
         DefaultValue = Type switch
         {
+            EParameterType.None or EParameterType.Image => null,
+            EParameterType.Bool => Ar.ReadBoolean(),
             EParameterType.Int => Ar.Read<int>(),
             EParameterType.Float => Ar.Read<float>(),
             EParameterType.Color => Ar.Read<FVector4>(),
             EParameterType.Projector => Ar.Read<FProjector>(),
-            EParameterType.Image => Ar.ReadFName(),
+            EParameterType.String => Ar.ReadString(),
             EParameterType.Matrix => new FMatrix(Ar, false),
-            _ => throw new NotSupportedException($"Type '{Type}' is currently not supported")
+            _ => throw new NotSupportedException($"Type {Type} is currently not supported")
         };
 
         Ranges = Ar.ReadArray<uint>();
