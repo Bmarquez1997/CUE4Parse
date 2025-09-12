@@ -9,7 +9,7 @@ namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Material;
 public class FMaterial
 {
     public int ReferenceID;
-    public Dictionary<FName, FImage?> ImageParameters;
+    public Dictionary<FName, TVariant<uint, FImage?>?> ImageParameters;
     public Dictionary<FName, FVector4> ColorParameters;
     public Dictionary<FName, float> ScalarParameters;
     
@@ -17,7 +17,7 @@ public class FMaterial
     public FMaterial(FMutableArchive Ar)
     {
         ReferenceID = Ar.Read<int>();
-        ImageParameters = Ar.ReadMap(() => (Ar.ReadFName(), Ar.ReadPtr(() => new FImage(Ar))));
+        ImageParameters = Ar.ReadMap(() => (Ar.ReadFName(), Ar.ReadTVariant(Ar.Read<uint>, () => Ar.ReadPtr(() => new FImage(Ar)))));
         ColorParameters = Ar.ReadMap(() => (Ar.ReadFName(), Ar.Read<FVector4>()));
         ScalarParameters = Ar.ReadMap(() => (Ar.ReadFName(), Ar.Read<float>()));
     }

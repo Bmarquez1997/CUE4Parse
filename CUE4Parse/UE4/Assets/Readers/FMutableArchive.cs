@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
 
@@ -58,5 +59,17 @@ public class FMutableArchive : FArchive
     {
         var id = Read<int>();
         return id == -1 ? default : getter();
+    }
+
+    public TVariant<T1, T2>? ReadTVariant<T1, T2>(Func<T1> getter1, Func<T2> getter2)
+    {
+        var variantIndex = Read<byte>();
+
+        return variantIndex switch
+        {
+            0 => new TVariant<T1, T2>(getter1()),
+            1 => new TVariant<T1, T2>(getter2()),
+            _ => throw new IndexOutOfRangeException($"Index {variantIndex} out of bounds")
+        };
     }
 }
