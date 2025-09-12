@@ -54,7 +54,7 @@ namespace CUE4Parse.UE4.Pak
                 EGame.GAME_InfinityNikki or EGame.GAME_MeetYourMaker or EGame.GAME_DeadByDaylight or EGame.GAME_WutheringWaves
                     or EGame.GAME_Snowbreak or EGame.GAME_TorchlightInfinite or EGame.GAME_TowerOfFantasy
                     or EGame.GAME_TheDivisionResurgence or EGame.GAME_QQ or EGame.GAME_DreamStar
-                    or EGame.GAME_EtheriaRestart or EGame.GAME_DeadByDaylight_Old => true,
+                    or EGame.GAME_EtheriaRestart or EGame.GAME_DeadByDaylight_Old or EGame.GAME_WorldofJadeDynasty => true,
                 _ => false
             };
         }
@@ -88,6 +88,8 @@ namespace CUE4Parse.UE4.Pak
                         return RennsportCompressedExtract(reader, pakEntry);
                     case EGame.GAME_DragonQuestXI:
                         return DQXIExtract(reader, pakEntry);
+                    case EGame.GAME_ArenaBreakoutInifinite:
+                        return ABIExtract(reader, pakEntry);
                 }
 
                 var uncompressed = new byte[(int) pakEntry.UncompressedSize];
@@ -117,6 +119,8 @@ namespace CUE4Parse.UE4.Pak
                     return RennsportExtract(reader, pakEntry);
                 case EGame.GAME_DragonQuestXI:
                     return DQXIExtract(reader, pakEntry);
+                case EGame.GAME_ArenaBreakoutInifinite:
+                    return ABIExtract(reader, pakEntry);
             }
 
             // Pak Entry is written before the file data,

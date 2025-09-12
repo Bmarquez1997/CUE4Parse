@@ -23,6 +23,7 @@ public class UStaticMesh : UObject
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
+        if(Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 12;
         base.Deserialize(Ar, validPos);
         Materials = [];
         LODForCollision = GetOrDefault(nameof(LODForCollision), 0);
@@ -62,7 +63,6 @@ public class UStaticMesh : UObject
             };
         }
 
-
         if (Ar.Game == EGame.GAME_WutheringWaves && GetOrDefault<bool>("bUseKuroLODDistance") && Ar.ReadBoolean())
         {
             Ar.Position += 64; // 8 per-platform floats
@@ -96,7 +96,7 @@ public class UStaticMesh : UObject
             }
         }
 
-        if (Ar.Game is EGame.GAME_FateTrigger) Ar.Position += 4;
+        if (Ar.Game is EGame.GAME_FateTrigger or EGame.GAME_GhostsofTabor) Ar.Position += 4;
 
         if (Ar.Game >= EGame.GAME_UE4_14)
         {
@@ -132,7 +132,7 @@ public class UStaticMesh : UObject
         {
             EGame.GAME_OutlastTrials => 1,
             EGame.GAME_Farlight84 or EGame.GAME_DuneAwakening => 4,
-            EGame.GAME_DaysGone => Ar.Read<int>() * 4,
+            EGame.GAME_DaysGone => Ar.Read<int>() * 4 + 4,
             _ => 0
         };
     }

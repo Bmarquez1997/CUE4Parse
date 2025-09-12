@@ -2202,6 +2202,12 @@ public class FStaticMeshSectionConverter : JsonConverter<FStaticMeshSection>
         writer.WritePropertyName("bVisibleInRayTracing");
         writer.WriteValue(value.bVisibleInRayTracing);
 
+        if (value.CustomData.HasValue)
+        {
+            writer.WritePropertyName("CustomData");
+            writer.WriteValue(value.CustomData.Value);
+        }
+
         writer.WriteEndObject();
     }
 

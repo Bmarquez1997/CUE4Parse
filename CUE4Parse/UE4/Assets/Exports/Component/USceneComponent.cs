@@ -35,6 +35,7 @@ public class USceneComponent : UActorComponent
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
         base.Deserialize(Ar, validPos);
+        if (Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 4;
         
         RelativeLocation = GetOrDefault(nameof(RelativeLocation), FVector.ZeroVector);
         RelativeRotation = GetOrDefault(nameof(RelativeRotation), FRotator.ZeroRotator);
@@ -56,13 +57,13 @@ public class USceneComponent : UActorComponent
     {
         var current = this;
         FVector? topMostScale = null;
-        
+
         while (current != null)
         {
             var foundLoc = current.TryGetValue(out FVector loc, "RelativeLocation");
             var foundRot = current.TryGetValue(out FRotator rot, "RelativeRotation");
             var foundScale = current.TryGetValue(out FVector scale, "RelativeScale3D");
-            
+
             // keep the top-most scale if found
             if (foundScale && topMostScale == null)
             {

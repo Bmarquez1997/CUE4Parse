@@ -22,7 +22,7 @@ public class ULandscapeComponent: UPrimitiveComponent
     public FWeightmapLayerAllocationInfo[] WeightmapLayerAllocations;
     public FBox CachedLocalBox;
     public FGuid MapBuildDataId;
-    
+
     public Lazy<UTexture2D[]> WeightmapTextures;
     [UProperty] public UTexture2D HeightmapTexture;
     [UProperty] public UMaterialInterface OverrideMaterial;
@@ -33,6 +33,7 @@ public class ULandscapeComponent: UPrimitiveComponent
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
+        if (Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 20;
         base.Deserialize(Ar, validPos);
         SectionBaseX = GetOrDefault(nameof(SectionBaseX), 0);
         SectionBaseY = GetOrDefault(nameof(SectionBaseY), 0);
@@ -47,7 +48,7 @@ public class ULandscapeComponent: UPrimitiveComponent
         MapBuildDataId = GetOrDefault<FGuid>(nameof(MapBuildDataId));
         // throw new NotImplementedException();
         WeightmapTextures = new Lazy<UTexture2D[]>(() => GetOrDefault<UTexture2D[]>("WeightmapTextures", []));
-        
+
         if (FRenderingObjectVersion.Get(Ar) < FRenderingObjectVersion.Type.MapBuildDataSeparatePackage)
         {
             LegacyMapBuildData = new FMeshMapBuildData();
