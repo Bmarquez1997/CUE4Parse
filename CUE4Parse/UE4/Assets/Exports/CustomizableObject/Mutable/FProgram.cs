@@ -29,8 +29,8 @@ public class FProgram
     public FMeshContentRange[] ConstantMeshes;
     public FExtensionDataConstant[] ConstantExtensionData;
     public string[] ConstantStrings;
-    public uint[][] ConstantUInt32Lists; //?
-    public ulong[][] ConstantUInt64Lists; //?
+    public uint[][] ConstantUInt32Lists;
+    public ulong[][] ConstantUInt64Lists;
     public FLayout[] ConstantLayouts;
     public FProjector[] ConstantProjectors;
     public FMatrix[] ConstantMatrices;
