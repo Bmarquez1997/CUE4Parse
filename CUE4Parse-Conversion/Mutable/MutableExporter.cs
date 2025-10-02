@@ -45,14 +45,19 @@ public class MutableExporter : ExporterBase
 
         var surfaceNameMap = GetSurfaceNameMap(modelResources);
 
+        var exportImages = false; //TODO: make this a config that's passed in
+        
         for (uint index = 0; index < original.Model.Program.Roms.Length; index++)
         {
             var rom = original.Model.Program.Roms[index];
             switch (rom.ResourceType)
             {
                 case ERomDataType.Image:
-                    // var image = loader.LoadImage(index);
-                    // ExportMutableImage(image);
+                    if (exportImages)
+                    {
+                        var image = loader.LoadImage(index);
+                        ExportMutableImage(image);
+                    }
                     break;
                 case ERomDataType.Mesh:
                     var mesh = loader.LoadMesh(index);

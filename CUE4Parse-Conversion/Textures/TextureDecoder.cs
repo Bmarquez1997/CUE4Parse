@@ -263,11 +263,17 @@ public static class TextureDecoder
             EImageFormat.RGBA_UByteRLE => UncompressRLE_RGBA(size.X, size.Y, rawBytes),
             _ => throw new NotImplementedException($"Mutable image format not supported: {dataStorage.ImageFormat}")
         };
+
+        if (dataStorage.ImageFormat is EImageFormat.BC5)
+        {
+            for (var i = 0; i < size.X * size.Y; i++)
+                decodedBytes[i * 4] = BCDecoder.GetZNormal(decodedBytes[i * 4 + 2], decodedBytes[i * 4 + 1]);
+        }
         
         var imageFormat = dataStorage.ImageFormat switch
         {
-            EImageFormat.BC5 => EPixelFormat.PF_BC5,
-            EImageFormat.BC4 => EPixelFormat.PF_G8,
+            EImageFormat.BC5 => EPixelFormat.PF_B8G8R8A8,
+            EImageFormat.BC4 => EPixelFormat.PF_B8G8R8A8,
             EImageFormat.BC3 => EPixelFormat.PF_R8G8B8A8,
             EImageFormat.BC1 => EPixelFormat.PF_R8G8B8A8,
             EImageFormat.L_UByte => EPixelFormat.PF_G8,
