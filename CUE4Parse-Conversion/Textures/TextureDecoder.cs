@@ -273,7 +273,7 @@ public static class TextureDecoder
         var imageFormat = dataStorage.ImageFormat switch
         {
             EImageFormat.BC5 => EPixelFormat.PF_B8G8R8A8,
-            EImageFormat.BC4 => EPixelFormat.PF_B8G8R8A8,
+            EImageFormat.BC4 => EPixelFormat.PF_G8,
             EImageFormat.BC3 => EPixelFormat.PF_R8G8B8A8,
             EImageFormat.BC1 => EPixelFormat.PF_R8G8B8A8,
             EImageFormat.L_UByte => EPixelFormat.PF_G8,
