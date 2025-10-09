@@ -910,10 +910,7 @@ public static class MeshConverter
             NumTexCoords = uv1Buffer == null ? 1 : uv2Buffer == null ? 2 : 3,
             HasNormals = true,
             HasTangents = tangentBuffer != null,
-            Indices = new Lazy<FRawStaticIndexBuffer>(() => new FRawStaticIndexBuffer
-            {
-                Indices32 = indices
-            }),
+            Indices = new Lazy<uint[]>(() => indices),
             Sections = new Lazy<CMeshSection[]>(() =>
             {
                 var sections = new CMeshSection[1];
