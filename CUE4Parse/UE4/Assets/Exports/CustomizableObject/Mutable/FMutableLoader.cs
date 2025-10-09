@@ -59,4 +59,19 @@ public class FMutableLoader
 
         return archive;
     }
+    
+    public List<EOpType> ReadByteCode()
+    {
+        List<EOpType> returnList = [];
+        var bytecodeReader = new FByteArchive("Mutable ByteCode", _customizableObject.Model.Program.ByteCode);
+        foreach (var address in _customizableObject.Model.Program.OpAddress)
+        {
+            bytecodeReader.Position = address;
+
+            var opCodeType = bytecodeReader.Read<EOpType>();
+            returnList.Add(opCodeType);
+        }
+
+        return returnList;
+    }
 }

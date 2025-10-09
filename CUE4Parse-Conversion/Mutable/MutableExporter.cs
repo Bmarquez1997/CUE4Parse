@@ -38,7 +38,16 @@ public class MutableExporter : ExporterBase
         Dictionary<uint, Dictionary<string, List<FMesh>>> meshes = [];
 
         var loader = new FMutableLoader(original);
-        //var opCodes = loader.ReadByteCode();
+        // var opCodes = loader.ReadByteCode();
+        //
+        // var counts = opCodes
+        //     .GroupBy(op => op)
+        //     .ToDictionary(g => g.Key, g => g.Count());
+        //
+        // foreach (var kvp in counts)
+        // {
+        //     Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+        // }
 
         if (!original.Private.TryLoad(out UCustomizableObjectPrivate coPrivate) || !coPrivate.ModelResources.TryLoad(out UModelResources modelResources))
             return;
