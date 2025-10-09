@@ -125,7 +125,7 @@ public class UEModel : UEFormatExport
         skeletonChunk.Serialize(Ar);
     }
 
-    private void SerializeStaticMeshData(FArchiveWriter archive, IReadOnlyCollection<CMeshVertex> verts, FRawStaticIndexBuffer indices, FColor[]? vertexColors, CVertexColor[]? extraVertexColors, CMeshSection[] sections, FMeshUVFloat[][] extraUVs)
+    private void SerializeStaticMeshData(FArchiveWriter archive, IReadOnlyCollection<CMeshVertex> verts, uint[] indices, FColor[]? vertexColors, CVertexColor[]? extraVertexColors, CMeshSection[] sections, FMeshUVFloat[][] extraUVs)
     {
         using var vertexChunk = new FDataChunk("VERTICES", verts.Count);
         using var normalsChunk = new FDataChunk("NORMALS", verts.Count);
