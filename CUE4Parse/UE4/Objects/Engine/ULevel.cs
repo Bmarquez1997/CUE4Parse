@@ -108,6 +108,7 @@ public class ULevel : Assets.Exports.UObject
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
         base.Deserialize(Ar, validPos);
+        if (Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 16;
         if (Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject) || Ar.Position >= validPos) return;
         if (FReleaseObjectVersion.Get(Ar) < FReleaseObjectVersion.Type.LevelTransArrayConvertedToTArray) Ar.Position += 4;
         Actors = Ar.ReadArray(() => new FPackageIndex(Ar));
@@ -119,7 +120,7 @@ public class ULevel : Assets.Exports.UObject
         NavListStart = new FPackageIndex(Ar);
         NavListEnd = new FPackageIndex(Ar);
         if (Ar.Game == EGame.GAME_MetroAwakening && GetOrDefault<bool>("bIsLightingScenario")) return;
-        if (Ar.Game == EGame.GAME_StateOfDecay2 && Ar.ReadBoolean()) return;
+        if (Ar.Game is EGame.GAME_StateOfDecay2 or EGame.GAME_WeHappyFew && Ar.ReadBoolean()) return;
         PrecomputedVisibilityHandler = new FPrecomputedVisibilityHandler(Ar);
         PrecomputedVolumeDistanceField = new FPrecomputedVolumeDistanceField(Ar);
     }

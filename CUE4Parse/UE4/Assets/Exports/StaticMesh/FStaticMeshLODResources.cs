@@ -89,7 +89,7 @@ public class FStaticMeshLODResources
                     case EGame.GAME_TheDivisionResurgence:
                         Ar.Position += 12;
                         break;
-                    case EGame.GAME_InfinityNikki when Sections.Any(x => x.CustomData == 1):
+                    case EGame.GAME_InfinityNikki when Sections.Any(x => x.CustomData.HasValue && x.CustomData.Value == 1):
                         _ = Ar.ReadArray(4, () => new FRawStaticIndexBuffer(Ar));
                         break;
                 }
@@ -99,9 +99,8 @@ public class FStaticMeshLODResources
                 var bulkData = new FByteBulkData(assetArchive);
                 if (bulkData.Header.ElementCount > 0 && bulkData.Data != null)
                 {
-                    var tempAr = new FByteArchive("StaticMeshBufferReader", bulkData.Data, Ar.Versions);
+                    using var tempAr = new FByteArchive("StaticMeshBufferReader", bulkData.Data, Ar.Versions);
                     SerializeBuffers(tempAr);
-                    tempAr.Dispose();
                 }
 
                 // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/Engine/Private/StaticMesh.cpp#L560
@@ -125,6 +124,7 @@ public class FStaticMeshLODResources
                 {
                     >= EGame.GAME_UE5_6 => 6 * 4, // RawDataHeader = 6x uint32
                     EGame.GAME_SuicideSquad => 29,
+                    EGame.GAME_ArenaBreakoutInfinite => 16,
                     EGame.GAME_StarWarsJediSurvivor or EGame.GAME_DeltaForceHawkOps => 4, // bDropNormals
                     EGame.GAME_FateTrigger => 5,
                     _ => 0
@@ -253,6 +253,12 @@ public class FStaticMeshLODResources
                 AdjacencyIndexBuffer = new FRawStaticIndexBuffer(Ar);
         }
 
+        if (Ar.Game == EGame.GAME_ArenaBreakoutInfinite)
+        {
+            _ = new FRawStaticIndexBuffer(Ar);
+            _ = new FRawStaticIndexBuffer(Ar);
+        }
+
         if (Ar.Game == EGame.GAME_FinalFantasy7Rebirth)
         {
             if (FF7FStaticMeshLODResources.SerializeIndexBuffer(Ar, out var sections, out var indexBuffer))
@@ -262,7 +268,7 @@ public class FStaticMeshLODResources
                 {
                     Sections[i].NumTriangles = sections[i];
                 }
-                IndexBuffer.Indices32 = indexBuffer;
+                IndexBuffer.SetIndices(indexBuffer);
             }
         }
 

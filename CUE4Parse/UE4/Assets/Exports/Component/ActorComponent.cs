@@ -3,6 +3,7 @@ using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Component.Lights;
 using CUE4Parse.UE4.Assets.Exports.Component.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Exports.Component.StaticMesh;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.UObject;
@@ -22,6 +23,7 @@ public class UActorComponent : UObject
             return;
 
         if (Ar.Game is EGame.GAME_SuicideSquad) Ar.Position += 4;
+        if (Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 16;
 
         if (FFortniteReleaseBranchCustomObjectVersion.Get(Ar) >= FFortniteReleaseBranchCustomObjectVersion.Type.ActorComponentUCSModifiedPropertiesSparseStorage)
         {
@@ -61,7 +63,23 @@ public class UBasicLineSetComponentBase : UMeshComponent;
 public class UBasicPointSetComponentBase : UMeshComponent;
 public class UBasicTriangleSetComponentBase : UMeshComponent;
 public class UBehaviorTreeComponent : UBrainComponent;
-public class UBillboardComponent : UPrimitiveComponent;
+
+public class UBillboardComponent : UPrimitiveComponent
+{
+    public UTexture2D? GetSprite()
+    {
+        var current = this;
+        while (current != null)
+        {
+            var sprite = current.GetOrDefault<UTexture2D?>("Sprite");
+            if (sprite != null) return sprite;
+            
+            current = current.Template?.Load<UBillboardComponent>();
+        }
+        
+        return Owner?.Provider?.LoadPackageObject<UTexture2D>("Engine/Content/EditorResources/S_Actor.S_Actor");
+    }
+}
 public class UBlackboardComponent : UActorComponent;
 public class UBoundsCopyComponent : UActorComponent;
 public class UBoxComponent : UShapeComponent;
@@ -169,6 +187,8 @@ public class UMediaComponent : UActorComponent;
 public class UMediaPlateComponent : UActorComponent;
 public class UMediaSoundComponent : USynthComponent;
 public class UMeshComponent : UPrimitiveComponent;
+public class UWaterBodyComponent : UPrimitiveComponent;
+public class UWaterMeshComponent : UMeshComponent;
 public class UMeshWireframeComponent : UMeshComponent;
 public class UMockDataMeshTrackerComponent : USceneComponent;
 public class UMockGameplayTasksComponent : UGameplayTasksComponent;
@@ -209,7 +229,25 @@ public class UPaperTerrainComponent : UPrimitiveComponent;
 public class UPaperTerrainSplineComponent : USplineComponent;
 public class UPaperTileMapComponent : UMeshComponent;
 public class UPaperTileMapRenderComponent : UPaperTileMapComponent;
-public class UParticleSystemComponent : UFXSystemComponent;
+
+public class UParticleSystemComponent : UFXSystemComponent
+{
+    public override void Deserialize(FAssetArchive Ar, long validPos)
+    {
+        if(Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 16;
+        base.Deserialize(Ar, validPos);
+    }
+}
+
+public class UParticleSystem : UObject
+{
+    public override void Deserialize(FAssetArchive Ar, long validPos)
+    {
+        if(Ar.Game == EGame.GAME_WorldofJadeDynasty) Ar.Position += 8;
+        base.Deserialize(Ar, validPos);
+    }
+}
+
 public class UPathFollowingComponent : UActorComponent;
 public class UPawnActionsComponent : UActorComponent;
 public class UPawnMovementComponent : UNavMovementComponent;
@@ -274,7 +312,6 @@ public class USynthComponentMonoWaveTable : USynthComponent;
 public class USynthComponentToneGenerator : USynthComponent;
 public class USynthSamplePlayer : USynthComponent;
 public class UTestPhaseComponent : USceneComponent;
-public class UTextRenderComponent : UPrimitiveComponent;
 public class UTimelineComponent : UActorComponent;
 public class UToFloatField : UFieldNodeFloat;
 public class UToIntegerField : UFieldNodeInt;
