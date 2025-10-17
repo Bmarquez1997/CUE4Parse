@@ -27,6 +27,9 @@ public class MutableExporter : ExporterBase
     public readonly Dictionary<string, List<Tuple<string, Mesh>>> Objects;
     public readonly List<CTexture> Images;
     public int meshIndex;
+    
+    // Flag to disable makeshift LOD grouping logic
+    private bool exportAll = true;
 
     public MutableExporter(UCustomizableObject original, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(original, options)
     {
@@ -114,6 +117,8 @@ public class MutableExporter : ExporterBase
         if (!meshes.ContainsKey(skeletonIndex))
             meshes[skeletonIndex] = [];
 
+        if (exportAll) materialSlotName = "Mesh";
+        
         if (!meshes[skeletonIndex].ContainsKey(materialSlotName))
             meshes[skeletonIndex][materialSlotName] = [];
 
@@ -129,9 +134,6 @@ public class MutableExporter : ExporterBase
             var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
             if (filterSkeletonName != null &&
                 !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
-
-            // Flag to disable makeshift LOD grouping logic
-            var exportAll = true;
 
             if (exportAll || skeletonName.Contains("Wheel", StringComparison.OrdinalIgnoreCase) || skeletonName.Contains("Shoe", StringComparison.OrdinalIgnoreCase) || ExportName.StartsWith("CO_Figure"))
             {
@@ -167,11 +169,11 @@ public class MutableExporter : ExporterBase
         var mesh = meshes[0];
         meshes.RemoveAt(0);
 
-        if (meshes.Count == 0 && mesh.VertexBuffers.ElementCount <= 800) return;
+        var matName = exportAll ? (mesh.Surfaces[0].SubMeshes[0].ExternalId.ToString()) : materialSlotName;
 
-        if (!mesh.TryConvert(originalCustomizableObject, materialSlotName, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
+        if (!mesh.TryConvert(originalCustomizableObject, matName, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         {
-            Log.Logger.Warning($"Mesh '{ExportName}.{skeletonSoftObject.AssetPathName.PlainText}.{materialSlotName}' has no LODs");
+            Log.Logger.Warning($"Mesh '{ExportName}.{skeletonSoftObject.AssetPathName.PlainText}.{matName}' has no LODs");
             return;
         }
 
@@ -182,7 +184,7 @@ public class MutableExporter : ExporterBase
             skeletonName = skeleton.Name;
         }
 
-        var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{materialSlotName}";
+        var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{matName}";
         // var meshName = materialSlotName;
         if (appendId) meshName = $"{meshIndex++}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
         var exportPath = $"{skeletonName}/{meshName}";
