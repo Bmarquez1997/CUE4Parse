@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using AssetRipper.TextureDecoder.Bc;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 
 namespace CUE4Parse_Conversion.Textures.BC
 {
@@ -84,6 +86,36 @@ namespace CUE4Parse_Conversion.Textures.BC
             return ret;
         }
 
+        public static byte[] LayerAssetRipper(byte[] inp, int sizeX, int sizeY, int sizeZ, EPixelFormat format)
+        {
+            byte[] ret = new byte[sizeX * sizeY * sizeZ * 4]; // BGRA32 (4 bytes per pixel)
+
+            var offset = sizeX * sizeY;
+            for (var i = 0; i < sizeZ; i++)
+            {
+                var startIndex = (i * offset);
+                var layerBytes = inp[startIndex .. (startIndex + offset)];
+                byte[] layerData = [];
+                switch (format)
+                {
+                    case EPixelFormat.PF_BC4:
+                        Bc4.Decompress(layerBytes, sizeX, sizeY, out layerData);
+                        break;
+                    case EPixelFormat.PF_BC5:
+                        Bc5.Decompress(layerBytes, sizeX, sizeY, out layerData);
+                        break;
+                    case EPixelFormat.PF_BC7:
+                        Bc7.Decompress(layerBytes, sizeX, sizeY, out layerData);
+                        break;
+                    case EPixelFormat.PF_BC6H:
+                        Bc6h.Decompress(layerBytes, sizeX, sizeY, false, out layerData);
+                        break;
+                }
+                Array.Copy(layerData, 0, ret, startIndex * 4, offset * 4);
+            }
+
+            return ret;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int GetPixelLoc(int width, int height, int x, int y, int z, int bpp, int off) => (z * width * height * bpp) + (y * width * bpp) + (x * bpp) + off;
