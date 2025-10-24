@@ -25,7 +25,7 @@ public class ULandscapeComponent: UPrimitiveComponent
 
     public Lazy<UTexture2D[]> WeightmapTextures;
     [UProperty] public UTexture2D HeightmapTexture;
-    [UProperty] public UMaterialInterface OverrideMaterial;
+    [UProperty] public UMaterialInterface? OverrideMaterial;
     
     public FMeshMapBuildData? LegacyMapBuildData;
     public FLandscapeComponentGrassData GrassData;
