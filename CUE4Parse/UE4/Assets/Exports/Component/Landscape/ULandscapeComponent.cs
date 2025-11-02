@@ -48,7 +48,6 @@ public class ULandscapeComponent: UPrimitiveComponent
         WeightmapLayerAllocations = GetOrDefault(nameof(WeightmapLayerAllocations), Array.Empty<FWeightmapLayerAllocationInfo>());
         CachedLocalBox = GetOrDefault<FBox>(nameof(CachedLocalBox));
         MapBuildDataId = GetOrDefault<FGuid>(nameof(MapBuildDataId));
-        // throw new NotImplementedException();
         WeightmapTextures = new Lazy<UTexture2D[]>(() => GetOrDefault<UTexture2D[]>("WeightmapTextures", []));
 
         if (FRenderingObjectVersion.Get(Ar) < FRenderingObjectVersion.Type.MapBuildDataSeparatePackage)
@@ -63,8 +62,13 @@ public class ULandscapeComponent: UPrimitiveComponent
             GrassData = new FLandscapeComponentGrassData(Ar);
         }
 
-        if (Ar.Game is EGame.GAME_Farlight84) Ar.Position += 32;
+        if (Ar.IsFilterEditorOnly)
+        {
+            Ar.Position += sizeof(int); // SelectedType
+        }
 
+        if (Ar.Game is EGame.GAME_Farlight84) Ar.Position += 32;
+        
         if (Ar.Ver >= EUnrealEngineObjectUE4Version.LANDSCAPE_PLATFORMDATA_COOKING && !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
         {
             bCooked = Ar.ReadBoolean();
