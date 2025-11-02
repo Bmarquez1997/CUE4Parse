@@ -2,6 +2,7 @@ using System;
 using CUE4Parse.UE4.Assets.Exports.BuildData;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Texture;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
@@ -30,6 +31,7 @@ public class ULandscapeComponent: UPrimitiveComponent
     public FMeshMapBuildData? LegacyMapBuildData;
     public FLandscapeComponentGrassData GrassData;
     public bool bCooked;
+    public FLandscapeComponentDerivedData? PlatformData;
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
@@ -56,14 +58,14 @@ public class ULandscapeComponent: UPrimitiveComponent
             LegacyMapBuildData.ShadowMap = new FShadowMap(Ar);
         }
 
-        if (Ar.Game is EGame.GAME_Farlight84) return;
-
         if (Ar.Ver >= EUnrealEngineObjectUE4Version.SERIALIZE_LANDSCAPE_GRASS_DATA)
         {
             GrassData = new FLandscapeComponentGrassData(Ar);
         }
 
-        if (Ar.Ver >= EUnrealEngineObjectUE4Version.LANDSCAPE_PLATFORMDATA_COOKING)
+        if (Ar.Game is EGame.GAME_Farlight84) Ar.Position += 32;
+
+        if (Ar.Ver >= EUnrealEngineObjectUE4Version.LANDSCAPE_PLATFORMDATA_COOKING && !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
         {
             bCooked = Ar.ReadBoolean();
         }
@@ -73,7 +75,7 @@ public class ULandscapeComponent: UPrimitiveComponent
             var bCookedMobileData = Ar.ReadBoolean();
             if (bCookedMobileData)
             {
-                // PlatformData.Serialize(Ar, this);
+                PlatformData = new FLandscapeComponentDerivedData(Ar);
             }
         }
     }
@@ -98,4 +100,19 @@ public class ULandscapeComponent: UPrimitiveComponent
     public UTexture2D[] GetWeightmapTextures() => WeightmapTextures.Value;
 
     public FWeightmapLayerAllocationInfo[] GetWeightmapLayerAllocations() => WeightmapLayerAllocations;
+}
+
+public class FLandscapeComponentDerivedData
+{
+    public byte[] CompressedLandscapeData;
+    public FByteBulkData[]? StreamingLODDataArray;
+
+    public FLandscapeComponentDerivedData(FAssetArchive Ar)
+    {
+        CompressedLandscapeData = Ar.ReadArray<byte>();
+        if (Ar.Game >= EGame.GAME_UE4_26)
+        {
+            StreamingLODDataArray = Ar.ReadArray(() => new FByteBulkData(Ar));
+        }
+    }
 }

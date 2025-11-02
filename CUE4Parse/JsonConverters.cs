@@ -22,6 +22,8 @@ using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Assets.Exports.Wwise;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Objects.Properties;
+using CUE4Parse.UE4.FMod;
+using CUE4Parse.UE4.FMod.Objects;
 using CUE4Parse.UE4.Kismet;
 using CUE4Parse.UE4.Localization;
 using CUE4Parse.UE4.Objects.Core.i18N;
@@ -42,6 +44,7 @@ using CUE4Parse.UE4.Wwise;
 using CUE4Parse.UE4.Wwise.Objects;
 using CUE4Parse.UE4.Wwise.Objects.HIRC;
 using CUE4Parse.Utils;
+using Fmod5Sharp.FmodTypes;
 using Newtonsoft.Json;
 using Type = System.Type;
 #pragma warning disable CS8765
@@ -2409,7 +2412,18 @@ public class FInstancedStructConverter : JsonConverter<FInstancedStruct>
 {
     public override void WriteJson(JsonWriter writer, FInstancedStruct? value, JsonSerializer serializer)
     {
-        serializer.Serialize(writer, value?.NonConstStruct);
+        if (value.StringData != null)
+        {
+            writer.WriteStartObject();
+
+            writer.WritePropertyName(nameof(value.StringData));
+            serializer.Serialize(writer, value.StringData);
+
+            writer.WriteEndObject();
+            return;
+        }
+
+        serializer.Serialize(writer, value?.NonConstIUSturct);
     }
 
     public override FInstancedStruct ReadJson(JsonReader reader, Type objectType, FInstancedStruct? existingValue, bool hasExistingValue, JsonSerializer serializer)
@@ -2795,44 +2809,23 @@ public class FDependsNodeConverter : JsonConverter<FDependsNode>
     {
         writer.WriteStartObject();
 
-        writer.WritePropertyName("Identifier");
+        writer.WritePropertyName(nameof(value.Identifier));
         serializer.Serialize(writer, value.Identifier);
+        writer.WritePropertyName(nameof(value.PackageDependencies));
+        serializer.Serialize(writer, value.PackageDependencies);
+        writer.WritePropertyName(nameof(value.NameDependencies));
+        serializer.Serialize(writer, value.NameDependencies);
+        writer.WritePropertyName(nameof(value.ManageDependencies));
+        serializer.Serialize(writer, value.ManageDependencies);
+        writer.WritePropertyName(nameof(value.Referencers));
+        serializer.Serialize(writer, value.Referencers);
 
-        WriteDependsNodeList("PackageDependencies", writer, value.PackageDependencies);
-        WriteDependsNodeList("NameDependencies", writer, value.NameDependencies);
-        WriteDependsNodeList("ManageDependencies", writer, value.ManageDependencies);
-        WriteDependsNodeList("Referencers", writer, value.Referencers);
-
-        if (value.PackageFlags != null)
-        {
-            writer.WritePropertyName("PackageFlags");
-            serializer.Serialize(writer, value.PackageFlags);
-        }
-
-        if (value.ManageFlags != null)
-        {
-            writer.WritePropertyName("ManageFlags");
-            serializer.Serialize(writer, value.ManageFlags);
-        }
+        writer.WritePropertyName(nameof(value.PackageFlags));
+        serializer.Serialize(writer, value.PackageFlags);
+        writer.WritePropertyName(nameof(value.ManageFlags));
+        serializer.Serialize(writer, value.ManageFlags);
 
         writer.WriteEndObject();
-    }
-
-    /** Custom serializer to avoid circular reference */
-    private static void WriteDependsNodeList(string name, JsonWriter writer, List<FDependsNode>? dependsNodeList)
-    {
-        if (dependsNodeList == null || dependsNodeList.Count == 0)
-        {
-            return;
-        }
-
-        writer.WritePropertyName(name);
-        writer.WriteStartArray();
-        foreach (var dependsNode in dependsNodeList)
-        {
-            writer.WriteValue(dependsNode._index);
-        }
-        writer.WriteEndArray();
     }
 
     public override FDependsNode ReadJson(JsonReader reader, Type objectType, FDependsNode existingValue, bool hasExistingValue,
@@ -2862,43 +2855,43 @@ public class FAssetDataConverter : JsonConverter<FAssetData>
     {
         writer.WriteStartObject();
 
-        writer.WritePropertyName("ObjectPath");
-        serializer.Serialize(writer, value.ObjectPath);
+        writer.WritePropertyName(nameof(value.ObjectPath));
+        writer.WriteValue(value.ObjectPath);
 
-        writer.WritePropertyName("PackageName");
-        serializer.Serialize(writer, value.PackageName);
+        writer.WritePropertyName(nameof(value.PackageName));
+        writer.WriteValue(value.PackageName.Text);
 
-        writer.WritePropertyName("PackagePath");
-        serializer.Serialize(writer, value.PackagePath);
+        writer.WritePropertyName(nameof(value.PackagePath));
+        writer.WriteValue(value.PackagePath.Text);
 
-        writer.WritePropertyName("AssetName");
-        serializer.Serialize(writer, value.AssetName);
+        writer.WritePropertyName(nameof(value.AssetName));
+        writer.WriteValue(value.AssetName.Text);
 
-        writer.WritePropertyName("AssetClass");
-        serializer.Serialize(writer, value.AssetClass);
+        writer.WritePropertyName(nameof(value.AssetClass));
+        writer.WriteValue(value.AssetClass.Text);
 
         if (value.TagsAndValues.Count > 0)
         {
-            writer.WritePropertyName("TagsAndValues");
+            writer.WritePropertyName(nameof(value.TagsAndValues));
             serializer.Serialize(writer, value.TagsAndValues);
         }
 
         if (value.TaggedAssetBundles.Bundles.Length > 0)
         {
-            writer.WritePropertyName("TaggedAssetBundles");
+            writer.WritePropertyName(nameof(value.TaggedAssetBundles));
             serializer.Serialize(writer, value.TaggedAssetBundles);
         }
 
         if (value.ChunkIDs.Length > 0)
         {
-            writer.WritePropertyName("ChunkIDs");
+            writer.WritePropertyName(nameof(value.ChunkIDs));
             serializer.Serialize(writer, value.ChunkIDs);
         }
 
         if (value.PackageFlags != 0)
         {
-            writer.WritePropertyName("PackageFlags");
-            serializer.Serialize(writer, value.PackageFlags);
+            writer.WritePropertyName(nameof(value.PackageFlags));
+            writer.WriteValue(value.PackageFlags);
         }
 
         writer.WriteEndObject();
@@ -3122,13 +3115,13 @@ public class FAssetRegistryStateConverter : JsonConverter<FAssetRegistryState>
     {
         writer.WriteStartObject();
 
-        writer.WritePropertyName("PreallocatedAssetDataBuffers");
+        writer.WritePropertyName(nameof(value.PreallocatedAssetDataBuffers));
         serializer.Serialize(writer, value.PreallocatedAssetDataBuffers);
 
-        writer.WritePropertyName("PreallocatedDependsNodeDataBuffers");
+        writer.WritePropertyName(nameof(value.PreallocatedDependsNodeDataBuffers));
         serializer.Serialize(writer, value.PreallocatedDependsNodeDataBuffers);
 
-        writer.WritePropertyName("PreallocatedPackageDataBuffers");
+        writer.WritePropertyName(nameof(value.PreallocatedPackageDataBuffers));
         serializer.Serialize(writer, value.PreallocatedPackageDataBuffers);
 
         writer.WriteEndObject();
@@ -3364,3 +3357,165 @@ public class FWwisePackagedFileConverter : JsonConverter<FWwisePackagedFile>
     }
 }
 
+public class FModConverter : JsonConverter<FModReader>
+{
+    public override void WriteJson(JsonWriter writer, FModReader value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName(nameof(value.BankName));
+        writer.WriteValue(value.BankName);
+
+        writer.WritePropertyName(nameof(value.BankInfo));
+        serializer.Serialize(writer, value.BankInfo);
+
+        writer.WritePropertyName(nameof(FModReader.FormatInfo));
+        serializer.Serialize(writer, FModReader.FormatInfo);
+
+        if (FModReader.SoundDataInfo is not null)
+        {
+            writer.WritePropertyName(nameof(FModReader.SoundDataInfo));
+            serializer.Serialize(writer, FModReader.SoundDataInfo);
+        }
+
+        if (FModReader.EncryptionKey is not null)
+        {
+            writer.WritePropertyName(nameof(FModReader.EncryptionKey));
+            serializer.Serialize(writer, FModReader.EncryptionKey);
+        }
+
+        if (value.StringTable is not null)
+        {
+            writer.WritePropertyName(nameof(value.StringTable));
+            serializer.Serialize(writer, value.StringTable);
+        }
+
+        if (value.SoundTable is not null)
+        {
+            writer.WritePropertyName(nameof(value.SoundTable));
+            serializer.Serialize(writer, value.SoundTable);
+        }
+
+        if (value.PlatformInfo is not null)
+        {
+            writer.WritePropertyName(nameof(value.PlatformInfo));
+            serializer.Serialize(writer, value.PlatformInfo);
+        }
+
+        writer.WritePropertyName(nameof(value.HashData));
+        serializer.Serialize(writer, value.HashData);
+
+        writer.WritePropertyName(nameof(value.SoundBankData));
+        writer.WriteStartArray();
+        foreach (var bank in value.SoundBankData)
+        {
+            serializer.Serialize(writer, bank, typeof(FmodSoundBank));
+        }
+        writer.WriteEndArray();
+
+        writer.WritePropertyName(nameof(value.EventNodes));
+        serializer.Serialize(writer, value.EventNodes);
+
+        writer.WritePropertyName(nameof(value.BusNodes));
+        serializer.Serialize(writer, value.BusNodes);
+
+        writer.WritePropertyName(nameof(value.EffectNodes));
+        serializer.Serialize(writer, value.EffectNodes);
+
+        writer.WritePropertyName(nameof(value.TimelineNodes));
+        serializer.Serialize(writer, value.TimelineNodes);
+
+        writer.WritePropertyName(nameof(value.TransitionNodes));
+        serializer.Serialize(writer, value.TransitionNodes);
+
+        writer.WritePropertyName(nameof(value.InstrumentNodes));
+        serializer.Serialize(writer, value.InstrumentNodes);
+
+        writer.WritePropertyName(nameof(value.WavEntries));
+        serializer.Serialize(writer, value.WavEntries);
+
+        writer.WritePropertyName(nameof(value.ParameterNodes));
+        serializer.Serialize(writer, value.ParameterNodes);
+
+        writer.WritePropertyName(nameof(value.ModulatorNodes));
+        serializer.Serialize(writer, value.ModulatorNodes);
+
+        writer.WritePropertyName(nameof(value.CurveNodes));
+        serializer.Serialize(writer, value.CurveNodes);
+
+        writer.WritePropertyName(nameof(value.PropertyNodes));
+        serializer.Serialize(writer, value.PropertyNodes);
+
+        writer.WritePropertyName(nameof(value.MappingNodes));
+        serializer.Serialize(writer, value.MappingNodes);
+
+        writer.WritePropertyName(nameof(value.ParameterLayoutNodes));
+        serializer.Serialize(writer, value.ParameterLayoutNodes);
+
+        writer.WritePropertyName(nameof(value.ControllerNodes));
+        serializer.Serialize(writer, value.ControllerNodes);
+
+        writer.WritePropertyName(nameof(value.SnapshotNodes));
+        serializer.Serialize(writer, value.SnapshotNodes);
+
+        writer.WritePropertyName(nameof(value.VCANodes));
+        serializer.Serialize(writer, value.VCANodes);
+
+        writer.WritePropertyName(nameof(value.ControllerOwnerNodes));
+        serializer.Serialize(writer, value.ControllerOwnerNodes);
+
+        writer.WriteEndObject();
+    }
+
+    public override FModReader ReadJson(JsonReader reader, System.Type objectType, FModReader existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FModGuidConverter : JsonConverter<FModGuid>
+{
+    public override void WriteJson(JsonWriter writer, FModGuid value, JsonSerializer serializer)
+    {
+        writer.WriteValue(value.ToString());
+    }
+
+    public override FModGuid ReadJson(JsonReader reader, Type objectType, FModGuid existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+public class FmodSoundBankConverter : JsonConverter<FmodSoundBank>
+{
+    public override void WriteJson(JsonWriter writer, FmodSoundBank value, JsonSerializer serializer)
+    {
+        writer.WriteStartObject();
+
+        writer.WritePropertyName(nameof(value.Header));
+        serializer.Serialize(writer, value.Header);
+
+        writer.WritePropertyName(nameof(value.Samples));
+        writer.WriteStartArray();
+        foreach (var sample in value.Samples)
+        {
+            writer.WriteStartObject();
+
+            writer.WritePropertyName(nameof(sample.Metadata));
+            serializer.Serialize(writer, sample.Metadata);
+
+            writer.WritePropertyName(nameof(sample.Name));
+            writer.WriteValue(sample.Name);
+
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
+
+        writer.WriteEndObject();
+    }
+
+    public override FmodSoundBank ReadJson(JsonReader reader, Type objectType, FmodSoundBank existingValue, bool hasExistingValue, JsonSerializer serializer)
+    {
+        throw new NotImplementedException();
+    }
+}

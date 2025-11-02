@@ -59,6 +59,7 @@ public class UStaticMesh : UObject
             RenderData = Ar.Game switch
             {
                 EGame.GAME_GameForPeace => new GFPStaticMeshRenderData(Ar, GetOrDefault<bool>("bIsStreamable")),
+                EGame.GAME_WeHappyFew => new GFPStaticMeshRenderData(Ar, true),
                 _ => RenderData = new FStaticMeshRenderData(Ar)
             };
         }
@@ -84,13 +85,14 @@ public class UStaticMesh : UObject
                         break;
                     case EGame.GAME_Farlight84:
                     {
+                        Ar.SkipBulkArrayData();
+                        Ar.SkipBulkArrayData();
                         var count = Ar.Read<int>();
                         for (var i = 0; i < count; i++)
                         {
                             Ar.SkipBulkArrayData();
                             Ar.SkipBulkArrayData();
                         }
-
                         break;
                     }
                     default:
