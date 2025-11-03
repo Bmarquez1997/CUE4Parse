@@ -57,7 +57,7 @@ public class MutableExporter : ExporterBase
 
         var surfaceNameMap = GetSurfaceNameMap(modelResources);
 
-        var exportImages = false; //TODO: make this a config that's passed in
+        var exportImages = true; //TODO: make this a config that's passed in
         
         for (uint index = 0; index < original.Model.Program.Roms.Length; index++)
         {
@@ -186,7 +186,7 @@ public class MutableExporter : ExporterBase
 
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{matName}";
         // var meshName = materialSlotName;
-        if (appendId) meshName = $"{meshIndex++}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
+        if (appendId) meshName = $"{meshIndex++:D4}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
         var exportPath = $"{skeletonName}/{meshName}";
 
         var totalSockets = new List<FPackageIndex>();

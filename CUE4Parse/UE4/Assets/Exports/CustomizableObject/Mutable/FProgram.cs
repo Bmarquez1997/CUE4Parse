@@ -72,7 +72,7 @@ public class FProgram
             Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
             Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
             ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
-            //ConstantMaterials = Ar.ReadPtrArray(() => new FMaterial(Ar));
+            ConstantMaterials = Ar.ReadPtrArray(() => new FMaterial(Ar));
         }
         catch (Exception e)
         {

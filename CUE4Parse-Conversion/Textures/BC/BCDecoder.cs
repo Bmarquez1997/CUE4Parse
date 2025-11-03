@@ -90,7 +90,7 @@ namespace CUE4Parse_Conversion.Textures.BC
         {
             byte[] ret = new byte[sizeX * sizeY * sizeZ * 4]; // BGRA32 (4 bytes per pixel)
 
-            var offset = sizeX * sizeY;
+            var offset = inp.Length / sizeZ;
             for (var i = 0; i < sizeZ; i++)
             {
                 var startIndex = (i * offset);
