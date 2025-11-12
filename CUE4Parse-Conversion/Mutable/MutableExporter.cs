@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using CUE4Parse_Conversion.Meshes;
+using CUE4Parse_Conversion.Meshes.PSK;
 using CUE4Parse_Conversion.Meshes.UEFormat;
 using CUE4Parse_Conversion.Textures;
 using CUE4Parse.FileProvider.Vfs;
@@ -31,6 +32,8 @@ public class MutableExporter : ExporterBase
     // Flag to disable makeshift LOD grouping logic
     private bool exportAll = true;
 
+    private Dictionary<uint, string> surfaceNameMap;
+
     public MutableExporter(UCustomizableObject original, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(original, options)
     {
         Objects = [];
@@ -55,7 +58,7 @@ public class MutableExporter : ExporterBase
         if (!original.Private.TryLoad(out UCustomizableObjectPrivate coPrivate) || !coPrivate.ModelResources.TryLoad(out UModelResources modelResources))
             return;
 
-        var surfaceNameMap = GetSurfaceNameMap(modelResources);
+        surfaceNameMap = GetSurfaceNameMap(modelResources);
 
         var exportImages = true; //TODO: make this a config that's passed in
         
@@ -169,9 +172,11 @@ public class MutableExporter : ExporterBase
         var mesh = meshes[0];
         meshes.RemoveAt(0);
 
-        var matName = exportAll ? (mesh.Surfaces[0].SubMeshes[0].ExternalId.ToString()) : materialSlotName;
-
-        if (!mesh.TryConvert(originalCustomizableObject, matName, out var convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
+        var subMeshId = mesh.Surfaces[0].SubMeshes[0].ExternalId;
+        var matName = exportAll ? surfaceNameMap.GetValueOrDefault(subMeshId, subMeshId.ToString()) : materialSlotName;
+        
+        // if (!mesh.TryConvert(originalCustomizableObject, matName, out CSkeletalMesh convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
+        if (!mesh.TryConvert(originalCustomizableObject, matName, out CStaticMesh convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         {
             Log.Logger.Warning($"Mesh '{ExportName}.{skeletonSoftObject.AssetPathName.PlainText}.{matName}' has no LODs");
             return;
@@ -186,7 +191,7 @@ public class MutableExporter : ExporterBase
 
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{matName}";
         // var meshName = materialSlotName;
-        if (appendId) meshName = $"{meshIndex++:D4}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{mesh.MeshIDPrefix}_{mesh.ReferenceID}";
+        if (appendId) meshName = $"{meshIndex++:D4}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{convertedMesh.LODs[0].Indices.Value.Length}";
         var exportPath = $"{skeletonName}/{meshName}";
 
         var totalSockets = new List<FPackageIndex>();
@@ -199,7 +204,8 @@ public class MutableExporter : ExporterBase
         {
             using var ueModelArchive = new FArchiveWriter();
             // var skeletonPackageIndex = new FPackageIndex(skeletonSoftObject.Owner, 0);
-            new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), skeletonSoftObject, null, Options).Save(ueModelArchive);
+            // new UEModel(meshName, convertedMesh, null, totalSockets.ToArray(), skeletonSoftObject, null, Options).Save(ueModelArchive);
+            new UEModel(meshName, convertedMesh, new FPackageIndex(), Options).Save(ueModelArchive);
             var outputMesh = new Mesh($"{meshName}.uemodel", ueModelArchive.GetBuffer(), convertedMesh.LODs[0].GetMaterials(Options));
 
             if (!Objects.ContainsKey(skeletonName))

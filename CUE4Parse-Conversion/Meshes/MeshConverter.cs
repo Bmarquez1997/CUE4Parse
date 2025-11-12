@@ -959,6 +959,96 @@ public static class MeshConverter
         return mutSkelMeshLod;
     }
 
+    public static bool TryConvert(this FMesh originalMesh, UCustomizableObject co, string materialSlotName, out CStaticMesh convertedMesh, List<FMesh>? additionalLods = null)
+     {
+         convertedMesh = new CStaticMesh();
+
+         if (!co.Private.TryLoad(out UCustomizableObjectPrivate coPrivate) || !coPrivate.ModelResources.TryLoad(out UModelResources modelResources))
+             return false;
+
+         var lod0 = BuildLodObject(originalMesh, coPrivate, modelResources, materialSlotName);
+         if (lod0 == null) return false;
+
+         convertedMesh.LODs.Add(lod0);
+         if (additionalLods != null)
+         {
+             foreach (var lod in additionalLods)
+             {
+                 GetBuffer(EMeshBufferSemantic.Position, lod, out var vertChannel, out var vertBuffer);
+                 if (vertBuffer == null) continue;
+
+                 var lodMesh = BuildLodObject(lod, coPrivate, modelResources, materialSlotName);
+                 if (lodMesh == null) continue;
+
+                 convertedMesh.LODs.Add(lodMesh);
+             }
+         }
+
+
+         convertedMesh.FinalizeMesh();
+         return true;
+     }
+
+    // public static CSkelMeshLod TryConvert(this FMesh originalMesh, UCustomizableObject co, out CSkeletalMesh convertedMesh)
+    private static CStaticMeshLod? BuildLodObject(FMesh originalMesh, UCustomizableObjectPrivate coPrivate, UModelResources modelResources, string materialSlotName)
+    {
+        // convertedMesh = new CSkeletalMesh();
+
+        GetBuffer(EMeshBufferSemantic.VertexIndex, originalMesh, out var indexChannel, out var indexBuffer);
+        GetBuffer(EMeshBufferSemantic.Position, originalMesh, out var vertexChannel, out var vertexBuffer);
+        GetBuffer(EMeshBufferSemantic.Normal, originalMesh, out var normalChannel, out var normalBuffer);
+        GetBuffer(EMeshBufferSemantic.Tangent, originalMesh, out var tangentChannel, out var tangentBuffer);
+        GetBuffer(EMeshBufferSemantic.TexCoords, originalMesh, out var uvChannel, out var uvBuffer);
+        GetBuffer(EMeshBufferSemantic.TexCoords, originalMesh, out var uv1Channel, out var uv1Buffer, 1);
+        GetBuffer(EMeshBufferSemantic.TexCoords, originalMesh, out var uv2Channel, out var uv2Buffer, 2);
+        GetBuffer(EMeshBufferSemantic.Color, originalMesh, out var colorChannel, out var colorBuffer);
+
+        var dataConverter = new MutableDataConverter(originalMesh.IndexBuffers.ElementCount);
+        var indices = dataConverter.GetIndices(indexChannel, indexBuffer);
+
+        if (indices.Length == 0) return null;
+        
+        var mutSkelMeshLod = new CStaticMeshLod()
+        {
+            NumTexCoords = uv1Buffer == null ? 1 : uv2Buffer == null ? 2 : 3,
+            HasNormals = true,
+            HasTangents = tangentBuffer != null,
+            Indices = new Lazy<uint[]>(() => indices),
+            Sections = new Lazy<CMeshSection[]>(() =>
+            {
+                var sections = new CMeshSection[1];
+                sections[0] = new CMeshSection(0, 0, Convert.ToInt32(originalMesh.IndexBuffers.ElementCount / 3), materialSlotName, null);
+                return sections;
+            })
+        };
+
+        var vertexCount = originalMesh.VertexBuffers.ElementCount;
+        mutSkelMeshLod.AllocateVerts((int) vertexCount);
+
+        if (colorBuffer != null)
+            mutSkelMeshLod.AllocateVertexColorBuffer();
+
+        for (var i = 0; i < vertexCount; i++)
+        {
+            mutSkelMeshLod.Verts[i].Position = dataConverter.GetVertices(vertexChannel, vertexBuffer, i);
+            mutSkelMeshLod.Verts[i].Normal = dataConverter.GetNormals(normalChannel, normalBuffer, i);
+            if (tangentBuffer != null) mutSkelMeshLod.Verts[i].Tangent = dataConverter.GetTangent(tangentChannel, tangentBuffer, i);
+            mutSkelMeshLod.Verts[i].UV = dataConverter.GetUVs(uvChannel, uvBuffer, i);
+
+            if (uv1Buffer != null)
+            {
+                mutSkelMeshLod.ExtraUV.Value[0][i] = dataConverter.GetUVs(uv1Channel, uv1Buffer, i);
+                if (uv2Buffer != null)
+                    mutSkelMeshLod.ExtraUV.Value[1][i] = dataConverter.GetUVs(uv2Channel, uv2Buffer, i);
+            }
+
+            if (mutSkelMeshLod.VertexColors != null)
+                mutSkelMeshLod.VertexColors[i] = dataConverter.GetColor(colorChannel, colorBuffer, i);
+        }
+
+        return mutSkelMeshLod;
+    }
+
      private static Dictionary<short, ushort>? BuildBoneIndexMap(FBoneName[] meshBoneMap,
          UScriptMap? boneNameMap, Dictionary<string, int>? finalNameToIndexMap)
      {
