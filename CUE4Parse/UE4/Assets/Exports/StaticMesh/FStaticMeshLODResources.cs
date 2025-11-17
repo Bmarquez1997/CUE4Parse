@@ -238,6 +238,8 @@ public class FStaticMeshLODResources
             ReversedIndexBuffer = new FRawStaticIndexBuffer(Ar);
         }
 
+        if (Ar.Game is EGame.GAME_OutlastTrials) Ar.Position += 4;
+
         DepthOnlyIndexBuffer = new FRawStaticIndexBuffer(Ar);
 
         if (!stripDataFlags.IsClassDataStripped((byte) EClassDataStripFlag.CDSF_ReversedIndexBuffer))
@@ -252,6 +254,8 @@ public class FStaticMeshLODResources
             if (Ar.Game != EGame.GAME_GTATheTrilogyDefinitiveEdition && Ar.Game != EGame.GAME_FinalFantasy7Rebirth)
                 AdjacencyIndexBuffer = new FRawStaticIndexBuffer(Ar);
         }
+
+        if (Ar.Game == EGame.GAME_OutlastTrials) Ar.Position += 4;
 
         if (Ar.Game == EGame.GAME_ArenaBreakoutInfinite)
         {
@@ -277,7 +281,7 @@ public class FStaticMeshLODResources
             if (Ar.Game >= EGame.GAME_UE5_6)
                 Ar.Position += 6 * sizeof(uint); // RawDataHeader = 6x uint32
 
-            _ = Ar.ReadBulkArray<byte>(); // rayTracingGeometry
+            Ar.SkipBulkArrayData(); // rayTracingGeometry
         }
 
         // https://github.com/EpicGames/UnrealEngine/blob/4.27/Engine/Source/Runtime/Engine/Private/StaticMesh.cpp#L547

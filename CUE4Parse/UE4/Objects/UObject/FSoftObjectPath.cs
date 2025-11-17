@@ -3,12 +3,14 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using CUE4Parse.FileProvider;
+using CUE4Parse.GameTypes.OuterWorlds2.Readers;
 using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.Utils;
 using Newtonsoft.Json;
+using Serilog;
 using UExport = CUE4Parse.UE4.Assets.Exports.UObject;
 
 namespace CUE4Parse.UE4.Objects.UObject;
@@ -32,11 +34,46 @@ public readonly struct FSoftObjectPath : IUStruct
             SubPathString = path.SubstringAfterLast('.');
             Owner = Ar.Owner;
             return;
-            //throw new ParserException(Ar, $"Asset path \"{path}\" is in short form and is not supported, nor recommended");
+        }
+
+        if (!Ar.IsFilterEditorOnly && Ar.Ver >= EUnrealEngineObjectUE5Version.ADD_SOFTOBJECTPATH_LIST
+            && Ar.Owner is Package package && package.SoftObjectPaths is { Length: > 0 } softObjectPaths)
+        {
+            var index = Ar.Read<int>();
+            if (index < 0 || index >= softObjectPaths.Length)
+            {
+                Log.Warning("SoftObjectProperty: Invalid SoftObjectPath index {Index} in package {PackageName}", index, Ar.Name);
+            }
+            else
+            {
+                var path = softObjectPaths[index];
+                AssetPathName = path.AssetPathName;
+                SubPathString = path.SubPathString;
+                Owner = Ar.Owner;
+            }
+            return;
+        }
+
+        if (Ar.Game is EGame.GAME_OuterWorlds2 && Ar is FOW2ObjectsArchive OW2Ar)
+        {
+            while (true)
+            {
+                var data = Ar.Read<uint>();
+                var idktype = (data >> 24) & 0xFF; 
+                if (idktype == 0xa9)
+                {
+                    var path = OW2Ar.Objects.SoftObjectPathStore[(int) (data & 0xFFFFFF)];
+                    AssetPathName = path.AssetPathName;
+                    SubPathString = path.SubPathString;
+                    Owner = OW2Ar.Asset;
+                    break;
+                }
+            }
+            return;
         }
 
         AssetPathName = Ar.Ver >= EUnrealEngineObjectUE5Version.FSOFTOBJECTPATH_REMOVE_ASSET_PATH_FNAMES || Ar.Game == EGame.GAME_TheFirstDescendant ? new FName(new FTopLevelAssetPath(Ar).ToString()) : Ar.ReadFName();
-        SubPathString = FFortniteMainBranchObjectVersion.Get(Ar) < FFortniteMainBranchObjectVersion.Type.SoftObjectPathUtf8SubPaths ? Ar.ReadFString() : Encoding.UTF8.GetString(Ar.ReadArray<byte>());
+        SubPathString = FFortniteMainBranchObjectVersion.Get(Ar) < FFortniteMainBranchObjectVersion.Type.SoftObjectPathUtf8SubPaths ? Ar.ReadFString() : Ar.ReadFUtf8String();
         Owner = Ar.Owner;
     }
 

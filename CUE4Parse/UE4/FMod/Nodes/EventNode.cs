@@ -21,16 +21,16 @@ public class EventNode
     public readonly FUserPropertyFloat[] UserPropertyFloatList;
     public readonly FUserPropertyString[] UserPropertyStringList;
 
-    public readonly float? DopplerScale;
-    public readonly float? TriggerCooldown;
-    public readonly uint? Flags;
+    public readonly float DopplerScale;
+    public readonly float TriggerCooldown;
+    public readonly uint Flags;
 
     public readonly FModGuid[] NonMasterTracks = [];
     public readonly FParameterId[] ParameterIds = [];
     public readonly FModGuid[] EventTriggeredInstruments = [];
 
-    public readonly float? MinimumDistance;
-    public readonly float? MaximumDistance;
+    public readonly float MinimumDistance;
+    public readonly float MaximumDistance;
 
     public EventNode(BinaryReader Ar)
     {
@@ -46,6 +46,8 @@ public class EventNode
         SchedulingMode = Ar.ReadInt32();
 
         ParameterLayouts = FModReader.ReadElemListImp<FModGuid>(Ar);
+
+        if (FModReader.Version < 0x3C) Ar.ReadUInt16(); // Dummy elem list
 
         UserPropertyFloatList = FModReader.ReadElemListImp<FUserPropertyFloat>(Ar);
         UserPropertyStringList = FModReader.ReadElemListImp<FUserPropertyString>(Ar);

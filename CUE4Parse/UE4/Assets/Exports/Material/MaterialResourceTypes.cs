@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using CUE4Parse.UE4.Assets.Exports.Niagara.NiagaraShader;
+using CUE4Parse.UE4.Objects.Core.Compression;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.RenderCore;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Readers;
+using CUE4Parse.UE4.Shaders;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.Utils;
 using Newtonsoft.Json;
@@ -450,7 +453,7 @@ public class FMaterialShaderMapContent : FShaderMapContent
     public override void Deserialize(FMemoryImageArchive Ar)
     {
         base.Deserialize(Ar);
-        
+
         OrderedMeshShaderMaps = Ar.ReadArrayOfPtrs(() =>
         {
             var meshMaterialShaderMap = new FMeshMaterialShaderMap();
@@ -458,7 +461,7 @@ public class FMaterialShaderMapContent : FShaderMapContent
 
             return meshMaterialShaderMap;
         });
-        
+
         MaterialCompilationOutput = new FMaterialCompilationOutput(Ar);
         ShaderContentHash = new FSHAHash(Ar);
 
@@ -479,7 +482,7 @@ public class FMeshMaterialShaderMap : FShaderMapContent
     public override void Deserialize(FMemoryImageArchive Ar)
     {
         base.Deserialize(Ar);
-        
+
         VertexFactoryTypeName = Ar.Read<FHashedName>();
     }
 }
@@ -567,6 +570,7 @@ public class FUniformExpressionSet
     public FMaterialPreshaderData UniformPreshaderData;
     public byte[]? DefaultValues;
     public FMaterialVirtualTextureStack[] VTStacks;
+    public FMaterialCacheTagStack[]? MaterialCacheTagStacks;
     public FGuid[] ParameterCollections;
     public FRHIUniformBufferLayoutInitializer UniformBufferLayoutInitializer;
 
@@ -574,11 +578,12 @@ public class FUniformExpressionSet
     {
         var materialTextureParameterTypeCount = Ar.Game switch
         {
+            EGame.GAME_InfinityNikki => 8,
             >= EGame.GAME_UE5_3 => 7,
             >= EGame.GAME_UE5_0 => 6,
             _ => 5,
         };
-        
+
         UniformTextureParameters = new FMaterialTextureParameterInfo[materialTextureParameterTypeCount][];
         if (Ar.Game >= EGame.GAME_UE5_0)
         {
@@ -608,7 +613,7 @@ public class FUniformExpressionSet
                 {
                     EMaterialParameterType.Scalar => dv.Read<float>(),
                     EMaterialParameterType.Vector => dv.Read<FLinearColor>(),
-                    EMaterialParameterType.DoubleVector => new FVector4(Ar),
+                    EMaterialParameterType.DoubleVector => new FVector4(dv),
                     EMaterialParameterType.StaticSwitch => dv.ReadFlag(),
                     _ => throw new NotImplementedException($"Unknown EMaterialParameterType: {parameter.ParameterType}"),
                 };
@@ -627,9 +632,19 @@ public class FUniformExpressionSet
         }
 
         VTStacks = Ar.ReadArray(() => new FMaterialVirtualTextureStack(Ar));
+        if (Ar.Game >= EGame.GAME_UE5_7)
+        {
+            MaterialCacheTagStacks = Ar.ReadArray<FMaterialCacheTagStack>();
+        }
         ParameterCollections = Ar.ReadArray<FGuid>();
         UniformBufferLayoutInitializer = new FRHIUniformBufferLayoutInitializer(Ar);
     }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct FMaterialCacheTagStack
+{
+    public FGuid TagGuid;
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 4)]
@@ -836,7 +851,7 @@ public enum EShaderValueType : byte
 public class FMaterialNumericParameterInfo
 {
     public FMemoryImageMaterialParameterInfo ParameterInfo;
-    public EMaterialParameterType ParameterType;
+    [JsonConverter(typeof(StringEnumConverter))] public EMaterialParameterType ParameterType;
     public uint DefaultValueOffset;
     public object? Value;
 
@@ -962,7 +977,7 @@ public class FRHIUniformBufferLayoutInitializer
     public uint ConstantBufferSize = 0;
     public ushort RenderTargetsOffset = ushort.MaxValue;
     public byte /*FUniformBufferStaticSlot*/ StaticSlot = 255;
-    public EUniformBufferBindingFlags BindingFlags = EUniformBufferBindingFlags.Shader;
+    [JsonConverter(typeof(StringEnumConverter))] public EUniformBufferBindingFlags BindingFlags = EUniformBufferBindingFlags.Shader;
     public bool bHasNonGraphOutputs = false;
     public bool bNoEmulatedUniformBuffer = false;
     public bool bUniformView = false;
@@ -1035,14 +1050,56 @@ public class FShaderMapResourceCode(FArchive Ar)
 {
     public FSHAHash ResourceHash = new FSHAHash(Ar);
     public FSHAHash[] ShaderHashes = Ar.ReadArray(() => new FSHAHash(Ar));
-    public FShaderEntry[] ShaderEntries = Ar.ReadArray(() => new FShaderEntry(Ar));
+    public FShaderEntry[] ShaderEntries = Ar.Game < EGame.GAME_UE5_6 ? Ar.ReadArray(() => new FShaderEntry(Ar)) : [];
+    public FShaderCodeResource[] ShaderCodeResources = Ar.Game >= EGame.GAME_UE5_6 ? Ar.ReadArray(() => new FShaderCodeResource(Ar)) : [];
 }
 
 public class FShaderEntry(FArchive Ar)
 {
-    public byte[] Code = Ar.ReadArray<byte>(); // Don't Serialize
+    public byte[] Code = Ar.ReadArray<byte>();
     public int UncompressedSize = Ar.Read<int>();
-    public byte Frequency = Ar.Read<byte>(); // Enum
+    [JsonConverter(typeof(StringEnumConverter))]
+    public EShaderFrequency Frequency = Ar.Read<EShaderFrequency>();
+}
+
+public class FShaderCodeResource
+{
+    public struct FHeader
+    {
+        int UncompressedSize = 0;		// full size of code array before compression
+        int ShaderCodeSize = 0;		// uncompressed size excluding optional data
+        [JsonConverter(typeof(StringEnumConverter))]
+        EShaderFrequency Frequency = EShaderFrequency.SF_NumFrequencies;
+        byte _Pad0 = 0;
+        ushort _Pad1 = 0;
+
+        public FHeader() { }
+    };
+
+    FHeader Header;		// The above FHeader struct persisted in a shared buffer
+    FSharedBuffer Code;			// The bytecode buffer as constructed by FShaderCode::FinalizeShaderCode
+    FCompressedBuffer Symbols;	// Buffer containing the symbols for this bytecode; will be empty if symbols are disabled
+
+    public FShaderCodeResource(FArchive Ar)
+    {
+        var headerBuffer = new FSharedBuffer(Ar);
+        using var headerAr = new FByteArchive("FShaderCodeResource::Header", headerBuffer.Data, Ar.Versions);
+        Header = headerAr.Read<FHeader>();
+        Code = new FSharedBuffer(Ar);
+        Symbols = new FCompressedBuffer(Ar);
+    }
+}
+
+public class FSharedBuffer
+{
+    public long Len;
+    public byte[] Data;
+
+    public FSharedBuffer(FArchive Ar)
+    {
+        Len = Ar.Read<long>();
+        Data = Ar.ReadArray<byte>((int)Len);
+    }
 }
 
 public class FMemoryImageResult
@@ -1144,7 +1201,7 @@ public class FShaderMapPointerTable : FPointerTableBase
         var NumVFTypes = Ar.Read<int>();
         Types = Ar.ReadArray<FHashedName>(NumTypes);
         VFTypes = Ar.ReadArray<FHashedName>(NumVFTypes);
-        if (!Ar.bUseNewFormat) base.LoadFromArchive(Ar);
+        if (!Ar.bUseNewFormat && this is not FNiagaraShaderMapPointerTable) base.LoadFromArchive(Ar);
     }
 }
 
@@ -1158,6 +1215,11 @@ public class FPointerTableBase
     public FTypeLayoutDesc[] TypeDependencies;
 
     public virtual void LoadFromArchive(FMaterialResourceProxyReader Ar)
+    {
+        TypeDependencies = Ar.ReadArray(() => new FTypeLayoutDesc(Ar));
+    }
+
+    protected void BaseLoadFromArchive(FMaterialResourceProxyReader Ar)
     {
         TypeDependencies = Ar.ReadArray(() => new FTypeLayoutDesc(Ar));
     }
@@ -1224,7 +1286,7 @@ public class FMaterialShaderMapId
         {
             var legacyQualityLevel = (EMaterialQualityLevel) Ar.Read<byte>(); // Is it enum?
         }
-
+        if (Ar.Game == EGame.GAME_TheFirstDescendant) Ar.Position += 4;
         CookedShaderMapIdHash = new FSHAHash(Ar);
 
         if (!bIsLegacyPackage)
@@ -1237,6 +1299,7 @@ public class FMaterialShaderMapId
 public class FPlatformTypeLayoutParameters
 {
     public uint MaxFieldAlignment;
+    [JsonConverter(typeof(StringEnumConverter))]
     public EFlags Flags;
 
     public FPlatformTypeLayoutParameters()
@@ -1247,6 +1310,7 @@ public class FPlatformTypeLayoutParameters
     public FPlatformTypeLayoutParameters(FArchive Ar)
     {
         MaxFieldAlignment = Ar.Read<uint>();
+        // Todo: need remap for old flag values
         Flags = Ar.Read<EFlags>();
     }
 

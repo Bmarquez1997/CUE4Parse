@@ -12,6 +12,7 @@ using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.Utils;
 using Fmod5Sharp.FmodTypes;
 using Serilog;
+using UE4Config.Parsing;
 
 namespace CUE4Parse.UE4.FMod;
 
@@ -28,9 +29,12 @@ public class FModProvider
 {
     private Dictionary<FModGuid, List<FmodSample>> _resolvedEventsCache = [];
     private Dictionary<FModGuid, FModReader> _mergedReaders = [];
+    private static byte[]? _encryptionKey;
+    private string? _BankOutputDirectory;
 
     public FModProvider(IFileProvider provider, string gameDirectory)
     {
+        LoadEncryptionKey(provider);
         LoadPakBanks(provider);
         LoadFileBanks(gameDirectory);
         UpdateEventCache();
@@ -44,36 +48,57 @@ public class FModProvider
 
         foreach (var group in banks)
         {
+            FModReader? mergedBank = null;
             foreach (var file in group)
             {
                 if (!provider.TrySaveAsset(file, out var data)) continue;
-                if (!TryLoadBank(new MemoryStream(data), out var fmodBank))
+                if (!TryLoadBank(new MemoryStream(data), file.Name, out var fmodBank))
                 {
                     Log.Error("Failed to serialize FMOD Bank file {bank}", file);
                     continue;
                 }
 
-                if (_mergedReaders.TryGetValue(fmodBank.GetBankGuid(), out var merged))
+                if (mergedBank == null)
                 {
-                    merged.Merge(fmodBank);
+                    mergedBank = fmodBank;
                 }
                 else
                 {
-                    _mergedReaders[fmodBank.GetBankGuid()] = fmodBank;
+                    mergedBank.Merge(fmodBank);
                 }
+            }
+
+            if (mergedBank == null) continue;
+
+            var guid = mergedBank.GetBankGuid();
+            if (_mergedReaders.TryGetValue(guid, out var existing))
+            {
+                existing.Merge(mergedBank);
+            }
+            else
+            {
+                _mergedReaders[guid] = mergedBank;
             }
         }
     }
 
-    public void LoadFileBanks(string gameDirectory)
+    private void LoadFileBanks(string gameDirectory)
     {
         var dir = new DirectoryInfo(gameDirectory);
         if (dir.Name.Equals("Paks", StringComparison.OrdinalIgnoreCase) && Directory.GetParent(gameDirectory) is {} parentInfo)
             gameDirectory = parentInfo.FullName;
 
-        string? fmodDir = Directory.GetDirectories(gameDirectory, "FMOD", SearchOption.AllDirectories)
-            .SelectMany(fmodFolder => Directory.GetDirectories(fmodFolder, "Desktop", SearchOption.AllDirectories))
-            .FirstOrDefault(Directory.Exists);
+        string? fmodDir = null!;
+        if (!string.IsNullOrEmpty(_BankOutputDirectory))
+        {
+            var potentialPath = Path.Combine(gameDirectory, _BankOutputDirectory);
+            if (Directory.Exists(potentialPath))
+                fmodDir = potentialPath;
+        }
+
+        fmodDir ??= Directory.EnumerateDirectories(gameDirectory, "FMOD", SearchOption.AllDirectories)
+                .SelectMany(fmodFolder => Directory.GetDirectories(fmodFolder, "Desktop", SearchOption.AllDirectories))
+                .FirstOrDefault(Directory.Exists);
 
         if (fmodDir is null)
         {
@@ -86,33 +111,86 @@ public class FModProvider
 
         foreach (var group in banks)
         {
+            FModReader? mergedBank = null;
             foreach (var file in group)
             {
-                if (!TryLoadBank(File.OpenRead(file), out var fmodBank))
+                if (!TryLoadBank(File.OpenRead(file), Path.GetFileNameWithoutExtension(file), out var fmodBank))
                 {
                     Log.Error("Failed to serialize FMOD Bank file {bank}", file);
                     continue;
                 }
 
-                if (_mergedReaders.TryGetValue(fmodBank.GetBankGuid(), out var merged))
+                if (mergedBank == null)
                 {
-                    merged.Merge(fmodBank);
+                    mergedBank = fmodBank;
                 }
                 else
                 {
-                    _mergedReaders[fmodBank.GetBankGuid()] = fmodBank;
+                    mergedBank.Merge(fmodBank);
                 }
+            }
+
+            if (mergedBank == null) continue;
+
+            var guid = mergedBank.GetBankGuid();
+            if (_mergedReaders.TryGetValue(guid, out var existing))
+            {
+                existing.Merge(mergedBank);
+            }
+            else
+            {
+                _mergedReaders[guid] = mergedBank;
             }
         }
     }
 
-    public static bool TryLoadBank(Stream stream, [NotNullWhen(true)]out FModReader? fmodReader)
+    private void LoadEncryptionKey(IFileProvider provider)
+    {
+        if (!provider.TryGetGameFile("/Game/Config/DefaultEngine.ini", out var defaultEngine))
+            return;
+
+        var engineConfig = new ConfigIni(nameof(defaultEngine));
+
+        if (defaultEngine.TryCreateReader(out var engineAr))
+        {
+            using (engineAr) engineConfig.Read(new StreamReader(engineAr));
+        }
+
+        var values = new List<string>();
+        engineConfig.EvaluatePropertyValues("/Script/FMODStudio.FMODSettings", "BankOutputDirectory", values);
+        var path = values.FirstOrDefault()?.SubstringAfter("Path=\"").SubstringBefore("\")");
+        if (!string.IsNullOrEmpty(path))
+        {
+            _BankOutputDirectory = path.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
+        }
+
+        var fmodSection = engineConfig.Sections
+            .FirstOrDefault(s => s.Name == "/Script/FMODStudio.FMODSettings");
+
+        var token = fmodSection?.Tokens
+            .OfType<InstructionToken>()
+            .FirstOrDefault(t => t.Key == "StudioBankKey");
+
+        if (!string.IsNullOrEmpty(token?.Value))
+        {
+            _encryptionKey = System.Text.Encoding.UTF8.GetBytes(token.Value);
+            Log.Information($"FMod encryption key found: {token.Value}");
+        }
+        else
+        {
+#if DEBUG
+            Log.Debug("FMod encryption key not found in DefaultEngine.ini. Soundbanks might not be encrypted");
+#endif
+        }
+    }
+
+    public static bool TryLoadBank(Stream stream, string bankName, [NotNullWhen(true)]out FModReader? fmodReader)
     {
         fmodReader = null;
         try
         {
             using var reader = new BinaryReader(stream);
-            fmodReader = new FModReader(reader);
+            fmodReader = new FModReader(reader, bankName, _encryptionKey);
             return true;
         }
         catch (Exception e)
@@ -157,23 +235,7 @@ public class FModProvider
             return [];
         }
 
-        var eventName = audioEvent.Name;
-        var extracted = new List<FModExtractedSound>(samples.Count);
-        for (var i = 0; i < samples.Count; i++)
-        {
-            var sample = samples[i];
-            if (!sample.RebuildAsStandardFileFormat(out var dataBytes, out var fileExtension))
-                continue;
-
-            extracted.Add(new FModExtractedSound
-            {
-                Name = sample.Name ?? $"{eventName}_{i}",
-                Extension = fileExtension,
-                Data = dataBytes
-            });
-        }
-
-        return extracted;
+        return ExtractAudioSamples(samples, audioEvent.Name);
     }
 
     public List<FModExtractedSound> ExtractBankSounds(UFMODBank audioBank)
@@ -187,9 +249,17 @@ public class FModProvider
             return [];
         }
 
-        var bankName = audioBank.Name;
         var samples = bank.ExtractTracks();
-        var extracted = new List<FModExtractedSound>();
+
+        return ExtractAudioSamples(samples, audioBank.Name);
+    }
+
+    public List<FModExtractedSound> ExtractBankSounds(FModReader fmodReader)
+       => ExtractAudioSamples(fmodReader.ExtractTracks(), fmodReader.BankName);
+    
+    private List<FModExtractedSound> ExtractAudioSamples(List<FmodSample> samples, string fallbackSampleName)
+    {
+        var extracted = new List<FModExtractedSound>(samples.Count);
         for (var i = 0; i < samples.Count; i++)
         {
             var sample = samples[i];
@@ -198,7 +268,7 @@ public class FModProvider
 
             extracted.Add(new FModExtractedSound
             {
-                Name = sample.Name ?? $"{bankName}_{i}",
+                Name = sample.Name ?? $"{fallbackSampleName}_{i}",
                 Extension = fileExtension,
                 Data = dataBytes
             });

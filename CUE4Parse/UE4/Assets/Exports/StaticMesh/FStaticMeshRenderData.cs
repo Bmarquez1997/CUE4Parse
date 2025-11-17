@@ -80,7 +80,7 @@ public class FStaticMeshRenderData
                 var bHasRayTracingProxy = Ar.ReadBoolean();
                 if (bHasRayTracingProxy)
                 {
-                    var rayTracingProxy = new FStaticMeshRayTracingProxy(Ar);
+                    _ = new FStaticMeshRayTracingProxy(Ar); // RayTracingProxy
                 }
             }
 
@@ -140,7 +140,7 @@ public class FStaticMeshRenderData
 
         if (Ar.Versions["StaticMesh.HasLODsShareStaticLighting"])
         {
-            if (Ar.Game >= EGame.GAME_UE5_6)
+            if (Ar.Game is >= EGame.GAME_UE5_6 or EGame.GAME_GrayZoneWarfare)
             {
                 var bRenderDataFlags = Ar.Read<byte>();
                 bLODsShareStaticLighting = (bRenderDataFlags & 1) != 0;

@@ -13,14 +13,18 @@ using System.IO;
 using System;
 using System.Linq;
 using Serilog;
+using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.FMod;
 
+[JsonConverter(typeof(FModConverter))]
 public class FModReader
 {
+    public readonly string BankName;
     public static int Version => FormatInfo.FileVersion;
     public static FFormatInfo FormatInfo;
     public static SoundDataInfo? SoundDataInfo;
+    public static byte[]? EncryptionKey;
     public StringTable? StringTable;
     public SoundTable? SoundTable;
     public FBankInfo? BankInfo;
@@ -46,8 +50,10 @@ public class FModReader
     public readonly Dictionary<FModGuid, VCANode> VCANodes = [];
     public readonly List<FModGuid> ControllerOwnerNodes = [];
 
-    public FModReader(BinaryReader Ar)
+    public FModReader(BinaryReader Ar, string bankName, byte[]? encryptionKey = null)
     {
+        BankName = bankName;
+        if (encryptionKey != null) EncryptionKey = encryptionKey;
         ParseHeader(Ar);
         ParseNodes(Ar, Ar.BaseStream.Position, Ar.BaseStream.Length);
     }
@@ -60,7 +66,7 @@ public class FModReader
         string riff = Encoding.ASCII.GetString(Ar.ReadBytes(4));
         if (riff != "RIFF") throw new Exception("Not a valid RIFF file");
 
-        int riffSize = Ar.ReadInt32();
+        uint riffSize = Ar.ReadUInt32();
         string fileType = Encoding.ASCII.GetString(Ar.ReadBytes(4));
         if (fileType != "FEV ") throw new Exception("Not a valid FMOD bank");
 
@@ -70,7 +76,7 @@ public class FModReader
         if (actualSize < expectedSize)
             throw new Exception($"Truncated file: expected {expectedSize} bytes, got {actualSize}");
         else if (actualSize > expectedSize)
-            Log.Warning($"Warning: file larger than RIFF size (expected {expectedSize}, got {actualSize})");
+            Log.Warning($"File larger than RIFF size (expected {expectedSize}, got {actualSize})");
     }
 
     private void ParseNodes(BinaryReader Ar, long start, long end)
@@ -96,7 +102,7 @@ public class FModReader
             }
 
             var nodeId = (ENodeId)rawNodeValue;
-            int nodeSize = Ar.ReadInt32();
+            uint nodeSize = Ar.ReadUInt32();
             long nextNode = nodeStart + 8 + nodeSize;
 
             if (nodeSize == 0)
@@ -140,6 +146,7 @@ public class FModReader
                     var listCount = Ar.ReadUInt32(); // Not needed; Im using custom structure
                     break;
 
+                case ENodeId.CHUNKID_OUTPUTPORTBODY:
                 case ENodeId.CHUNKID_RETURNBUSBODY:
                 case ENodeId.CHUNKID_INPUTBUSBODY:
                 case ENodeId.CHUNKID_GROUPBUSBODY:
@@ -190,6 +197,7 @@ public class FModReader
                     }
                     break;
 
+                case ENodeId.CHUNKID_MODULATOR:
                 case ENodeId.CHUNKID_MODULATORBODY: // Modulator Node
                     {
                         var node = new ModulatorNode(Ar);
@@ -232,6 +240,7 @@ public class FModReader
                     }
                     break;
 
+                case ENodeId.CHUNKID_VCA:
                 case ENodeId.CHUNKID_VCABODY: // VCA Node
                     {
                         var node = new VCANode(Ar);
@@ -284,7 +293,7 @@ public class FModReader
                     break;
 
                 default:
-                    Console.WriteLine($"Unknown chunk {nodeId} at {nodeStart}, size={nodeSize}, skipped");
+                    Log.Warning($"Unknown chunk {nodeId} at {nodeStart}, size={nodeSize}, skipped");
                     break;
             }
 
@@ -296,7 +305,9 @@ public class FModReader
 
             if (Ar.BaseStream.Position != nextNode)
             {
-                Console.WriteLine($"Warning: chunk {nodeId} did not parse fully (at {Ar.BaseStream.Position}, should be {nextNode})");
+                if (nodeId is not ENodeId.CHUNKID_LIST)
+                    Log.Warning($"Chunk {nodeId} did not parse fully (at {Ar.BaseStream.Position}, should be {nextNode})");
+
                 Ar.BaseStream.Position = nextNode;
             }
         }
@@ -306,6 +317,14 @@ public class FModReader
     {
         switch (nodeId)
         {
+            case ENodeId.CHUNKID_OUTPUTPORTBODY: // Output Port Node
+                {
+                    var node = new OutputPortNode(Ar);
+                    BusNodes[node.BaseGuid] = node;
+                    parentStack.Push(new FParentContext(nodeId, node.BaseGuid)); // Points to bus node
+                }
+                break;
+
             case ENodeId.CHUNKID_RETURNBUSBODY: // Return Bus Node
                 {
                     var node = new ReturnBusNode(Ar);
@@ -343,7 +362,8 @@ public class FModReader
                     busParent.NodeId is ENodeId.CHUNKID_INPUTBUSBODY or
                         ENodeId.CHUNKID_GROUPBUSBODY or
                         ENodeId.CHUNKID_MASTERBUSBODY or
-                        ENodeId.CHUNKID_RETURNBUSBODY)
+                        ENodeId.CHUNKID_RETURNBUSBODY or
+                        ENodeId.CHUNKID_OUTPUTPORTBODY)
                 {
                     var node = new BusNode(Ar);
                     if (BusNodes.TryGetValue(busParent.Guid, out var baseBus))
@@ -559,11 +579,8 @@ public class FModReader
             case ENodeId.CHUNKID_TRANSITIONREGIONBODY: // Transition Region Node
                 {
                     var node = new TransitionRegionNode(Ar);
-                    if (!TransitionNodes.ContainsKey(node.DestinationGuid))
-                    {
-                        TransitionNodes[node.DestinationGuid] = node;
-                    }
-                    parentStack.Push(new FParentContext(nodeId, node.DestinationGuid)); // Points to transition timeline node
+                    TransitionNodes[node.BaseGuid] = node;
+                    parentStack.Push(new FParentContext(nodeId, node.BaseGuid)); // Points to transition timeline node
                 }
                 break;
 
@@ -582,14 +599,10 @@ public class FModReader
     }
 
     public List<FmodSample> ExtractTracks()
-    {
-        return SoundBankData.SelectMany(bank => bank.Samples).ToList();
-    }
+        => [.. SoundBankData.SelectMany(bank => bank.Samples)];
 
     public FModGuid GetBankGuid()
-    {
-        return BankInfo?.BaseGuid ?? new FModGuid();
-    }
+        => BankInfo?.BaseGuid ?? new FModGuid();
 
     public void Merge(FModReader src)
     {
@@ -670,9 +683,9 @@ public class FModReader
 
         var result = new T[count];
 
-        _ = Ar.ReadUInt16(); // Payload size
         for (int i = 0; i < count; i++)
         {
+            _ = Ar.ReadUInt16(); // Payload size
             if (readElem != null)
             {
                 result[i] = readElem(Ar);
@@ -681,8 +694,6 @@ public class FModReader
             {
                 result[i] = (T)Activator.CreateInstance(typeof(T), Ar)!;
             }
-
-            if (i < count - 1) _ = Ar.ReadUInt16(); // Payload size
         }
 
         return result;
