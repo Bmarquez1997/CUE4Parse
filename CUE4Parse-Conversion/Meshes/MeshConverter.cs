@@ -29,6 +29,7 @@ using SkiaSharp;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.UE4.Assets.Exports.Nanite;
 using System.Threading;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
 using Serilog;
 
 namespace CUE4Parse_Conversion.Meshes;
