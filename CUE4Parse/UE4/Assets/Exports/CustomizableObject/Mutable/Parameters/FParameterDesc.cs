@@ -29,8 +29,9 @@ public class FParameterDesc
             EParameterType.Float => Ar.Read<float>(),
             EParameterType.Color => Ar.Read<FVector4>(),
             EParameterType.Projector => Ar.Read<FProjector>(),
-            EParameterType.String => Ar.ReadString(),
-            EParameterType.Matrix => new FMatrix(Ar, false),
+            EParameterType.String => Ar.ReadFString(),
+            EParameterType.Matrix => new FMatrix(Ar),
+            EParameterType.Material or EParameterType.Mesh => null,
             _ => throw new NotSupportedException($"Type {Type} is currently not supported")
         };
 
@@ -39,7 +40,7 @@ public class FParameterDesc
     }
 }
 
-public enum EParameterType : uint
+public enum EParameterType
 {
     /** Undefined parameter type. */
     None,
@@ -64,6 +65,9 @@ public enum EParameterType : uint
 
     /** An externally provided mesh. */
     Mesh,
+		
+    /** An externally provided material*/
+    Material,
 
     /** A text string. */
     String,

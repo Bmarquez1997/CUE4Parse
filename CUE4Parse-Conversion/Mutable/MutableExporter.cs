@@ -227,6 +227,7 @@ public class MutableExporter : ExporterBase
             // Temporary LOD exclusion
             case EImageFormat.BC5 when resolution is { X: < 760, Y: < 760 }:
             case EImageFormat.BC3 when resolution is { X: < 760, Y: < 760 } && resolution.Y != 576:
+            case EImageFormat.BC1 when resolution is { X: < 512, Y: < 576 }:
                 return;
         }
         try

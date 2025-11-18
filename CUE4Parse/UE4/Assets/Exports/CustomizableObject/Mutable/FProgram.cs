@@ -1,8 +1,8 @@
 ﻿using System;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Material;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Material;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;

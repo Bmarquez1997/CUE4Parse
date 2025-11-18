@@ -1,4 +1,4 @@
-﻿namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
+﻿namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
 
 public struct FMeshBufferChannel
 {

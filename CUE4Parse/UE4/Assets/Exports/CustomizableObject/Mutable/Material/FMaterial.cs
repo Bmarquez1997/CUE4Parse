@@ -4,7 +4,7 @@ using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.UObject;
 
-namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Material;
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Material;
 
 public class FMaterial
 {

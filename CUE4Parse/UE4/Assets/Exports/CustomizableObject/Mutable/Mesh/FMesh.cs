@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Surface;
@@ -26,8 +27,8 @@ public class FMesh
     public FPhysicsBody[] AdditionalPhysicsBodies;
     public uint MeshIDPrefix;
     public uint ReferenceID;
-    public string ReferencedMorph;
-
+    public string ReferenceMorph;
+    
     public FMesh(FMutableArchive Ar)
     {
         IndexBuffers = new FMeshBufferSet(Ar);
@@ -49,7 +50,7 @@ public class FMesh
         if (Flags.HasFlag(EMeshFlags.IsResourceReference))
         {
             ReferenceID = Ar.Read<uint>();
-            ReferencedMorph = Ar.ReadString();
+            ReferenceMorph = Ar.ReadFString();
         }
     }
 }
