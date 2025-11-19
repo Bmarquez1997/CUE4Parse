@@ -23,7 +23,7 @@ public class FParameterDesc
         Ar.Position += 1;
         DefaultValue = Type switch
         {
-            EParameterType.None or EParameterType.Image => null,
+            EParameterType.None or EParameterType.Texture => null,
             EParameterType.Bool => Ar.ReadBoolean(),
             EParameterType.Int => Ar.Read<int>(),
             EParameterType.Float => Ar.Read<float>(),
@@ -31,7 +31,7 @@ public class FParameterDesc
             EParameterType.Projector => Ar.Read<FProjector>(),
             EParameterType.String => Ar.ReadFString(),
             EParameterType.Matrix => new FMatrix(Ar),
-            EParameterType.Material or EParameterType.Mesh => null,
+            EParameterType.Material or EParameterType.SkeletalMesh => null,
             _ => throw new NotSupportedException($"Type {Type} is currently not supported")
         };
 
@@ -61,11 +61,11 @@ public enum EParameterType
     Projector,
 
     /** An externally provided image. */
-    Image,
+    Texture,
 
     /** An externally provided mesh. */
-    Mesh,
-		
+    SkeletalMesh,
+
     /** An externally provided material*/
     Material,
 
@@ -74,6 +74,8 @@ public enum EParameterType
 
     /** A 4x4 matrix. */
     Matrix,
+
+    InstancedStruct,
 
     /** Utility enumeration value, not really a parameter type. */
     Count

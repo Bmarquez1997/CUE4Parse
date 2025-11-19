@@ -56,6 +56,7 @@ public enum EOpType : ushort
     ST_CONSTANT,
     ED_CONSTANT,
     MA_CONSTANT,
+    MI_CONSTANT,
 
     //! User parameter
     BO_PARAMETER,
@@ -64,9 +65,11 @@ public enum EOpType : ushort
     CO_PARAMETER,
     PR_PARAMETER,
     IM_PARAMETER,
-    ME_PARAMETER,
+    SK_PARAMETER,
     ST_PARAMETER,
     MA_PARAMETER,
+    MI_PARAMETER,
+    IS_PARAMETER,
 
     //! A referenced, but opaque engine resource
     IM_REFERENCE,
@@ -81,6 +84,7 @@ public enum EOpType : ushort
     LA_CONDITIONAL,
     IN_CONDITIONAL,
     ED_CONDITIONAL,
+    MI_CONDITIONAL,
 
     //! Select one of several values depending on an int input
     NU_SWITCH,
@@ -91,6 +95,15 @@ public enum EOpType : ushort
     LA_SWITCH,
     IN_SWITCH,
     ED_SWITCH,
+    MI_SWITCH,
+
+    //! Selects a parameter value from a Material
+    SC_MATERIAL_BREAK,
+    CO_MATERIAL_BREAK,
+    IM_MATERIAL_BREAK,
+
+    //! Converts a texture of a material parameter into a texture parameter to process it at runtime.
+    IM_PARAMETER_FROM_MATERIAL,
 
     //-----------------------------------------------------------------------------------------
     // Boolean operations
@@ -118,6 +131,9 @@ public enum EOpType : ushort
     //! Get a scalar value from a curve
     SC_CURVE,
 
+    //! External operation
+    SC_EXTERNAL,
+
     //-----------------------------------------------------------------------------------------
     // Colour operations. Colours are sometimes used as generic vectors.
     //-----------------------------------------------------------------------------------------
@@ -134,6 +150,12 @@ public enum EOpType : ushort
     //! Apply component-wise arithmetic operations to two colours
     CO_ARITHMETIC,
 
+    //! Apply a Linear to sRGB color transformation on a given color vector.
+    CO_LINEARTOSRGB,
+
+    //! External operation
+    CO_EXTERNAL,
+    
     //-----------------------------------------------------------------------------------------
     // Image operations
     //-----------------------------------------------------------------------------------------
@@ -144,7 +166,7 @@ public enum EOpType : ushort
 
     //! Apply a colour on top of an image using a specific effect (Blend, SoftLight, 
     //! Hardlight, Burn...), optionally using a mask.
-    IM_LAYERCOLOUR,
+    IM_LAYERCOLOUR,        
 
     //! Convert between pixel formats
     IM_PIXELFORMAT,
@@ -216,6 +238,12 @@ public enum EOpType : ushort
     //! Apply linear transform to Image content. Resulting samples outside the original image are tiled.
     IM_TRANSFORM,
 
+    /** Convert an FImage in Passthrough Parameter mode to an FImage with data. */
+    IM_PARAMETER_CONVERT,
+
+    //! External operation
+    IM_EXTERNAL,
+    
     //-----------------------------------------------------------------------------------------
     // Mesh operations
     //-----------------------------------------------------------------------------------------
@@ -289,11 +317,20 @@ public enum EOpType : ushort
     //! Optimize skinning before adding a mesh to the component
     ME_OPTIMIZESKINNING,
 
-    //! Add a set of tags to a mesh
-    ME_ADDTAGS,
+    //! Add a metadata to a mesh
+    ME_ADDMETADATA,
 
     //! Transform with a 4x4 matrix the geometry channels of a mesh that are bounded by another mesh
     ME_TRANSFORMWITHMESH,
+
+    //! Transform with a 4x4 matrix the geometry channels of a mesh that are skinned to a bone or hierarchy
+    ME_TRANSFORMWITHBONE,
+
+    //! External operation
+    ME_EXTERNAL,
+
+    /** Select a Mesh Section from a Skeletal Mesh. */
+    ME_SKELETALMESH_BREAK,
 
     //-----------------------------------------------------------------------------------------
     // Instance operations
@@ -323,11 +360,20 @@ public enum EOpType : ushort
     //! Add all LODs to an instance. This operation can only appear once in a model.
     IN_ADDLOD,
 
+    //! Add a Skeletal Mesh to an instance.
+    IN_ADDSKELETALMESH,
+
     //! Add extension data to an instance
     IN_ADDEXTENSIONDATA,
 
     //! Add overlay material to an instance
     IN_ADDOVERLAYMATERIAL,
+
+    //! Add override material to an instance
+    IN_ADDOVERRIDEMATERIAL,
+
+    //! Add a material to an instance
+    IN_ADDMATERIAL,
 
     //-----------------------------------------------------------------------------------------
     // Layout operations
@@ -346,6 +392,23 @@ public enum EOpType : ushort
     //! Extract a layout from a mesh
     LA_FROMMESH,
 
+    //-----------------------------------------------------------------------------------------
+    // Material operations
+    //-----------------------------------------------------------------------------------------
+
+    //! External operation
+    MI_EXTERNAL,
+
+    // Get a material from a given skeletal mesh
+    MI_SKELETALMESH_BREAK,
+    
+    //-----------------------------------------------------------------------------------------
+    // FInstancedStruct operations
+    //-----------------------------------------------------------------------------------------
+
+    //! External operation
+    IS_EXTERNAL,
+    
     //-----------------------------------------------------------------------------------------
     // Utility values
     //-----------------------------------------------------------------------------------------

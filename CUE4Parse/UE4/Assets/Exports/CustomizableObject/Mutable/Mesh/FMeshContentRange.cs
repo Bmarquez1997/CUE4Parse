@@ -11,14 +11,14 @@ public class FMeshContentRange
 
     private static int FirstIndexMaxBits   = 24;
     private static int ContentFlagsMaxBits = 32 - FirstIndexMaxBits;
-    private static int FirstIndexBitMask   = (1 << FirstIndexMaxBits) - 1;
+    private static uint FirstIndexBitMask   = (1u << FirstIndexMaxBits) - 1;
     public FMeshContentRange(FMutableArchive Ar)
     {
         var firstIndex_ContentFlags = Ar.Read<uint>();
 
         MeshIdPrefix = Ar.Read<uint>();
-        ContentFlags = (EMeshContentFlags)((firstIndex_ContentFlags >> FirstIndexMaxBits) & ((1 << ContentFlagsMaxBits) - 1));
-        FirstIndex = (uint)(firstIndex_ContentFlags & FirstIndexBitMask);
+        ContentFlags = (EMeshContentFlags)((firstIndex_ContentFlags >> FirstIndexMaxBits) & ((1u << ContentFlagsMaxBits) - 1));
+        FirstIndex = firstIndex_ContentFlags & FirstIndexBitMask;
     }
 }
 

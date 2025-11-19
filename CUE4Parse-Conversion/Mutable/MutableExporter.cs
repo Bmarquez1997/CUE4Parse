@@ -45,6 +45,9 @@ public class MutableExporter : ExporterBase
 
         var loader = new FMutableLoader(original);
         // var opCodes = loader.ReadByteCode();
+        // foreach (var opCode in opCodes) Console.WriteLine(opCode);
+        
+        // var opCodes = loader.ReadByteCode();
         //
         // var counts = opCodes
         //     .GroupBy(op => op)
