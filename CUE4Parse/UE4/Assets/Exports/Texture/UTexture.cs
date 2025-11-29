@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using CUE4Parse.UE4.Assets.Exports.Component;
 using CUE4Parse.UE4.Assets.Exports.Material;
+using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.Engine;
@@ -26,6 +27,7 @@ public abstract class UTexture : UUnrealMaterial, IAssetUserData
     public FPackageIndex[] AssetUserData { get; private set; } = [];
     public EPixelFormat Format { get; protected set; } = EPixelFormat.PF_Unknown;
     public FTexturePlatformData PlatformData { get; private set; } = new();
+    public FEditorBulkData? EditorData { get; private set; }
 
     public bool RenderNearestNeighbor => LODGroup == TextureGroup.TEXTUREGROUP_Pixels2D || Filter == TextureFilter.TF_Nearest;
     public bool IsNormalMap => CompressionSettings == TextureCompressionSettings.TC_Normalmap;
@@ -71,16 +73,26 @@ public abstract class UTexture : UUnrealMaterial, IAssetUserData
         SRGB = GetOrDefault(nameof(SRGB), true);
         AssetUserData = GetOrDefault<FPackageIndex[]>(nameof(AssetUserData), []);
 
-        var stripFlags = Ar.Read<FStripDataFlags>();
+        var stripFlags = new FStripDataFlags(Ar);
 
         // If archive is has editor only data
         if (!stripFlags.IsEditorDataStripped())
         {
-            // if (FUE5MainStreamObjectVersion.Get(Ar) < FUE5MainStreamObjectVersion.Type.VirtualizedBulkDataHaveUniqueGuids)
-            // {
-            //
-            // }
-            // throw new NotImplementedException("Non-Cooked Textures are not supported");
+            if (FUE5MainStreamObjectVersion.Get(Ar) < FUE5MainStreamObjectVersion.Type.VirtualizedBulkDataHaveUniqueGuids)
+            {
+                if (FUE5MainStreamObjectVersion.Get(Ar) < FUE5MainStreamObjectVersion.Type.TextureSourceVirtualization)
+                {
+                    new FByteBulkData(Ar);
+                }
+                else
+                {
+                    EditorData = new FEditorBulkData(Ar);
+                }
+            }
+            else
+            {
+                EditorData = new FEditorBulkData(Ar);
+            }
         }
     }
 
