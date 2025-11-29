@@ -73,8 +73,9 @@ public class MutableExporter : ExporterBase
                 case ERomDataType.Image:
                     if (exportImages)
                     {
+                        // HighRes flag or CO.Model.Program.ConstantImages(FirstIndex)
                         var image = loader.LoadImage(index);
-                        ExportMutableImage(image);
+                        if (image != null) ExportMutableImage(image);
                     }
                     break;
                 case ERomDataType.Mesh:
@@ -194,7 +195,7 @@ public class MutableExporter : ExporterBase
 
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{matName}";
         // var meshName = materialSlotName;
-        if (appendId) meshName = $"{meshIndex++:D4}_{meshName}_{convertedMesh.LODs[0].NumVerts}_{convertedMesh.LODs[0].Indices.Value.Length}";
+        if (appendId) meshName = $"{meshIndex++:D4}_{matName}_{convertedMesh.LODs[0].NumVerts}_{convertedMesh.LODs[0].Indices.Value.Length}";
         var exportPath = $"{skeletonName}/{meshName}";
 
         var totalSockets = new List<FPackageIndex>();
@@ -222,17 +223,16 @@ public class MutableExporter : ExporterBase
 
     private void ExportMutableImage(FImage image)
     {
-        if (image == null) return;
         var resolution = image.DataStorage.ImageSize;
 
-        switch (image.DataStorage.ImageFormat)
-        {
-            // Temporary LOD exclusion
-            case EImageFormat.BC5 when resolution is { X: < 760, Y: < 760 }:
-            case EImageFormat.BC3 when resolution is { X: < 760, Y: < 760 } && resolution.Y != 576:
-            case EImageFormat.BC1 when resolution is { X: < 512, Y: < 576 }:
-                return;
-        }
+        // switch (image.DataStorage.ImageFormat)
+        // {
+        //     // Temporary LOD exclusion
+        //     case EImageFormat.BC5 when resolution is { X: < 760, Y: < 760 }:
+        //     case EImageFormat.BC3 when resolution is { X: < 760, Y: < 760 } && resolution.Y != 576:
+        //     case EImageFormat.BC1 when resolution is { X: < 512, Y: < 576 }:
+        //         return;
+        // }
         try
         {
             var bitmap = image.Decode();

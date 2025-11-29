@@ -38,9 +38,10 @@ public class FMutableLoader
         return new FMesh(archive);
     }
 
-    public FImage LoadImage(uint index)
+    public FImage? LoadImage(uint index)
     {
         var block = ModelStreamables[index];
+        if (block.Flags != EMutableFileFlags.HighRes) return null;
         var archive = GetArchive(block);
         archive.Position = (long) block.Offset;
         return new FImage(archive);
