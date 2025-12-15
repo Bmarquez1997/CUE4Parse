@@ -127,6 +127,7 @@ public enum EGame : uint
         GAME_Raven2 = GAME_UE4_27 + 28,
         GAME_DuetNightAbyss = GAME_UE4_27 + 29,
         GAME_LiesofP = GAME_UE4_27 + 30,
+        GAME_BloodBowl3 = GAME_UE4_27 + 31,
     GAME_UE4_28 = GameUtils.GameUe4Base + (28 << 16),
 
     GAME_UE4_LATEST = GAME_UE4_28,
@@ -173,7 +174,7 @@ public enum EGame : uint
         GAME_TempestRising = GAME_UE5_4 + 8,
         GAME_MindsEye = GAME_UE5_4 + 9,
         GAME_DeadByDaylight = GAME_UE5_4 + 10,
-        GAME_Grounded2 = GAME_UE5_4 + 11,
+        GAME_Placeholder1 = GAME_UE5_4 + 11,
         GAME_MafiaTheOldCountry = GAME_UE5_4 + 12,
         GAME_2XKO = GAME_UE5_4 + 13,
         GAME_Reanimal = GAME_UE5_4 + 14,
@@ -195,7 +196,8 @@ public enum EGame : uint
         GAME_Borderlands4 = GAME_UE5_5 + 10,
         GAME_Rennsport = GAME_UE5_5 + 11,
     GAME_UE5_6 = GameUtils.GameUe5Base + (6 << 16),
-        GAME_FORTNITE_S35 = GAME_UE5_6 + 1,
+        GAME_Grounded2 = GAME_UE5_6 + 1,
+        GAME_FORTNITE_S35 = GAME_UE5_6 + 2,
     GAME_UE5_7 = GameUtils.GameUe5Base + (7 << 16),
     GAME_UE5_8 = GameUtils.GameUe5Base + (8 << 16),
 
