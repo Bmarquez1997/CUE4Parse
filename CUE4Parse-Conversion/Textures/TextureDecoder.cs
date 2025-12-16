@@ -213,6 +213,12 @@ public static class TextureDecoder
         }
         return bitmaps;
     }
+    
+    private static int GetBytesPerPixel(EPixelFormat pixelFormat)
+    {
+        var tempFormatInfo = PixelFormatUtils.PixelFormats.ElementAtOrDefault((int) pixelFormat)!;
+        return tempFormatInfo.BlockBytes / (tempFormatInfo.BlockSizeX * tempFormatInfo.BlockSizeY * tempFormatInfo.BlockSizeZ);
+    }
 
     private static void DecodeTexture(FTexture2DMipMap? mip, int sizeX, int sizeY, int sizeZ, EPixelFormat format, bool isNormalMap, ETexturePlatform platform, out byte[] data, out EPixelFormat colorType)
     {
