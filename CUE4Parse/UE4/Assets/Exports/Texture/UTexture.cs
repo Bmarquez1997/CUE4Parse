@@ -73,7 +73,7 @@ public abstract class UTexture : UUnrealMaterial, IAssetUserData
         SRGB = GetOrDefault(nameof(SRGB), true);
         AssetUserData = GetOrDefault<FPackageIndex[]>(nameof(AssetUserData), []);
 
-        var stripFlags = Ar.Read<FStripDataFlags>();
+        var stripFlags = new FStripDataFlags(Ar);
 
         // If archive is has editor only data
         if (!stripFlags.IsEditorDataStripped())
@@ -187,6 +187,47 @@ public abstract class UTexture : UUnrealMaterial, IAssetUserData
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FTexture2DMipMap? GetFirstMip() => PlatformData.Mips.Where((t, i) => t.EnsureValidBulkData(MipDataProvider, i)).FirstOrDefault();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetFirstMipIndex()
+    {
+        for (var i = 0; i < PlatformData.Mips.Length; i++)
+        {
+            var mip = PlatformData.Mips[i];
+            if (mip.EnsureValidBulkData(MipDataProvider, i))
+                return i;
+        }
+
+        return -1;
+    }
+
+    public int GetMipIndexByMaxSize(int maxXSize, int maxYSize = -1)
+    {
+        if (maxYSize == -1)
+            maxYSize = maxXSize;
+
+        if (PlatformData is { FirstMipToSerialize: >= 0, VTData: { } vt } && vt.IsInitialized())
+        {
+            var tileSize = vt.TileSize;
+            for (var i = 0; i < vt.NumMips; i++)
+            {
+                var tileOffsetData = vt.GetTileOffsetData(i);
+                if ((tileOffsetData.Width * tileSize <= maxXSize || tileOffsetData.Height * tileSize <= maxYSize))
+                    return i;
+
+            }
+            return -1;
+        }
+
+        for (var i = 0; i < PlatformData.Mips.Length; i++)
+        {
+            var mip = PlatformData.Mips[i];
+            if ((mip.SizeX <= maxXSize || mip.SizeY <= maxYSize) && mip.EnsureValidBulkData(MipDataProvider, i))
+                return i;
+        }
+
+        return GetFirstMipIndex();
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public FTexture2DMipMap? GetMipByMaxSize(int maxSize)

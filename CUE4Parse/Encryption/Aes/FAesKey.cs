@@ -10,13 +10,13 @@ namespace CUE4Parse.Encryption.Aes
         public readonly string KeyString;
         public bool IsDefault => Key.All(x => x == 0);
 
-        public FAesKey(byte[] key)
-        {
-            if (key.Length != 32)
-                throw new ArgumentException("Aes Key must be 32 bytes long");
-            Key = key;
-            KeyString = "0x" + BitConverter.ToString(key);
-        }
+    public FAesKey(byte[] key, bool ignoreLength = false)
+    {
+        if (!ignoreLength && key.Length != 32)
+            throw new ArgumentException("Aes Key must be 32 bytes long");
+        Key = key;
+        KeyString = "0x" + BitConverter.ToString(key);
+    }
 
         public FAesKey(string keyString)
         {

@@ -44,7 +44,7 @@ public class FStaticMeshLODResources
 
     public FStaticMeshLODResources(FArchive Ar)
     {
-        var stripDataFlags = Ar.Read<FStripDataFlags>();
+        var stripDataFlags = new FStripDataFlags(Ar);
 
         if (Ar.Game == EGame.GAME_TheDivisionResurgence) Ar.Position += 4;
 
@@ -88,6 +88,10 @@ public class FStaticMeshLODResources
                         break;
                     case EGame.GAME_TheDivisionResurgence:
                         Ar.Position += 12;
+                        break;
+                    case EGame.GAME_PUBGBlackBudget:
+                        Ar.Position += 4;
+                        if (Ar.Read<int>() > 0) Ar.SkipBulkArrayData();
                         break;
                     case EGame.GAME_InfinityNikki when Sections.Any(x => x.CustomData.HasValue && x.CustomData.Value == 1):
                         _ = Ar.ReadArray(4, () => new FRawStaticIndexBuffer(Ar));
@@ -219,7 +223,7 @@ public class FStaticMeshLODResources
 
     public void SerializeBuffers(FArchive Ar)
     {
-        var stripDataFlags = Ar.Read<FStripDataFlags>();
+        var stripDataFlags = new FStripDataFlags(Ar);
 
         PositionVertexBuffer = new FPositionVertexBuffer(Ar);
         VertexBuffer = new FStaticMeshVertexBuffer(Ar);
