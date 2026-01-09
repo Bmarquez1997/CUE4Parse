@@ -6,6 +6,7 @@ using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Surface;
 using CUE4Parse.UE4.Assets.Readers;
+using Serilog;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 
@@ -37,20 +38,21 @@ public class FMesh
         Layouts = Ar.ReadPtrArray(() => new FLayout(Ar));
         SkeletonIDs = Ar.ReadArray<uint>();
         Skeleton = Ar.ReadPtr(() => new FSkeleton(Ar));
-        PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
-        Flags = Ar.Read<EMeshFlags>();
-        Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
-        Tags = Ar.ReadArray(Ar.ReadFString);
-        StreamedResources = Ar.ReadArray<ulong>();
-        BonePoses = Ar.ReadArray<FBonePose>();
-        BoneMap = Ar.ReadArray<FBoneName>();
-        AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
-        MeshIDPrefix = Ar.Read<uint>();
-
-        if (Flags.HasFlag(EMeshFlags.IsResourceReference))
+        try
         {
-            ReferenceID = Ar.Read<uint>();
-            ReferenceMorph = Ar.ReadFString();
+            PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
+            Flags = Ar.Read<EMeshFlags>();
+            Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
+            Tags = Ar.ReadArray(Ar.ReadFString);
+            StreamedResources = Ar.ReadArray<ulong>();
+            BonePoses = Ar.ReadArray<FBonePose>();
+            BoneMap = Ar.ReadArray<FBoneName>();
+            AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
+            MeshIDPrefix = Ar.Read<uint>();
+        }
+        catch (Exception e)
+        {
+            Log.Warning("Exception thrown reading FMesh: {0}", e);
         }
     }
 }

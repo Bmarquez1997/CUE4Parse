@@ -41,7 +41,7 @@ public class FMutableLoader
     public FImage? LoadImage(uint index)
     {
         var block = ModelStreamables[index];
-        if (block.Flags != EMutableFileFlags.HighRes) return null;
+        if (block.Flags != 1) return null;
         var archive = GetArchive(block);
         archive.Position = (long) block.Offset;
         return new FImage(archive);
@@ -64,6 +64,7 @@ public class FMutableLoader
     public List<EOpType> ReadByteCode()
     {
         List<EOpType> returnList = [];
+        if (_customizableObject.Model == null) return returnList;
         var bytecodeReader = new FByteArchive("Mutable ByteCode", _customizableObject.Model.Program.ByteCode);
         foreach (var address in _customizableObject.Model.Program.OpAddress)
         {

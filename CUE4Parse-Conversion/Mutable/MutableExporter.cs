@@ -6,7 +6,6 @@ using CUE4Parse_Conversion.Meshes;
 using CUE4Parse_Conversion.Meshes.PSK;
 using CUE4Parse_Conversion.Meshes.UEFormat;
 using CUE4Parse_Conversion.Textures;
-using CUE4Parse.FileProvider.Vfs;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
@@ -34,7 +33,7 @@ public class MutableExporter : ExporterBase
 
     private Dictionary<uint, string> surfaceNameMap;
 
-    public MutableExporter(UCustomizableObject original, ExporterOptions options, AbstractVfsFileProvider provider, string? filterSkeletonName = null) : base(original, options)
+    public MutableExporter(UCustomizableObject original, ExporterOptions options, string? filterSkeletonName = null) : base(original, options)
     {
         Objects = [];
         Images = [];
@@ -68,7 +67,7 @@ public class MutableExporter : ExporterBase
         for (uint index = 0; index < original.Model.Program.Roms.Length; index++)
         {
             var rom = original.Model.Program.Roms[index];
-            switch (rom.ResourceType)
+            switch (rom.Type)
             {
                 case ERomDataType.Image:
                     if (exportImages)
@@ -83,7 +82,7 @@ public class MutableExporter : ExporterBase
                     StoreMutableMesh(mesh, meshes, surfaceNameMap);
                     break;
                 default:
-                    Log.Information("Unknown resource type: {0} for index: {1}", rom.ResourceType, index);
+                    Log.Information("Unknown resource type: {0} for index: {1}", rom.Type, index);
                     break;
             }
         }
@@ -115,7 +114,7 @@ public class MutableExporter : ExporterBase
     {
         var skeletonIndex = mesh.SkeletonIDs.LastOrDefault(0u);
 
-        if (mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 ||
+        if (mesh.Surfaces == null || mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 ||
             !surfaceNameMap.TryGetValue(mesh.Surfaces[0].SubMeshes[0].ExternalId, out var materialSlotName)) return;
 
         // TODO: Remove temp limit

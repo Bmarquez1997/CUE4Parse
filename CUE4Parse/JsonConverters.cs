@@ -383,7 +383,7 @@ public class FMutableStreamableBlockConverter : JsonConverter<FMutableStreamable
         serializer.Serialize(writer, value.FileId);
 
         writer.WritePropertyName("Flags");
-        serializer.Serialize(writer, value.Flags.ToStringBitfield());
+        serializer.Serialize(writer, value.Flags);
 
         writer.WritePropertyName("Offset");
         serializer.Serialize(writer, value.Offset);
@@ -391,7 +391,7 @@ public class FMutableStreamableBlockConverter : JsonConverter<FMutableStreamable
         writer.WriteEndObject();
     }
 
-    public override FMutableStreamableBlock ReadJson(JsonReader reader, Type objectType, FMutableStreamableBlock? existingValue,
+    public override FMutableStreamableBlock ReadJson(JsonReader reader, Type objectType, FMutableStreamableBlock existingValue,
         bool hasExistingValue, JsonSerializer serializer)
     {
         throw new NotImplementedException();

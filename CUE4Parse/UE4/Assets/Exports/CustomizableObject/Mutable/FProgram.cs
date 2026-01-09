@@ -67,24 +67,24 @@ public class FProgram
             ConstantUInt32Lists = Ar.ReadArray(Ar.ReadArray<uint>);
             ConstantUInt64Lists = Ar.ReadArray(Ar.ReadArray<ulong>);
         }
-        ConstantLayouts = Ar.ReadPtrArray(() => new FLayout(Ar));
-        ConstantProjectors = Ar.ReadArray<FProjector>();
-        ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
-        ConstantShapes = Ar.ReadArray<FShape>();
-        ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
-        ConstantSkeletons = Ar.ReadPtrArray(() => new FSkeleton(Ar));
-        if (Ar.Game < EGame.GAME_UE5_7) ConstantPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
-        Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
-        Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
-        ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
-        //if (Ar.Game >= EGame.GAME_UE5_8) RelevantParameterList = Ar.ReadMap(Ar.Read<uint>, Ar.Read<int>);
         try
         {
+            ConstantLayouts = Ar.ReadPtrArray(() => new FLayout(Ar));
+            ConstantProjectors = Ar.ReadArray<FProjector>();
+            ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
+            ConstantShapes = Ar.ReadArray<FShape>();
+            ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
+            ConstantSkeletons = Ar.ReadPtrArray(() => new FSkeleton(Ar));
+            if (Ar.Game < EGame.GAME_UE5_7) ConstantPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
+            Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
+            Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
+            ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
+            //if (Ar.Game >= EGame.GAME_UE5_8) RelevantParameterList = Ar.ReadMap(Ar.Read<uint>, Ar.Read<int>);
             if (Ar.Game >= EGame.GAME_UE5_7) ConstantMaterials = Ar.ReadPtrArray(() => new FMaterial(Ar));
         }
         catch (Exception e)
         {
-            Log.Warning("Exception thrown reading FProgram.ConstantMaterials: {0}", e);
+            Log.Warning("Exception thrown reading FProgram: {0}", e);
         }
     }
 }

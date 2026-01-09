@@ -1,5 +1,6 @@
 ﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 using CUE4Parse.UE4.Assets.Readers;
+using CUE4Parse.UE4.Objects.UObject;
 using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
@@ -8,7 +9,7 @@ public class UCustomizableObject : UObject
 {
     public long InternalVersion;
     public FModel? Model;
-    public FPackageIndex Private;
+    public FPackageIndex? Private;
     
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
@@ -29,17 +30,6 @@ public class UCustomizableObject : UObject
         writer.WriteValue(InternalVersion);
         writer.WritePropertyName(nameof(Model));
         serializer.Serialize(writer, Model);
-    }
-    
-    public void ReadByteCode()
-    {
-        if (Model == null) return;
-        var bytecodeReader = new FByteArchive("Mutable ByteCode", Model.Program.ByteCode);
-        foreach (var address in Model.Program.OpAddress)
-        {
-            bytecodeReader.Position = address;
-            var opType = bytecodeReader.Read<EOpType>();
-        }
     }
 }
 
