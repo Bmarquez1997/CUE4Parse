@@ -10,10 +10,10 @@ public struct FShape
     public FVector Up;
     public FVector Side;
     public FVector Size;
-    public Type Type;
+    public EType Type;
 }
 
-public enum Type : byte
+public enum EType : byte
 {
     None = 0,
     Ellipse,

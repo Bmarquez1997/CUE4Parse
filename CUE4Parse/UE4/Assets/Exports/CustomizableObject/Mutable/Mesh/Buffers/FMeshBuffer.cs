@@ -7,7 +7,7 @@ public class FMeshBuffer
     public FMeshBufferChannel[] Channels;
     public byte[] Data;
     public uint ElementSize;
-
+    
     public FMeshBuffer(FMutableArchive Ar)
     {
         Channels = Ar.ReadArray<FMeshBufferChannel>();

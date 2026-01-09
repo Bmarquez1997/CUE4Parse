@@ -8,7 +8,7 @@ public class FMeshBufferSet
     public uint ElementCount;
     public FMeshBuffer[] Buffers;
     public EMeshBufferSetFlags Flags;
-
+    
     public FMeshBufferSet(FMutableArchive Ar)
     {
         ElementCount = Ar.Read<uint>();
@@ -18,7 +18,7 @@ public class FMeshBufferSet
 }
 
 [Flags]
-public enum EMeshBufferSetFlags
+public enum EMeshBufferSetFlags : uint
 {
     None = 0,
     IsDescriptor = 1 << 0

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Layout;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Physics;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Surface;
@@ -44,7 +44,7 @@ public class FMesh
         StreamedResources = Ar.ReadArray<ulong>();
         BonePoses = Ar.ReadArray<FBonePose>();
         BoneMap = Ar.ReadArray<FBoneName>();
-        AdditionalPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
+        AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
         MeshIDPrefix = Ar.Read<uint>();
 
         if (Flags.HasFlag(EMeshFlags.IsResourceReference))

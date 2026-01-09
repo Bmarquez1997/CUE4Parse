@@ -1,25 +1,20 @@
-﻿using CUE4Parse.UE4.Assets.Readers;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Roms;
 
-public class FRomDataRuntime
+public struct FRomDataRuntime
 {
-    public uint Size;
-    public ERomDataType ResourceType;
-    public bool bIsHighRes;
-
-    public FRomDataRuntime(FMutableArchive Ar)
-    {
-        var bitField = Ar.Read<uint>();
-
-        Size = bitField & 0x3FFFFFFF;
-        ResourceType = (ERomDataType)((bitField & 0x40000000) >> 30);
-        bIsHighRes = (bitField & 0x80000000) >> 31 != 0;
-    }
+    [JsonIgnore] public uint Packed;
+    
+    public uint Size => Packed & 0x3FFFFFFF;
+    public ERomDataType Type => (ERomDataType)((Packed >> 30) & 1);
+    public bool IsHighRes => Packed >> 31 != 0;
 }
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum ERomDataType : uint
 {
     Image = 0,
-    Mesh  = 1
+    Mesh = 1
 }

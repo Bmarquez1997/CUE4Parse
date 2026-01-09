@@ -1,13 +1,17 @@
-﻿using CUE4Parse.UE4.Assets.Readers;
+﻿using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 
+[StructLayout(LayoutKind.Sequential)]
 public struct FExtensionData
 {
     public short Index;
     public EOrigin Origin;
 }
 
+[JsonConverter(typeof(StringEnumConverter))]
 public enum EOrigin : byte
 {
     //! An invalid value used to indicate that this ExtensionData hasn't been initialized

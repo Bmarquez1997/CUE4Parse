@@ -8,7 +8,7 @@ public class FMeshSurface
     public uint BoneMapIndex;
     public uint BoneMapCount;
     public uint Id;
-
+    
     public FMeshSurface(FMutableArchive Ar)
     {
         SubMeshes = Ar.ReadArray<FSurfaceSubMesh>();

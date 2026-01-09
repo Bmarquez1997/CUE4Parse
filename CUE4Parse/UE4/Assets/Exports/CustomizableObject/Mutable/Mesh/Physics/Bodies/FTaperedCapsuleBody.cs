@@ -10,7 +10,7 @@ public class FTaperedCapsuleBody : FBodyShape
     public float Radius0;
     public float Radius1;
     public float Length;
-
+    
     public FTaperedCapsuleBody(FMutableArchive Ar) : base(Ar)
     {
         Position = Ar.Read<FVector>();

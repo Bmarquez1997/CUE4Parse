@@ -2,37 +2,45 @@
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Parameters;
 
 public class FParameterDesc
 {
     public string Name;
+    // Unique id (provided externally, so no actual guarantee that it is unique.)
     public FGuid UID;
     public EParameterType Type;
     public object? DefaultValue;
+    // Ranges, if the parameter is multi-dimensional. The indices refer to the Model's program vector of range descriptors.
     public uint[] Ranges;
+    // For integer parameters, this contains the description of the possible values. If empty, the integer may have any value.
     public FIntValueDesc[] PossibleValues;
-
+   
     public FParameterDesc(FMutableArchive Ar)
     {
         Name = Ar.ReadFString();
         UID = Ar.Read<FGuid>();
         Type = Ar.Read<EParameterType>();
 
-        Ar.Position += 1;
+        var index = Ar.Read<byte>();
         DefaultValue = Type switch
         {
-            EParameterType.None or EParameterType.Texture => null,
-            EParameterType.Bool => Ar.ReadBoolean(),
+            EParameterType.None => null,
+            EParameterType.Bool => Ar.ReadFlag(),
             EParameterType.Int => Ar.Read<int>(),
             EParameterType.Float => Ar.Read<float>(),
             EParameterType.Color => Ar.Read<FVector4>(),
             EParameterType.Projector => Ar.Read<FProjector>(),
+            EParameterType.Texture => null,
+            EParameterType.SkeletalMesh => null,
+            EParameterType.Material => null,
             EParameterType.String => Ar.ReadFString(),
-            EParameterType.Matrix => new FMatrix(Ar),
-            EParameterType.Material or EParameterType.SkeletalMesh => null,
-            _ => throw new NotSupportedException($"Type {Type} is currently not supported")
+            EParameterType.Matrix => new FMatrix(Ar, false),
+            EParameterType.InstancedStruct => null,
+            _ => throw new NotSupportedException("Serialization for parameter type " + Type + " is not supported")
         };
 
         Ranges = Ar.ReadArray<uint>();
@@ -40,7 +48,8 @@ public class FParameterDesc
     }
 }
 
-public enum EParameterType
+[JsonConverter(typeof(StringEnumConverter))]
+public enum EParameterType : uint
 {
     /** Undefined parameter type. */
     None,
@@ -65,7 +74,7 @@ public enum EParameterType
 
     /** An externally provided mesh. */
     SkeletalMesh,
-
+        
     /** An externally provided material*/
     Material,
 

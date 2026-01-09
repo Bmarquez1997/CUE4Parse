@@ -1,31 +1,39 @@
-﻿using System.Collections.Generic;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
+﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 using CUE4Parse.UE4.Assets.Readers;
-using CUE4Parse.UE4.Objects.UObject;
-using CUE4Parse.UE4.Readers;
 using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 
 public class UCustomizableObject : UObject
 {
+    public long InternalVersion;
+    public FModel? Model;
     public FPackageIndex Private;
-    public ulong Version;
-    public FModel Model;
-
+    
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
         base.Deserialize(Ar, validPos);
-
-        var mutableArchive = new FMutableArchive(Ar);
-
+        // tested only on 5.7+, but in theory should also work on 5.6
+        if (Ar.Game < Versions.EGame.GAME_UE5_6) return;
+        InternalVersion = Ar.Read<long>();
+        if (InternalVersion != -1)
+            Model = new FModel(new FMutableArchive(Ar));
+        
         Private = GetOrDefault<FPackageIndex>(nameof(Private));
-        Version = Ar.Read<ulong>();
-        Model = new FModel(mutableArchive);
     }
 
+    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
+    {
+        base.WriteJson(writer, serializer);
+        writer.WritePropertyName(nameof(InternalVersion));
+        writer.WriteValue(InternalVersion);
+        writer.WritePropertyName(nameof(Model));
+        serializer.Serialize(writer, Model);
+    }
+    
     public void ReadByteCode()
     {
+        if (Model == null) return;
         var bytecodeReader = new FByteArchive("Mutable ByteCode", Model.Program.ByteCode);
         foreach (var address in Model.Program.OpAddress)
         {

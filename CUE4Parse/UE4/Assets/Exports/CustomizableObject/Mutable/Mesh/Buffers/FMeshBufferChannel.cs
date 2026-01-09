@@ -1,5 +1,8 @@
-﻿namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
+﻿using System.Runtime.InteropServices;
 
+namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
+
+[StructLayout(LayoutKind.Sequential)]
 public struct FMeshBufferChannel
 {
     public EMeshBufferSemantic Semantic;
@@ -56,7 +59,7 @@ public enum EMeshBufferSemantic : uint
     Count,
 }
 
-public enum EMeshBufferFormat : uint
+public enum EMeshBufferFormat
 {
     None,
 

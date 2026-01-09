@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using CUE4Parse.UE4.Objects.Core.Math;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
@@ -7,12 +6,11 @@ namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Skeleton;
 [StructLayout(LayoutKind.Sequential)]
 public struct FBonePose
 {
-    public FBoneName Id;
+    public FBoneName BoneId;
     public EBoneUsageFlags BoneUsageFlags;
     public FTransform BoneTransform;
 }
 
-[Flags]
 public enum EBoneUsageFlags : uint
 {
     None		   = 0,
@@ -23,5 +21,5 @@ public enum EBoneUsageFlags : uint
     PhysicsParent  = 1 << 5,
     Deform         = 1 << 6,
     DeformParent   = 1 << 7,
-    Reshaped       = 1 << 8
+    Reshaped       = 1 << 8	
 }

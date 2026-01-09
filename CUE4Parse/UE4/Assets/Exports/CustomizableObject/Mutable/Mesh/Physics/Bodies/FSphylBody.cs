@@ -9,7 +9,7 @@ public class FSphylBody : FBodyShape
     public FQuat Orientation;
     public float Radius;
     public float Length;
-
+    
     public FSphylBody(FMutableArchive Ar) : base(Ar)
     {
         Position = Ar.Read<FVector>();

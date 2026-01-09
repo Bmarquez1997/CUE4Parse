@@ -7,15 +7,15 @@ public class FPhysicsBodyAggregate
 {
     public FSphereBody[] Spheres;
     public FBoxBody[] Boxes;
-    public FConvexBody[] Convex;
+    public FConvexBody[] Convexes;
     public FSphylBody[] Sphyls;
     public FTaperedCapsuleBody[] TaperedCapsules;
-
+    
     public FPhysicsBodyAggregate(FMutableArchive Ar)
     {
         Spheres = Ar.ReadArray(() => new FSphereBody(Ar));
         Boxes = Ar.ReadArray(() => new FBoxBody(Ar));
-        Convex = Ar.ReadArray(() => new FConvexBody(Ar));
+        Convexes = Ar.ReadArray(() => new FConvexBody(Ar));
         Sphyls = Ar.ReadArray(() => new FSphylBody(Ar));
         TaperedCapsules = Ar.ReadArray(() => new FTaperedCapsuleBody(Ar));
     }

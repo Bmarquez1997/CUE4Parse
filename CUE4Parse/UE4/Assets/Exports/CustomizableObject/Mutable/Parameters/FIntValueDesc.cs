@@ -6,7 +6,7 @@ public class FIntValueDesc
 {
     public short Value;
     public string Name;
-
+    
     public FIntValueDesc(FMutableArchive Ar)
     {
         Value = Ar.Read<short>();
