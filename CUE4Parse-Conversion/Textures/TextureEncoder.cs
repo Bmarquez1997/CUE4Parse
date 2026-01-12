@@ -359,32 +359,32 @@ public static class TextureEncoder
                 break;
             case EPixelFormat.PF_FloatRGB:
             case EPixelFormat.PF_FloatRGBA:
-                convertedData = ConvertHalfTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan);
+                convertedData = ConvertTo8<Half>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertHalfTo8);
                 break;
             case EPixelFormat.PF_R32_FLOAT:
             case EPixelFormat.PF_R32G32B32F:
-                convertedData = ConvertFloatTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan);
+                convertedData = ConvertTo8<float>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertFloatTo8);
                 break;
             case EPixelFormat.PF_A32B32G32R32F:
-                convertedData = ConvertFloatTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
+                convertedData = ConvertTo8<float>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertFloatTo8, true);
                 break;
             case EPixelFormat.PF_A16B16G16R16:
-                convertedData = Convert16To8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
+                convertedData = ConvertTo8<ushort>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, Convert16To8, true);
                 break;
             case EPixelFormat.PF_G16:
-                convertedData = Convert16To8(texture.PixelFormat, texture.Width, texture.Height, dataSpan);
+                convertedData = ConvertTo8<ushort>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, Convert16To8);
                 break;
             case EPixelFormat.PF_G16R16:
-                convertedData = Convert16To8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
+                convertedData = ConvertTo8<ushort>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, Convert16To8, true);
                 break;
             case EPixelFormat.PF_G16R16F:
-                convertedData = ConvertHalfTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
+                convertedData = ConvertTo8<Half>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertHalfTo8, true);
                 break;
             case EPixelFormat.PF_G32R32F:
-                convertedData = ConvertFloatTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan, true);
+                convertedData = ConvertTo8<float>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertFloatTo8, true);
                 break;
             case EPixelFormat.PF_R16F:
-                convertedData = ConvertHalfTo8(texture.PixelFormat, texture.Width, texture.Height, dataSpan);
+                convertedData = ConvertTo8<Half>(texture.PixelFormat, texture.Width, texture.Height, dataSpan, ConvertHalfTo8);
                 break;
             case EPixelFormat.PF_V8U8:
                 convertedData = ConvertV8U8ToRGBA(texture.Width, texture.Height, dataSpan);
@@ -468,62 +468,6 @@ public static class TextureEncoder
                     FillMissingChannels(outPtr, channelCount);
                 }
             }
-        }
-        return retPtr;
-    }
-
-    private static unsafe nint ConvertFloatTo8(EPixelFormat pixelFormat, int width, int height, ReadOnlySpan<byte> inp, bool flipOrder = false)
-    {
-        int channelCount = PixelFormatUtils.PixelFormats.First(x => x.UnrealFormat == pixelFormat).NumComponents;
-
-        //(4 bytes per pixel for RGBA)
-        MemoryUtils.NativeAlloc<byte>(width * height * 4, out var retPtr);
-
-        fixed (byte* inpPtr = inp)
-        {
-            byte* outPtr = (byte*)retPtr;
-
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                {
-                    int pixelOffset = (y * width + x) * channelCount * sizeof(float);
-                    for (int c = 0; c < channelCount; c++)
-                    {
-                        int channelIndex = flipOrder ? (3 - c) : c;
-                        float value = *(float*)(inpPtr + pixelOffset + channelIndex * sizeof(float));
-                        *outPtr = (byte)Math.Clamp(value * 255.0f, 0, byte.MaxValue);
-                        outPtr += sizeof(byte);
-                    }
-                    FillMissingChannels(outPtr, channelCount);
-                }
-        }
-        return retPtr;
-    }
-
-    private static unsafe nint ConvertHalfTo8(EPixelFormat pixelFormat, int width, int height, ReadOnlySpan<byte> inp, bool flipOrder = false)
-    {
-        int channelCount = PixelFormatUtils.PixelFormats.First(x => x.UnrealFormat == pixelFormat).NumComponents;
-
-        //(4 bytes per pixel for RGBA)
-        MemoryUtils.NativeAlloc<byte>(width * height * 4, out var retPtr);
-
-        fixed (byte* inpPtr = inp)
-        {
-            byte* outPtr = (byte*)retPtr;
-
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                {
-                    int pixelOffset = (y * width + x) * channelCount * sizeof(Half);
-                    for (int c = 0; c < channelCount; c++)
-                    {
-                        int channelIndex = flipOrder ? (3 - c) : c;
-                        float value = (float)*(Half*)(inpPtr + pixelOffset + channelIndex * sizeof(Half));
-                        *outPtr = (byte)Math.Clamp(value * 255.0f, 0, byte.MaxValue);
-                        outPtr += sizeof(byte);
-                    }
-                    FillMissingChannels(outPtr, channelCount);
-                }
         }
         return retPtr;
     }
