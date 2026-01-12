@@ -217,6 +217,11 @@ namespace CUE4Parse.FileProvider.Vfs
             }
         }
 
+        public void RegisterTextureCache(FileInfo file)
+        {
+            TextureCachePaths[Path.GetFileNameWithoutExtension(file.Name)] = file.FullName;
+        }
+
         protected void PostLoadReader(AbstractAesVfsReader reader, bool isConcurrent = true)
         {
             if (reader.IsEncrypted)
@@ -504,6 +509,25 @@ namespace CUE4Parse.FileProvider.Vfs
                 }
             }
             return refList;
+        }
+
+        public FFilePackageStoreEntry? TryFindStoreEntry(FPackageId packageId)
+        {
+            FFilePackageStoreEntry? storeEntry = null;
+            foreach (var reader in MountedVfs)
+            {
+                if (reader is not IoStoreReader ioReader || ioReader.ContainerHeader is not { StoreEntries.Length: > 0 } header)
+                    continue;
+
+                var idx = Array.IndexOf(header.PackageIds, packageId);
+                if (idx != -1)
+                {
+                    storeEntry = header.StoreEntries[idx];
+                    break;
+                }
+
+            }
+            return storeEntry;
         }
 
         public override void Dispose()

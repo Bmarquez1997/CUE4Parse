@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
@@ -13,6 +13,7 @@ public class FMutableArchive : FArchive
     public FMutableArchive(FArchive baseArchive)
     {
         _baseArchive = baseArchive;
+        Versions = baseArchive.Versions;
     }
     
     public override int Read(byte[] buffer, int offset, int count) => _baseArchive.Read(buffer, offset, count);
