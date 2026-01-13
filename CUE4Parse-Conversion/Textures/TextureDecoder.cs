@@ -178,13 +178,14 @@ public static class TextureDecoder
         }
     }
 
-    public static unsafe CTexture[]? DecodeTextureArray(this UTexture2DArray texture, ETexturePlatform platform = ETexturePlatform.DesktopMobile)
+    public static unsafe CTexture[]? DecodeTextureArray(this UTexture2DArray texture, FTexture2DMipMap? mip = null,
+        ETexturePlatform platform = ETexturePlatform.DesktopMobile)
     {
-        var mip = texture.GetFirstMip();
+        mip ??= texture.GetFirstMip();
 
         if (mip is null)
             return null;
-
+        
         var sizeX = mip.SizeX;
         var sizeY = mip.SizeY;
         var sizeZ = mip.SizeZ;
