@@ -185,7 +185,9 @@ public static class MeshConverter
             convertedMesh.LODs.Add(staticMeshLod);
         }
 
-        if (naniteFormat != ENaniteMeshFormat.OnlyNormalLODs && TryConvertNaniteMesh(originalMesh, out CStaticMeshLod? naniteMesh) && naniteMesh is not null)
+        var lodsCount = convertedMesh.LODs.Count;
+        if ((lodsCount == 0 || naniteFormat != ENaniteMeshFormat.OnlyNormalLODs)
+            && TryConvertNaniteMesh(originalMesh, out CStaticMeshLod? naniteMesh) && naniteMesh is not null)
         {
             switch (naniteFormat)
             {
@@ -198,6 +200,9 @@ public static class MeshConverter
                     convertedMesh.LODs.Insert(0, naniteMesh);
                     break;
                 case ENaniteMeshFormat.AllLayersNaniteLast:
+                    convertedMesh.LODs.Add(naniteMesh);
+                    break;
+                case ENaniteMeshFormat.OnlyNormalLODs when lodsCount == 0:
                     convertedMesh.LODs.Add(naniteMesh);
                     break;
             }

@@ -35,6 +35,8 @@ public class ULightComponentBase : USceneComponent
     {
         return new FLinearColor(LightColor.R / 255.0f, LightColor.G / 255.0f, LightColor.B / 255.0f, LightColor.A / 255.0f);
     }
+
+    public virtual float GetNitIntensity() => Intensity;
 }
 
 public class ULightComponent : ULightComponentBase
@@ -44,6 +46,8 @@ public class ULightComponent : ULightComponentBase
     public float MaxDistanceFadeRange { get; private set; }
     public uint bUseTemperature { get; private set; }
     public FPackageIndex IESTexture { get; private set; }
+    public uint bUseIESBrightness { get; private set; }
+    public float IESBrightnessScale { get; private set; }
     public FStaticShadowDepthMapData? LegacyData { get; private set; }
     
     [UProperty] public float SpecularScale;
@@ -61,6 +65,8 @@ public class ULightComponent : ULightComponentBase
         MaxDistanceFadeRange = GetOrDefault(nameof(MaxDistanceFadeRange), 0.0f);
         bUseTemperature = GetOrDefault(nameof(bUseTemperature), 0u);
         IESTexture = GetOrDefault(nameof(IESTexture), new FPackageIndex());
+        bUseIESBrightness = GetOrDefault(nameof(bUseIESBrightness), 0u);
+        IESBrightnessScale = GetOrDefault(nameof(IESBrightnessScale), 1.0f);
 
         if (Ar.Ver >= EUnrealEngineObjectUE4Version.STATIC_SHADOW_DEPTH_MAPS)
         {
@@ -73,7 +79,7 @@ public class ULightComponent : ULightComponentBase
         if (Ar.Game == EGame.GAME_Valorant) Ar.Position += 24; // Zero FVector, 1.0f, -1 int, 1.0f
     }
 
-    public virtual double GetNitIntensity() => Intensity;
+    public virtual ELightUnits GetLightUnits() => ELightUnits.Unitless;
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
     {
@@ -101,10 +107,7 @@ public class ULocalLightComponent : ULightComponent
         IntensityUnits = GetOrDefault(nameof(IntensityUnits), Owner.Provider.DefaultLightUnit);
     }
 
-    public override double GetNitIntensity()
-    {
-        return Intensity;
-    }
+    public override ELightUnits GetLightUnits() => IntensityUnits;
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
     {
@@ -171,34 +174,38 @@ public class UPointLightComponent : ULocalLightComponent
         }
     }
 
-    public override double GetNitIntensity()
+    public override float GetNitIntensity()
     {
         if (!bUseInverseSquaredFalloff)
             return Intensity; // Unitless brightness
 
-        double solidAngle = 4f * Math.PI;
+        var solidAngle = 4f * MathF.PI;
         if (this is USpotLightComponent spotLightComponent)
-            solidAngle = 2f * Math.PI * (1.0f - spotLightComponent.GetCosHalfConeAngle());
+            solidAngle = 2f * MathF.PI * (1.0f - spotLightComponent.GetCosHalfConeAngle());
 
-        float areaInSqMeters =
-            (float)Math.Max(solidAngle * Math.Pow(SourceRadius / 100f, 2), UnrealMath.KindaSmallNumber);
+        var areaInSqMeters = (float)Math.Max(solidAngle * Math.Pow(SourceRadius / 100f, 2), UnrealMath.KindaSmallNumber);
 
-        return LightUtils.ConvertToIntensityToNits(Intensity, areaInSqMeters, solidAngle, IntensityUnits);
-    }
+        float intensity = Intensity;
+        if (UnrealMath.IsNearlyZero(SourceRadius))
+        {
+            intensity = 0.0f;
+        }
 
-    protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
-    {
-        base.WriteJson(writer, serializer);
-
-        writer.WritePropertyName("bUseInverseSquaredFalloff");
-        writer.WriteValue(bUseInverseSquaredFalloff);
+        return LightUtils.ConvertToIntensityToNits(intensity, areaInSqMeters, solidAngle, IntensityUnits);
     }
 }
 
 public class URectLightComponent : ULocalLightComponent
 {
-    public float SourceWidth;
-    public float SourceHeight;
+    public float SourceWidth { get; private set; }
+    public float SourceHeight { get; private set; }
+    public float BarnDoorAngle { get; private set; }
+    public float BarnDoorLength { get; private set; }
+    public float LightFunctionConeAngle { get; private set; }
+    public FPackageIndex SourceTexture { get; private set; }
+    public FVector2D SourceTextureScale { get; private set; }
+    public FVector2D SourceTextureOffset { get; private set; }
+    public bool bLightRequiresBrokenEVMath { get; private set; }
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
@@ -206,13 +213,34 @@ public class URectLightComponent : ULocalLightComponent
 
         SourceWidth = GetOrDefault(nameof(SourceWidth), 64.0f);
         SourceHeight = GetOrDefault(nameof(SourceHeight), 64.0f);
+        BarnDoorAngle = GetOrDefault(nameof(BarnDoorAngle), 88.0f);
+        BarnDoorLength = GetOrDefault(nameof(BarnDoorLength), 20.0f);
+        LightFunctionConeAngle = GetOrDefault(nameof(LightFunctionConeAngle), 0.0f);
+
+        SourceTexture = GetOrDefault(nameof(SourceTexture), new FPackageIndex());
+        SourceTextureScale = GetOrDefault(nameof(SourceTextureScale), new FVector2D(1.0f, 1.0f));
+        SourceTextureOffset = GetOrDefault(nameof(SourceTextureOffset), new FVector2D(0.0f, 0.0f));
+
+        if (FFortniteMainBranchObjectVersion.Get(Ar) < FFortniteMainBranchObjectVersion.Type.RectLightFixedEVUnitConversion)
+        {
+            if (IntensityUnits == ELightUnits.EV)
+            {
+                bLightRequiresBrokenEVMath = true;
+            }
+        }
     }
 
-    public override double GetNitIntensity()
+    public override float GetNitIntensity()
     {
         var areaInSqMeters = (SourceWidth / 100.0f) * (SourceHeight / 100.0f);
-        const double angle = Math.PI;
-        return LightUtils.ConvertToIntensityToNits(Intensity, areaInSqMeters, angle, IntensityUnits);
+
+        float intensity = Intensity;
+        if (UnrealMath.IsNearlyZero(areaInSqMeters))
+        {
+            intensity = 0.0f;
+        }
+
+        return LightUtils.ConvertToIntensityToNits(intensity, areaInSqMeters, MathF.PI, IntensityUnits);
     }
 }
 
@@ -235,8 +263,8 @@ public class UDirectionalLightComponent : ULightComponent
     [UProperty] public float FarShadowDistance;
     [UProperty] public float DistanceFieldShadowDistance;
     [UProperty] public int ForwardShadingPriority;
-    [UProperty] public float LightSourceAngle;
-    [UProperty] public float LightSourceSoftAngle;
+    [UProperty] public float LightSourceAngle = 0.5357f;
+    [UProperty] public float LightSourceSoftAngle = 0.0f;
     [UProperty] public float ShadowSourceAngleFactor;
     [UProperty] public float TraceDistance;
     [UProperty] public uint bUsedAsAtmosphereSunLight_DEPRECATED = 1;
@@ -259,9 +287,12 @@ public class UDirectionalLightComponent : ULightComponent
     [UProperty] public FColor ModulatedShadowColor;
     [UProperty] public float ShadowAmount;
 
-    // public override double GetNitIntensity() 
+    // public override void Deserialize(FAssetArchive Ar, long validPos)
     // {
-    //     return LightUtils.ConvertToIntensityToNits(Intensity, areaInSqMeters, solidAngle, IntensityUnits);
+    //     base.Deserialize(Ar, validPos);
+    //
+    //     LightSourceAngle = GetOrDefault(nameof(LightSourceAngle), 0.5357f);
+    //     LightSourceSoftAngle = GetOrDefault(nameof(LightSourceSoftAngle), 0.0f);
     // }
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
@@ -270,7 +301,4 @@ public class UDirectionalLightComponent : ULightComponent
     }
 }
 
-public class USkyLightComponent : ULightComponentBase
-{
-
-}
+public class USkyLightComponent : ULightComponentBase;
