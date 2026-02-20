@@ -160,7 +160,7 @@ public class UObject : AbstractPropertyHolder
             DeserializePropertiesTagged(Properties = [], Ar, false);
         }
 
-        if (!Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject) && Ar.ReadBoolean() && Ar.Position + 16 <= validPos)
+        if (Ar.Game >= EGame.GAME_UE4_0 && !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject) && Ar.ReadBoolean() && Ar.Position + 16 <= validPos)
         {
             ObjectGuid = Ar.Read<FGuid>();
         }
@@ -641,7 +641,7 @@ public static class PropertyUtil
 
         var tag2 = tag ?? new FPropertyTag(name, typeof(T).Name, 0, 0, null, false, null, null);
 
-        tag.Tag = value switch
+        tag2.Tag = value switch
         {
             FPackageIndex idx => new ObjectProperty(idx),
             IUStruct uStruct => new StructProperty(new FScriptStruct(uStruct)),

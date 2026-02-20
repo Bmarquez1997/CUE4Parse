@@ -15,6 +15,7 @@ using CUE4Parse.UE4.Assets;
 using CUE4Parse.UE4.Assets.Exports;
 using CUE4Parse.UE4.Assets.Exports.Internationalization;
 using CUE4Parse.UE4.Assets.Objects;
+using CUE4Parse.UE4.IO;
 using CUE4Parse.UE4.IO.Objects;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Objects.Engine;
@@ -47,9 +48,11 @@ namespace CUE4Parse.FileProvider
         public VersionContainer Versions { get; }
         public StringComparer PathComparer { get; }
 
+        public IoStoreOnDemandOptions? OnDemandOptions { get; set; }
         public FileProviderDictionary Files { get; }
         public InternationalizationDictionary Internationalization { get; }
         public IDictionary<string, string> VirtualPaths { get; }
+        public IDictionary<string, string> TextureCachePaths { get; }
         public CustomConfigIni DefaultGame { get; }
         public CustomConfigIni DefaultEngine { get; }
 
@@ -72,6 +75,7 @@ namespace CUE4Parse.FileProvider
             Files = new FileProviderDictionary();
             Internationalization = new InternationalizationDictionary(PathComparer);
             VirtualPaths = new ConcurrentDictionary<string, string>(PathComparer);
+            TextureCachePaths = new ConcurrentDictionary<string, string>(PathComparer);
             DefaultGame = new CustomConfigIni(nameof(DefaultGame));
             DefaultEngine = new CustomConfigIni(nameof(DefaultEngine));
         }
@@ -350,8 +354,8 @@ namespace CUE4Parse.FileProvider
         public int LoadVirtualPaths() { return LoadVirtualPaths(Versions.Ver); }
         public virtual int LoadVirtualPaths(FPackageFileVersion version, CancellationToken cancellationToken = default)
         {
-            var regex = new Regex($"^{ProjectName}/Plugins/.+.upluginmanifest$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            var arregex = new Regex($"^{ProjectName}/Plugins/.*AssetRegistry.bin$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            var regex = new Regex($"^{Regex.Escape(ProjectName)}/Plugins/.+.upluginmanifest$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+            var arregex = new Regex($"^{Regex.Escape(ProjectName)}/Plugins/.*AssetRegistry.bin$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
             VirtualPaths.Clear();
             ConcurrentBag<KeyValuePair<string, GameFile>> matchingPlugins = [];
             Parallel.ForEach(Files, new ParallelOptions { CancellationToken = cancellationToken }, (kvp) =>

@@ -22,6 +22,7 @@ using CUE4Parse.GameTypes.MindsEye.Encryption.Aes;
 using CUE4Parse.GameTypes.MJS.Encryption.Aes;
 using CUE4Parse.GameTypes.NetEase.MAR.Encryption.Aes;
 using CUE4Parse.GameTypes.NFS.Mobile.Encryption.Aes;
+using CUE4Parse.GameTypes.NMZ.Encryption.Aes;
 using CUE4Parse.GameTypes.OPA.Encryption.Aes;
 using CUE4Parse.GameTypes.PAXDEI.Encryption.Aes;
 using CUE4Parse.GameTypes.PMA.Encryption.Aes;
@@ -29,6 +30,7 @@ using CUE4Parse.GameTypes.Rennsport.Encryption.Aes;
 using CUE4Parse.GameTypes.SD.Encryption.Aes;
 using CUE4Parse.GameTypes.Snowbreak.Encryption.Aes;
 using CUE4Parse.GameTypes.Splitgate2.Encryption.Aes;
+using CUE4Parse.GameTypes.Styx.Encryption.Aes;
 using CUE4Parse.GameTypes.THPS.Encryption.Aes;
 using CUE4Parse.GameTypes.UDWN.Encryption.Aes;
 using CUE4Parse.GameTypes.UWO.Encryption.Aes;
@@ -97,6 +99,8 @@ namespace CUE4Parse.FileProvider.Vfs
                 EGame.GAME_UnchartedWatersOrigin => UnchartedWatersOriginAes.UnchartedWatersOriginDecrypt,
                 EGame.GAME_ArenaBreakoutInfinite => ABIDecryption.ABIDecrypt,
                 EGame.GAME_BloodBowl3 => BloodBowl3Aes.BloodBowl3Decrypt,
+                EGame.GAME_StyxBladesofGreed => StyxAes.StyxDecrypt,
+                EGame.GAME_AssaultFireFuture => AssaultFireFutureAes.AssaultFireFutureDecrypt,
                 _ => null
             };
         }
@@ -142,6 +146,12 @@ namespace CUE4Parse.FileProvider.Vfs
                         openContainerStreamFunc ??= it => new FStreamArchive(it, stream!, Versions);
                         reader = new IoStoreReader(archive, openContainerStreamFunc);
                         break;
+                    case "UONDEMANDTOC":
+                        if (OnDemandOptions is null)
+                            return;
+                        var chunkToc = new IoChunkToc(archive);
+                        RegisterVfs(chunkToc, OnDemandOptions);
+                        return;
                     default:
                         return;
                 }
@@ -170,6 +180,12 @@ namespace CUE4Parse.FileProvider.Vfs
                         openContainerStreamFunc ??= _ => utocArchive!;
                         reader = new IoStoreReader(pakOrUtocArchive, openContainerStreamFunc);
                         break;
+                    case "UONDEMANDTOC":
+                        if (OnDemandOptions is null)
+                            return;
+                        var chunkToc = new IoChunkToc(pakOrUtocArchive);
+                        RegisterVfs(chunkToc, OnDemandOptions);
+                        return;
                     default:
                         return;
                 }
@@ -196,6 +212,12 @@ namespace CUE4Parse.FileProvider.Vfs
                         openContainerStreamFunc ??= it => new FRandomAccessStreamArchive(it, utocStream!, Versions);
                         reader = new IoStoreReader(pakOrUtocArchive, openContainerStreamFunc);
                         break;
+                    case "UONDEMANDTOC":
+                        if (OnDemandOptions is null)
+                            return;
+                        var chunkToc = new IoChunkToc(pakOrUtocArchive);
+                        RegisterVfs(chunkToc, OnDemandOptions);
+                        return;
                     default:
                         return;
                 }
@@ -206,15 +228,28 @@ namespace CUE4Parse.FileProvider.Vfs
                 Log.Warning(e.ToString());
             }
         }
-        public async Task RegisterVfs(IoChunkToc chunkToc, IoStoreOnDemandOptions options)
+
+        public void RegisterVfs(IoChunkToc chunkToc, IoStoreOnDemandOptions options) => RegisterVfsAsync(chunkToc).GetAwaiter().GetResult();
+        public async Task RegisterVfsAsync(IoChunkToc chunkToc)
         {
-            var downloader = new IoStoreOnDemandDownloader(options);
+            if (OnDemandOptions is null)
+                return;
+
+            var downloader = new IoStoreOnDemandDownloader(OnDemandOptions);
             foreach (var container in chunkToc.Containers)
             {
                 PostLoadReader(new IoStoreOnDemandReader(
-                    new FStreamArchive($"{container.ContainerName}.utoc", await downloader.Download($"{container.UTocHash.ToString().ToLower()}.utoc"), Versions),
-                    container.Entries, downloader));
+                    new FStreamArchive($"{container.ContainerName}.utoc",
+                    await downloader.Download($"{chunkToc.Header.ChunksDirectory}/{container.UTocHash.ToString().ToLower()}.utoc").ConfigureAwait(false), Versions),
+                    chunkToc,
+                    container,
+                    downloader));
             }
+        }
+
+        public void RegisterTextureCache(FileInfo file)
+        {
+            TextureCachePaths[Path.GetFileNameWithoutExtension(file.Name)] = file.FullName;
         }
 
         protected void PostLoadReader(AbstractAesVfsReader reader, bool isConcurrent = true)
@@ -504,6 +539,25 @@ namespace CUE4Parse.FileProvider.Vfs
                 }
             }
             return refList;
+        }
+
+        public FFilePackageStoreEntry? TryFindStoreEntry(FPackageId packageId)
+        {
+            FFilePackageStoreEntry? storeEntry = null;
+            foreach (var reader in MountedVfs)
+            {
+                if (reader is not IoStoreReader ioReader || ioReader.ContainerHeader is not { StoreEntries.Length: > 0 } header)
+                    continue;
+
+                var idx = Array.IndexOf(header.PackageIds, packageId);
+                if (idx != -1)
+                {
+                    storeEntry = header.StoreEntries[idx];
+                    break;
+                }
+
+            }
+            return storeEntry;
         }
 
         public override void Dispose()

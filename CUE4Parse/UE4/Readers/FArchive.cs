@@ -207,10 +207,37 @@ namespace CUE4Parse.UE4.Readers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SkipMultipleBulkArrayData(int count)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                SkipBulkArrayData();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SkipFixedArray(int size = -1)
         {
             var num = Read<int>();
             Position += num * size;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SkipMultipleFixedArrays(int [] sizes)
+        {
+            foreach (var size in sizes)
+            {
+                SkipFixedArray(size);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SkipMultipleFixedArrays(int count, int size)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                SkipFixedArray(size);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -250,6 +277,36 @@ namespace CUE4Parse.UE4.Readers
         {
             var length = Read<int>();
             return ReadMap(length, getter);
+        }
+
+        // TO-DO: Switch to TMultiMap class
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Dictionary<TKey, List<TValue>> ReadMultiMap<TKey, TValue>(int length, Func<TKey> keyGetter, Func<TValue> valueGetter) where TKey : notnull
+        {
+            var result = new Dictionary<TKey, List<TValue>>();
+            for (var i = 0; i < length; i++)
+            {
+                var key = keyGetter();
+                var value = valueGetter();
+
+                if (result.TryGetValue(key, out var list))
+                {
+                    list.Add(value);
+                }
+                else
+                {
+                    result[key] = [value];
+                }
+            }
+
+            return result;
+        }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Dictionary<TKey, List<TValue>> ReadMultiMap<TKey, TValue>(Func<TKey> keyGetter, Func<TValue> valueGetter) where TKey : notnull
+        {
+            var length = Read<int>();
+            return ReadMultiMap(length, keyGetter, valueGetter);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

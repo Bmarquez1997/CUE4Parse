@@ -87,7 +87,10 @@ public class FModProvider
     private void LoadFileBanks(string gameDirectory)
     {
         var dir = new DirectoryInfo(gameDirectory);
-        if (dir.Name.Equals("Paks", StringComparison.OrdinalIgnoreCase) && Directory.GetParent(gameDirectory) is {} parentInfo)
+        if (!dir.Name.Equals("Paks", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (Directory.GetParent(gameDirectory) is {} parentInfo)
             gameDirectory = parentInfo.FullName;
 
         string? fmodDir = null!;
@@ -186,7 +189,7 @@ public class FModProvider
         }
     }
 
-    public static bool TryLoadBank(Stream stream, string bankName, [NotNullWhen(true)]out FModReader? fmodReader)
+    public bool TryLoadBank(Stream stream, string bankName, [NotNullWhen(true)]out FModReader? fmodReader)
     {
         fmodReader = null;
         try
