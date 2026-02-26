@@ -13,6 +13,7 @@ public class UModelResources : UObject
     public UScriptMap? BoneNamesMap;
     public UScriptMap? MeshMetadata;
     public UScriptMap? SurfaceMetadata;
+    public UScriptMap? PassthroughObjects;
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
     {
@@ -24,5 +25,6 @@ public class UModelResources : UObject
         BoneNamesMap = GetOrDefault<UScriptMap>(nameof(BoneNamesMap));
         MeshMetadata = GetOrDefault<UScriptMap>(nameof(MeshMetadata));
         SurfaceMetadata = GetOrDefault<UScriptMap>(nameof(SurfaceMetadata));
+        PassthroughObjects = GetOrDefault<UScriptMap>(nameof(PassthroughObjects));
     }
 }
