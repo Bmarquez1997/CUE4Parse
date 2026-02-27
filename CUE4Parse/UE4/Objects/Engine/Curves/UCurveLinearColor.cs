@@ -16,13 +16,13 @@ public class UCurveLinearColor : UCurveBase
     {
         base.Deserialize(Ar, validPos);
 
-        AdjustBrightness = GetOrDefault<float>(nameof(AdjustBrightness));
-        AdjustBrightnessCurve = GetOrDefault<float>(nameof(AdjustBrightnessCurve));
+        AdjustBrightness = GetOrDefault<float>(nameof(AdjustBrightness), 1.0f);
+        AdjustBrightnessCurve = GetOrDefault<float>(nameof(AdjustBrightnessCurve), 1.0f);
         AdjustVibrance = GetOrDefault<float>(nameof(AdjustVibrance));
-        AdjustSaturation = GetOrDefault<float>(nameof(AdjustSaturation));
+        AdjustSaturation = GetOrDefault<float>(nameof(AdjustSaturation), 1.0f);
         AdjustHue = GetOrDefault<float>(nameof(AdjustHue));
         AdjustMinAlpha = GetOrDefault<float>(nameof(AdjustMinAlpha));
-        AdjustMaxAlpha = GetOrDefault<float>(nameof(AdjustMaxAlpha));
+        AdjustMaxAlpha = GetOrDefault<float>(nameof(AdjustMaxAlpha), 1.0f);
 
         for (var i = 0; i < Properties.Count; ++i)
         {
