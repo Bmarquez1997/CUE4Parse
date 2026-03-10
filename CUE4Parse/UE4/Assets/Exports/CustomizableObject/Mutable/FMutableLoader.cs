@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Exceptions;
@@ -41,7 +41,7 @@ public class FMutableLoader
     public FImage? LoadImage(uint index)
     {
         var block = ModelStreamables[index];
-        if (block.Flags != 1) return null;
+        // if (block.Flags != 1) return null; HighRes flag
         var archive = GetArchive(block);
         archive.Position = (long) block.Offset;
         return new FImage(archive);
@@ -65,15 +65,26 @@ public class FMutableLoader
     {
         List<EOpType> returnList = [];
         if (_customizableObject.Model == null) return returnList;
-        var bytecodeReader = new FByteArchive("Mutable ByteCode", _customizableObject.Model.Program.ByteCode);
+        var byteCode = _customizableObject.Model.Program.ByteCode;
+        if (byteCode == null) return returnList;
+        // In Unreal, EOpType is uint8 (1 byte) per instruction
         foreach (var address in _customizableObject.Model.Program.OpAddress)
         {
-            bytecodeReader.Position = address;
-
-            var opCodeType = bytecodeReader.Read<EOpType>();
-            returnList.Add(opCodeType);
+            uint offset = MutableByteCode.GetByteCodeOffset(address);
+            if (offset >= byteCode.Length) continue;
+            returnList.Add((EOpType)byteCode[offset]);
         }
-
         return returnList;
+    }
+
+    /// <summary>
+    /// Builds ROM identification by scanning ByteCode for IM_CONSTANT and ME_CONSTANT instructions.
+    /// Use this to map each Program.Roms[index] to its logical constant image/mesh and op references.
+    /// </summary>
+    public RomIdentification? GetRomIdentification()
+    {
+        if (_customizableObject.Model?.Program == null) return null;
+        var byteCode = new MutableByteCode(_customizableObject.Model.Program);
+        return byteCode.BuildRomIdentification();
     }
 }

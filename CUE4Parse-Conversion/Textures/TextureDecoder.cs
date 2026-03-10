@@ -10,7 +10,7 @@ using CUE4Parse.Utils;
 using CUE4Parse_Conversion.Textures.ASTC;
 using CUE4Parse_Conversion.Textures.BC;
 using CUE4Parse_Conversion.Textures.DXT;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 
 namespace CUE4Parse_Conversion.Textures;
 
@@ -256,7 +256,7 @@ public static class TextureDecoder
     {
         var dataStorage = image.DataStorage;
 
-        var size = dataStorage.ImageSize;
+        var size = dataStorage.Size;
         
         var rawBytes = dataStorage.Buffers.SelectMany(buffer => buffer).ToArray();
         

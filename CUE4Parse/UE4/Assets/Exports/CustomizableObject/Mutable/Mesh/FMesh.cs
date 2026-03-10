@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
@@ -36,24 +36,21 @@ public class FMesh
         VertexBuffers = new FMeshBufferSet(Ar);
         AdditionalBuffers = Ar.ReadArray(() => new KeyValuePair<EMeshBufferType, FMeshBufferSet>(Ar.Read<EMeshBufferType>(), new FMeshBufferSet(Ar)));
         Layouts = Ar.ReadPtrArray(() => new FLayout(Ar));
-        SkeletonIDs = Ar.ReadArray<uint>();
-        Skeleton = Ar.ReadPtr(() => new FSkeleton(Ar));
-        try
-        {
-            PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
-            Flags = Ar.Read<EMeshFlags>();
-            Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
-            Tags = Ar.ReadArray(Ar.ReadFString);
-            StreamedResources = Ar.ReadArray<ulong>();
-            BonePoses = Ar.ReadArray<FBonePose>();
-            BoneMap = Ar.ReadArray<FBoneName>();
-            AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
-            MeshIDPrefix = Ar.Read<uint>();
-        }
-        catch (Exception e)
-        {
-            Log.Warning("Exception thrown reading FMesh: {0}", e);
-        }
+        // Unreal does NOT serialize Skeleton or SkeletonIDs in the mesh blob (see Mesh.cpp Serialise).
+        // They are set at runtime from ME_CONSTANT args (Skeleton index) and Program.ConstantMeshes.
+        SkeletonIDs = [];
+        Skeleton = null;
+        PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
+        Flags = Ar.Read<EMeshFlags>();
+        Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
+        Tags = Ar.ReadArray(Ar.ReadFString);
+        StreamedResources = Ar.ReadArray<ulong>();
+        BonePoses = Ar.ReadArray<FBonePose>();
+        BoneMap = Ar.ReadArray<FBoneName>();
+        AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
+        MeshIDPrefix = Ar.Read<uint>();
+        // Unreal then serializes: ClothSections, Morph, MorphDataBuffer (not read here).
+        // ReferenceID / ReferenceMorph are not in the serialized blob; leave as default.
     }
 }
 

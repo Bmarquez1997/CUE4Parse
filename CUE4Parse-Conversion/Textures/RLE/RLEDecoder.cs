@@ -1,5 +1,5 @@
 ﻿using System;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 
 namespace CUE4Parse_Conversion.Textures.RLE;
 
@@ -7,8 +7,8 @@ public static class RLEDecoder
 {
     public static byte[] UncompressRLE_L(FImage BaseImage, byte[] baseData)
     {
-        int sizeX = BaseImage.DataStorage.ImageSize.X;
-        int sizeY = BaseImage.DataStorage.ImageSize.Y;
+        int sizeX = BaseImage.DataStorage.Size.X;
+        int sizeY = BaseImage.DataStorage.Size.Y;
 
         var numLODs = MathF.Max(1, BaseImage.DataStorage.NumLODs);
         for (int i = 0; i < numLODs; i++)

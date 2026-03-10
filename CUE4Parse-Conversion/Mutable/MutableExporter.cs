@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,7 +9,7 @@ using CUE4Parse_Conversion.Textures;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Roms;
 using CUE4Parse.UE4.Assets.Objects;
@@ -29,7 +29,7 @@ public class MutableExporter : ExporterBase
     public int meshIndex;
     
     // Flag to disable makeshift LOD grouping logic
-    private bool exportAll = true;
+    private bool exportAll = false;
 
     private Dictionary<uint, string> surfaceNameMap;
 
@@ -41,21 +41,11 @@ public class MutableExporter : ExporterBase
 
         // <skeletonIndex, <MaterialSlot, Meshes>>
         Dictionary<uint, Dictionary<string, List<FMesh>>> meshes = [];
+        // GroupID, Images
+        Dictionary<uint, List<FImage>> imagesByGroup = [];
 
         var loader = new FMutableLoader(original);
-        // var opCodes = loader.ReadByteCode();
-        // foreach (var opCode in opCodes) Console.WriteLine(opCode);
-        
-        // var opCodes = loader.ReadByteCode();
-        //
-        // var counts = opCodes
-        //     .GroupBy(op => op)
-        //     .ToDictionary(g => g.Key, g => g.Count());
-        //
-        // foreach (var kvp in counts)
-        // {
-        //     Console.WriteLine($"{kvp.Key}: {kvp.Value}");
-        // }
+        var romId = loader.GetRomIdentification();
 
         if (!original.Private.TryLoad(out UCustomizableObjectPrivate coPrivate) || !coPrivate.ModelResources.TryLoad(out UModelResources modelResources))
             return;
@@ -74,11 +64,24 @@ public class MutableExporter : ExporterBase
                     {
                         // HighRes flag or CO.Model.Program.ConstantImages(FirstIndex)
                         var image = loader.LoadImage(index);
-                        if (image != null) ExportMutableImage(image);
+                        var img = romId.GetImageRomIdentity(index);
+                        if (img == null) continue;
+
+                        uint groupId = img.Value.ImageGroupId;  // same for all LODs of this image
+                        if (!imagesByGroup.TryGetValue(groupId, out var list))
+                            imagesByGroup[groupId] = list = [];
+
+                        list.Add(image);
                     }
                     break;
                 case ERomDataType.Mesh:
                     var mesh = loader.LoadMesh(index);
+                    var meshRomIdentity = romId.GetMeshRomIdentity(index);
+                    if (meshRomIdentity != null)
+                    {
+                        mesh.MeshIDPrefix = meshRomIdentity.MeshIDPrefix;
+                        mesh.SkeletonIDs = [meshRomIdentity.SkeletonConstantIndex];
+                    }
                     StoreMutableMesh(mesh, meshes, surfaceNameMap);
                     break;
                 default:
@@ -86,6 +89,9 @@ public class MutableExporter : ExporterBase
                     break;
             }
         }
+
+        if (meshes.Count > 0)
+            ExportMutableMeshes(original, meshes, modelResources.Skeletons, filterSkeletonName);
 
         if (meshes.Count > 0)
             ExportMutableMeshes(original, meshes, modelResources.Skeletons, filterSkeletonName);
@@ -114,16 +120,18 @@ public class MutableExporter : ExporterBase
     {
         var skeletonIndex = mesh.SkeletonIDs.LastOrDefault(0u);
 
-        if (mesh.Surfaces == null || mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 ||
-            !surfaceNameMap.TryGetValue(mesh.Surfaces[0].SubMeshes[0].ExternalId, out var materialSlotName)) return;
+        // if (mesh.Surfaces == null || mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 ||
+        //     !surfaceNameMap.TryGetValue(mesh.Surfaces[0].SubMeshes[0].ExternalId, out var materialSlotName)) return;
+        if (mesh.Surfaces == null || mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0) return;
+        var materialSlotName = mesh.MeshIDPrefix.ToString();
 
-        // TODO: Remove temp limit
-        if (materialSlotName.Contains("LOD", StringComparison.OrdinalIgnoreCase)) return;
+        // // TODO: Remove temp limit
+        // if (materialSlotName.Contains("LOD", StringComparison.OrdinalIgnoreCase)) return;
 
         if (!meshes.ContainsKey(skeletonIndex))
             meshes[skeletonIndex] = [];
 
-        if (exportAll) materialSlotName = "Mesh";
+        // if (exportAll) materialSlotName = "Mesh";
         
         if (!meshes[skeletonIndex].ContainsKey(materialSlotName))
             meshes[skeletonIndex][materialSlotName] = [];
@@ -220,9 +228,19 @@ public class MutableExporter : ExporterBase
         // TODO: other types
     }
 
+    private void ExportMutableImages(Dictionary<uint, List<FImage>> imagesByGroup)
+    {
+        foreach (var imageGroup in imagesByGroup)
+        {
+            var image = imageGroup.Value.OrderByDescending(image => image.DataStorage.Size).FirstOrDefault();
+            if (image == null) continue;
+            ExportMutableImage(image);
+        }
+    }
+
     private void ExportMutableImage(FImage image)
     {
-        var resolution = image.DataStorage.ImageSize;
+        var resolution = image.DataStorage.Size;
 
         // switch (image.DataStorage.ImageFormat)
         // {
