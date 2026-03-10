@@ -35,22 +35,26 @@ public class FMesh
         IndexBuffers = new FMeshBufferSet(Ar);
         VertexBuffers = new FMeshBufferSet(Ar);
         AdditionalBuffers = Ar.ReadArray(() => new KeyValuePair<EMeshBufferType, FMeshBufferSet>(Ar.Read<EMeshBufferType>(), new FMeshBufferSet(Ar)));
-        Layouts = Ar.ReadPtrArray(() => new FLayout(Ar));
-        // Unreal does NOT serialize Skeleton or SkeletonIDs in the mesh blob (see Mesh.cpp Serialise).
-        // They are set at runtime from ME_CONSTANT args (Skeleton index) and Program.ConstantMeshes.
+        Layouts = Ar.ReadPtrArrayWithHistory(() => new FLayout(Ar));
         SkeletonIDs = [];
         Skeleton = null;
-        PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
-        Flags = Ar.Read<EMeshFlags>();
-        Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
-        Tags = Ar.ReadArray(Ar.ReadFString);
-        StreamedResources = Ar.ReadArray<ulong>();
-        BonePoses = Ar.ReadArray<FBonePose>();
-        BoneMap = Ar.ReadArray<FBoneName>();
-        AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
-        MeshIDPrefix = Ar.Read<uint>();
-        // Unreal then serializes: ClothSections, Morph, MorphDataBuffer (not read here).
-        // ReferenceID / ReferenceMorph are not in the serialized blob; leave as default.
+        try
+        {
+            PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
+            Flags = Ar.Read<EMeshFlags>();
+            Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
+            Tags = [];
+            StreamedResources = [];
+            BonePoses = Ar.ReadArray<FBonePose>();
+            BoneMap = Ar.ReadArray<FBoneName>();
+            AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
+            MeshIDPrefix = Ar.Read<uint>();
+        }
+        catch (Exception e)
+        {
+            Log.Error("Exception thrown reading FMesh: {0}", e);
+        }
+        
     }
 }
 

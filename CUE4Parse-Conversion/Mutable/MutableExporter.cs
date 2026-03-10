@@ -67,7 +67,7 @@ public class MutableExporter : ExporterBase
                         var img = romId.GetImageRomIdentity(index);
                         if (img == null) continue;
 
-                        uint groupId = img.Value.ImageGroupId;  // same for all LODs of this image
+                        var groupId = img.Value.ImageGroupId;  // same for all LODs of this image
                         if (!imagesByGroup.TryGetValue(groupId, out var list))
                             imagesByGroup[groupId] = list = [];
 
@@ -79,8 +79,8 @@ public class MutableExporter : ExporterBase
                     var meshRomIdentity = romId.GetMeshRomIdentity(index);
                     if (meshRomIdentity != null)
                     {
-                        mesh.MeshIDPrefix = meshRomIdentity.MeshIDPrefix;
-                        mesh.SkeletonIDs = [meshRomIdentity.SkeletonConstantIndex];
+                        mesh.MeshIDPrefix = (uint) meshRomIdentity?.MeshIDPrefix;
+                        mesh.SkeletonIDs = [(uint) meshRomIdentity?.SkeletonConstantIndex];
                     }
                     StoreMutableMesh(mesh, meshes, surfaceNameMap);
                     break;
