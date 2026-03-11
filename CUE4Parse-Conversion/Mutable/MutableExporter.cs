@@ -144,7 +144,9 @@ public class MutableExporter : ExporterBase
     {
         foreach (var skeletonGroup in meshes)
         {
-            var skeletonSoftObject = skeletons[skeletonGroup.Key];
+            var skeletonIndex = skeletonGroup.Key;
+            if (skeletonIndex > skeletons.Length) skeletonIndex = (uint) skeletons.Length - 1;
+            var skeletonSoftObject = skeletons[skeletonIndex];
             var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
             if (filterSkeletonName != null &&
                 !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;

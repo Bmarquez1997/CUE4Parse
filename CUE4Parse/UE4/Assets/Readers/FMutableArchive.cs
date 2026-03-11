@@ -40,22 +40,24 @@ public class FMutableArchive : FArchive
     
     public override T[] ReadArray<T>(Func<T> getter)
     {
-        var length = _baseArchive.Read<int>();
-        if (length <= 0) return [];
-        if (length > MaxArrayLength) length = MaxArrayLength;
-        return _baseArchive.ReadArray(length, getter);
+        // var length = _baseArchive.Read<int>();
+        // if (length <= 0) return [];
+        // if (length > MaxArrayLength) length = MaxArrayLength;
+        // return _baseArchive.ReadArray(length, getter);
+        return _baseArchive.ReadArray(getter);
     }
-
+    // TODO: Determine if we need these clamped ReadArray methods (and what the max should be)
     public override T[] ReadArray<T>() where T : struct
     {
-        var length = _baseArchive.Read<int>();
-        if (length <= 0) return [];
-        if (length > MaxArrayLength) length = MaxArrayLength;
-        var elemSize = Unsafe.SizeOf<T>();
-        var remaining = _baseArchive.Length - _baseArchive.Position;
-        if (remaining < (long)length * elemSize && remaining >= 0)
-            length = (int)Math.Max(0, remaining / elemSize);
-        return length > 0 ? _baseArchive.ReadArray<T>(length) : [];
+        // var length = _baseArchive.Read<int>();
+        // if (length <= 0) return [];
+        // if (length > MaxArrayLength) length = MaxArrayLength;
+        // var elemSize = Unsafe.SizeOf<T>();
+        // var remaining = _baseArchive.Length - _baseArchive.Position;
+        // if (remaining < (long)length * elemSize && remaining >= 0)
+        //     length = (int)Math.Max(0, remaining / elemSize);
+        // return length > 0 ? _baseArchive.ReadArray<T>(length) : [];
+        return _baseArchive.ReadArray<T>();
     }
     
     public T ReadPtr<T>() where T : unmanaged => _baseArchive.Read<int>() == -1 ? default : _baseArchive.Read<T>();

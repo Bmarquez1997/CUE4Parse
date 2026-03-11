@@ -21,7 +21,9 @@ public class FMutableLoader
 
     public FMutableLoader(UCustomizableObject customizableObject)
     {
-        if (!customizableObject.Private.TryLoad(out var coExport) || (coExport is not UCustomizableObjectPrivate coPrivate) 
+        if (customizableObject.Model == null || customizableObject.Private == null 
+            || !customizableObject.Private.TryLoad(out var coExport) 
+            || (coExport is not UCustomizableObjectPrivate coPrivate) 
             || !coPrivate.ModelStreamableData.TryLoad(out var coStreamableData))
             throw new ParserException();
 
