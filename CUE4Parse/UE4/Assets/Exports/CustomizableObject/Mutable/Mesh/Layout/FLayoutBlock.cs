@@ -15,4 +15,5 @@ public readonly struct FLayoutBlock
     
     public readonly bool bReduceBothAxes => (Packed & 1) != 0;
     public readonly bool bReduceByTwo  => (Packed & 2) != 0;
+    public readonly ushort MaskIndex => (ushort)(Packed >> 16);
 }

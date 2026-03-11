@@ -46,6 +46,8 @@ public class FProgram
     public ushort[][] ParameterLists;
     public Dictionary<uint, int>? RelevantParameterList;
     public FMaterial[]? ConstantMaterials;
+    public Dictionary<uint, string> ConstantNames;
+    public Dictionary<uint, FMeshSocket> ConstantSockets;
    
     public FProgram(FMutableArchive Ar)
     {
@@ -63,8 +65,9 @@ public class FProgram
             ConstantMeshesPermanent = Ar.ReadPtrArrayWithHistory(() => new FMesh(Ar));
             ConstantMeshContentIndices = Ar.ReadArray<FConstantResourceIndex>();
             ConstantMeshes = Ar.ReadArray<FMeshContentRange>();
-            ConstantExtensionData = [];
-            ConstantStrings = Ar.ReadArray(Ar.ReadMutableFString);
+            // ConstantExtensionData = [];
+            ConstantExtensionData = Ar.ReadArray(() => new FExtensionDataConstant(Ar));
+            ConstantStrings = Ar.ReadArray(Ar.ReadFString);
             if (Ar.Game >= EGame.GAME_UE5_7)
             {
                 ConstantUInt32Lists = Ar.ReadArray(Ar.ReadArray<uint>);
@@ -82,6 +85,8 @@ public class FProgram
             ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
             //if (Ar.Game >= EGame.GAME_UE5_8) RelevantParameterList = Ar.ReadMap(Ar.Read<uint>, Ar.Read<int>);
             if (Ar.Game >= EGame.GAME_UE5_7) ConstantMaterials = Ar.ReadPtrArrayWithHistory(() => new FMaterial(Ar));
+            // ConstantNames = Ar.ReadMap(Ar.Read<uint>, Ar.ReadMutableFString);
+            // ConstantSockets = Ar.ReadMap(Ar.Read<uint>, () => new FMeshSocket(Ar));
         }
         catch (Exception e)
         {

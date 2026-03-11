@@ -27,6 +27,9 @@ public class FMesh
     public FBoneName[] BoneMap;
     public FPhysicsBody[] AdditionalPhysicsBodies;
     public uint MeshIDPrefix;
+    public FCloth[] ClothSections;
+    public FMeshMorph Morph;
+    public uint[] MorphDataBuffer;
     public uint ReferenceID;
     public string ReferenceMorph;
     
@@ -36,19 +39,26 @@ public class FMesh
         VertexBuffers = new FMeshBufferSet(Ar);
         AdditionalBuffers = Ar.ReadArray(() => new KeyValuePair<EMeshBufferType, FMeshBufferSet>(Ar.Read<EMeshBufferType>(), new FMeshBufferSet(Ar)));
         Layouts = Ar.ReadPtrArrayWithHistory(() => new FLayout(Ar));
-        SkeletonIDs = [];
-        Skeleton = null;
+        // SkeletonIDs = [];
+        // Skeleton = null;
+        SkeletonIDs = Ar.ReadArray<uint>();
+        Skeleton = Ar.ReadPtr(() => new FSkeleton(Ar));
         try
         {
             PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
             Flags = Ar.Read<EMeshFlags>();
             Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
-            Tags = [];
-            StreamedResources = [];
+            // Tags = [];
+            // StreamedResources = [];
+            Tags = Ar.ReadArray(Ar.ReadFString);
+            StreamedResources = Ar.ReadArray<ulong>();
             BonePoses = Ar.ReadArray<FBonePose>();
             BoneMap = Ar.ReadArray<FBoneName>();
             AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
             MeshIDPrefix = Ar.Read<uint>();
+            // ClothSections = Ar.ReadArray(() => new FCloth(Ar));
+            // Morph = new FMeshMorph(Ar);
+            // MorphDataBuffer = Ar.ReadArray<uint>();
         }
         catch (Exception e)
         {

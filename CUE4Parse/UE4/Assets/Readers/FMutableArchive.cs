@@ -118,6 +118,24 @@ public class FMutableArchive : FArchive
         };
     }
 
+    /// <summary>
+    /// Read TMap: uint32 count then count pairs of (key, value). Matches C++ Serialisation.h operator>> for TMap.
+    /// </summary>
+    public new Dictionary<TK, TV> ReadMap<TK, TV>(Func<TK> readKey, Func<TV> readValue)
+    {
+        var count = _baseArchive.Read<int>();
+        if (count <= 0) return new Dictionary<TK, TV>();
+        if (count > MaxArrayLength) count = MaxArrayLength;
+        var dict = new Dictionary<TK, TV>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var key = readKey();
+            var value = readValue();
+            dict[key] = value;
+        }
+        return dict;
+    }
+
     public override bool CanSeek => _baseArchive.CanSeek;
     public override long Length => _baseArchive.Length;
     public override string Name  => _baseArchive.Name;
