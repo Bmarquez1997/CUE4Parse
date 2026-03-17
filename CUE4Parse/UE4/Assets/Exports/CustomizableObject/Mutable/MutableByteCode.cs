@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Roms;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
@@ -197,10 +198,59 @@ public class MutableByteCode
 
     /// <summary>
     /// Gets the byte offset into ByteCode from an FOperation::ADDRESS (from OpAddress array).
+    /// When the value is an op index (into OpAddress), use OpIndexToByteCodeOffset instead.
     /// </summary>
     public static uint GetByteCodeOffset(uint address)
     {
         return address & AddressByteCodeOffsetMask;
+    }
+
+    /// <summary>
+    /// Finds the op index (into Program.OpAddress) whose byte offset equals the given byteCodeOffset.
+    /// Returns null if not found.
+    /// </summary>
+    public uint? GetOpIndexFromByteCodeOffset(uint byteCodeOffset)
+    {
+        if (_program.OpAddress == null) return null;
+        uint target = byteCodeOffset & AddressByteCodeOffsetMask;
+        for (int i = 0; i < _program.OpAddress.Length; i++)
+        {
+            if ((_program.OpAddress[i] & AddressByteCodeOffsetMask) == target)
+                return (uint)i;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Converts an op index (into Program.OpAddress) to the byte offset of that op.
+    /// Unreal stores ADDRESS in bytecode as op index; OpAddress[index] = byte offset.
+    /// </summary>
+    public uint OpIndexToByteCodeOffset(uint opIndex)
+    {
+        if (_program.OpAddress == null || opIndex >= _program.OpAddress.Length)
+            return 0;
+        return _program.OpAddress[opIndex] & AddressByteCodeOffsetMask;
+    }
+
+    /// <summary>
+    /// Resolves an ADDRESS from bytecode: if it looks like an op index (valid index into OpAddress), return that op's byte offset; otherwise treat as raw byte offset.
+    /// Some assets store ADDRESS as (opIndex &lt;&lt; 8) or (opIndex &lt;&lt; 16); when the raw value is past ByteCode length, we try &gt;&gt; 8 then &gt;&gt; 16 as op index.
+    /// </summary>
+    public uint AddressToByteCodeOffset(uint address)
+    {
+        if (_program.OpAddress != null && address < (uint)_program.OpAddress.Length)
+            return OpIndexToByteCodeOffset(address);
+        uint len = (uint)(_byteCode?.Length ?? 0);
+        if (_program.OpAddress != null && address >= len)
+        {
+            uint shifted8 = address >> 8;
+            if (shifted8 < (uint)_program.OpAddress.Length)
+                return OpIndexToByteCodeOffset(shifted8);
+            uint shifted16 = address >> 16;
+            if (shifted16 < (uint)_program.OpAddress.Length)
+                return OpIndexToByteCodeOffset(shifted16);
+        }
+        return GetByteCodeOffset(address);
     }
 
     /// <summary>
@@ -245,6 +295,65 @@ public class MutableByteCode
         int skeleton = (int)(byteCode[argsOffset + 4] | (byteCode[argsOffset + 5] << 8) | (byteCode[argsOffset + 6] << 16) | (byteCode[argsOffset + 7] << 24));
         uint clothId = (uint)(byteCode[argsOffset + 8] | (byteCode[argsOffset + 9] << 8) | (byteCode[argsOffset + 10] << 16) | (byteCode[argsOffset + 11] << 24));
         return (value, skeleton, clothId);
+    }
+
+    /// <summary> ParameterArgs: variable (ADDRESS = parameter index into Program.Parameters). Used by NU_PARAMETER. </summary>
+    public static uint ReadParameterArgs(byte[] byteCode, uint argsOffset)
+    {
+        if (argsOffset + 4 > byteCode.Length) return 0;
+        return (uint)(byteCode[argsOffset] | (byteCode[argsOffset + 1] << 8) | (byteCode[argsOffset + 2] << 16) | (byteCode[argsOffset + 3] << 24));
+    }
+
+    /// <summary> InstanceAddArgs first two fields: instance (ADDRESS), value (ADDRESS) = 8 bytes. Used by IN_ADDMESH, IN_ADDIMAGE, IN_ADDSURFACE. </summary>
+    public static (uint instance, uint value) ReadInstanceAddArgs(byte[] byteCode, uint argsOffset)
+    {
+        if (argsOffset + 8 > byteCode.Length) return (0, 0);
+        uint instance = (uint)(byteCode[argsOffset] | (byteCode[argsOffset + 1] << 8) | (byteCode[argsOffset + 2] << 16) | (byteCode[argsOffset + 3] << 24));
+        uint value = (uint)(byteCode[argsOffset + 4] | (byteCode[argsOffset + 5] << 8) | (byteCode[argsOffset + 6] << 16) | (byteCode[argsOffset + 7] << 24));
+        return (instance, value);
+    }
+
+    /// <summary> ConditionalArgs: condition (4), yes (4), no (4) = 12 bytes. </summary>
+    public static (uint condition, uint yes, uint no) ReadConditionalArgs(byte[] byteCode, uint argsOffset)
+    {
+        if (argsOffset + 12 > byteCode.Length) return (0, 0, 0);
+        uint c = (uint)(byteCode[argsOffset] | (byteCode[argsOffset + 1] << 8) | (byteCode[argsOffset + 2] << 16) | (byteCode[argsOffset + 3] << 24));
+        uint y = (uint)(byteCode[argsOffset + 4] | (byteCode[argsOffset + 5] << 8) | (byteCode[argsOffset + 6] << 16) | (byteCode[argsOffset + 7] << 24));
+        uint n = (uint)(byteCode[argsOffset + 8] | (byteCode[argsOffset + 9] << 8) | (byteCode[argsOffset + 10] << 16) | (byteCode[argsOffset + 11] << 24));
+        return (c, y, n);
+    }
+
+    /// <summary>
+    /// Reads SWITCH op args: VarAddress (4), DefAddress (4), FSwitchCaseDescriptor (4: Count in low 31 bits, bUseRanges in bit 31),
+    /// then Count times (Condition int32 + CaseAt ADDRESS) or (Start+Size+CaseAt) if bUseRanges.
+    /// Returns (varAddress, defAddress, useRanges, list of (conditionOrStart, sizeOr0, caseAt)).
+    /// </summary>
+    public static (uint varAddress, uint defAddress, bool useRanges, List<(int conditionOrStart, int size, uint caseAt)>) ReadSwitchOpArgs(byte[] byteCode, uint argsOffset)
+    {
+        var cases = new List<(int, int, uint)>();
+        if (argsOffset + 12 > byteCode.Length) return (0, 0, false, cases);
+        uint varAddress = (uint)(byteCode[argsOffset] | (byteCode[argsOffset + 1] << 8) | (byteCode[argsOffset + 2] << 16) | (byteCode[argsOffset + 3] << 24));
+        uint defAddress = (uint)(byteCode[argsOffset + 4] | (byteCode[argsOffset + 5] << 8) | (byteCode[argsOffset + 6] << 16) | (byteCode[argsOffset + 7] << 24));
+        uint caseDesc = (uint)(byteCode[argsOffset + 8] | (byteCode[argsOffset + 9] << 8) | (byteCode[argsOffset + 10] << 16) | (byteCode[argsOffset + 11] << 24));
+        int count = (int)(caseDesc & 0x7FFFFFFF);
+        bool useRanges = (caseDesc & 0x80000000) != 0;
+        int pos = (int)(argsOffset + 12);
+        int caseSize = useRanges ? 12 : 8;
+        for (int i = 0; i < count && pos + caseSize <= byteCode.Length; i++)
+        {
+            int c = (int)(byteCode[pos] | (byteCode[pos + 1] << 8) | (byteCode[pos + 2] << 16) | (byteCode[pos + 3] << 24));
+            pos += 4;
+            int size = 0;
+            if (useRanges)
+            {
+                size = (int)(byteCode[pos] | (byteCode[pos + 1] << 8) | (byteCode[pos + 2] << 16) | (byteCode[pos + 3] << 24));
+                pos += 4;
+            }
+            uint caseAt = (uint)(byteCode[pos] | (byteCode[pos + 1] << 8) | (byteCode[pos + 2] << 16) | (byteCode[pos + 3] << 24));
+            pos += 4;
+            cases.Add((c, size, caseAt));
+        }
+        return (varAddress, defAddress, useRanges, cases);
     }
 
     /// <summary>
@@ -366,6 +475,514 @@ public class MutableByteCode
     }
 
     /// <summary>
+    /// Finds the constant mesh index and range for a ROM index by scanning Program.ConstantMeshes and ConstantMeshContentIndices.
+    /// Used when the ROM is not referenced by any ME_CONSTANT in ByteCode (e.g. only referenced via ME_SWITCH).
+    /// </summary>
+    public (int constantMeshIndex, FMeshContentRange range)? TryGetMeshConstantForRomIndex(uint romIndex)
+    {
+        if (_program.ConstantMeshes == null || _program.ConstantMeshContentIndices == null)
+            return null;
+        for (int c = 0; c < _program.ConstantMeshes.Length; c++)
+        {
+            var romIndices = GetMeshConstantRomIndices(c);
+            foreach (var idx in romIndices)
+            {
+                if (idx == romIndex)
+                    return (c, _program.ConstantMeshes[c]);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Finds the constant image index and range for a ROM index by scanning Program.ConstantImages and ConstantImageLODIndices.
+    /// Used when the ROM is not referenced by any IM_CONSTANT in ByteCode (e.g. only referenced via IM_SWITCH).
+    /// </summary>
+    public (int constantImageIndex, Images.FImageLODRange range)? TryGetImageConstantForRomIndex(uint romIndex)
+    {
+        if (_program.ConstantImages == null || _program.ConstantImageLODIndices == null)
+            return null;
+        for (int c = 0; c < _program.ConstantImages.Length; c++)
+        {
+            var romIndices = GetImageConstantRomIndices(c);
+            foreach (var idx in romIndices)
+            {
+                if (idx == romIndex)
+                    return (c, _program.ConstantImages[c]);
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Resolves a SWITCH variable address to the parameter index (into Program.Parameters).
+    /// VarAddress is the ADDRESS of the op that produces the int variable (usually NU_PARAMETER).
+    /// Uses low 26 bits as byte offset into ByteCode per UE convention.
+    /// </summary>
+    public int? ResolveVarAddressToParameterIndex(uint varAddress)
+    {
+        uint offset = AddressToByteCodeOffset(varAddress);
+        if (offset == 0 || offset >= _byteCode.Length) return null;
+        byte op = _byteCode[offset];
+        if (op == (byte)EOpType.NU_PARAMETER)
+        {
+            uint argsOffset = offset + 1;
+            if (argsOffset + 4 <= _byteCode.Length)
+            {
+                uint variable = ReadParameterArgs(_byteCode, argsOffset);
+                if (variable < (_program.Parameters?.Length ?? 0))
+                    return (int)variable;
+            }
+            return null;
+        }
+        // VarAddress may be stored as (opIndex << 8) or (opIndex << 16); try resolving as op index
+        if (_program.OpAddress != null)
+        {
+            uint shifted8 = varAddress >> 8;
+            if (shifted8 < (uint)_program.OpAddress.Length)
+            {
+                uint off8 = OpIndexToByteCodeOffset(shifted8);
+                if (off8 < _byteCode.Length && _byteCode[off8] == (byte)EOpType.NU_PARAMETER)
+                {
+                    uint argsOffset = off8 + 1;
+                    if (argsOffset + 4 <= _byteCode.Length)
+                    {
+                        uint variable = ReadParameterArgs(_byteCode, argsOffset);
+                        if (variable < (_program.Parameters?.Length ?? 0))
+                            return (int)variable;
+                    }
+                }
+            }
+            uint shifted16 = varAddress >> 16;
+            if (shifted16 < (uint)_program.OpAddress.Length)
+            {
+                uint off16 = OpIndexToByteCodeOffset(shifted16);
+                if (off16 < _byteCode.Length && _byteCode[off16] == (byte)EOpType.NU_PARAMETER)
+                {
+                    uint argsOffset = off16 + 1;
+                    if (argsOffset + 4 <= _byteCode.Length)
+                    {
+                        uint variable = ReadParameterArgs(_byteCode, argsOffset);
+                        if (variable < (_program.Parameters?.Length ?? 0))
+                            return (int)variable;
+                    }
+                }
+            }
+        }
+        // Some assets store VarAddress as the parameter index directly (when it fits)
+        if (varAddress < (_program.Parameters?.Length ?? 0))
+            return (int)varAddress;
+        return null;
+    }
+
+    /// <summary>
+    /// Collects image and mesh constant indices reachable from the given op address when following
+    /// CONDITIONAL (both branches) and SWITCH (only the case matching the given parameter option index).
+    /// Address is byte offset into ByteCode (use GetByteCodeOffset if you have an ADDRESS).
+    /// paramIndexToOptionIndex: parameter index -> option index (0-based) for SWITCH selection.
+    /// constLogDepth: when >= 0 and &lt;= 15 and LogPath set, log CONST_* lines for debugging (-1 = no log).
+    /// </summary>
+    public (HashSet<int> imageConstants, HashSet<int> meshConstants) CollectConstantsFromAddress(
+        uint byteCodeOffset,
+        IReadOnlyDictionary<int, int> paramIndexToOptionIndex,
+        HashSet<uint>? visited = null,
+        int constLogDepth = -1)
+    {
+        var images = new HashSet<int>();
+        var meshes = new HashSet<int>();
+        visited ??= [];
+        if (!visited.Add(byteCodeOffset)) return (images, meshes);
+
+        if (byteCodeOffset >= _byteCode.Length) return (images, meshes);
+        var (opType, argsOffset) = GetInstructionAt(byteCodeOffset);
+
+        bool doLog = constLogDepth >= 0 && constLogDepth <= 15 && !string.IsNullOrEmpty(MutableResolverDebugLog.LogPath);
+        if (doLog) MutableResolverDebugLog.Log($"CONST_OP\tdepth={constLogDepth}\toffset={byteCodeOffset}\topType={opType}");
+
+        switch (opType)
+        {
+            case EOpType.IM_CONSTANT:
+                uint ciRaw = ReadResourceConstantArgs(_byteCode, argsOffset);
+                int imgConstLen = _program.ConstantImages?.Length ?? 0;
+                int ci = (int)ciRaw;
+                if (ci >= imgConstLen && imgConstLen > 0)
+                {
+                    int try8 = (int)(ciRaw >> 8), try16 = (int)(ciRaw >> 16);
+                    if (try8 >= 0 && try8 < imgConstLen) ci = try8;
+                    else if (try16 >= 0 && try16 < imgConstLen) ci = try16;
+                }
+                if (ci >= 0 && ci < imgConstLen) { images.Add(ci); if (doLog) MutableResolverDebugLog.Log($"CONST_ADD_IMAGE\tdepth={constLogDepth}\tconstantIndex={ci}"); }
+                break;
+            case EOpType.ME_CONSTANT:
+                var (mc, _, _) = ReadMeshConstantArgs(_byteCode, argsOffset);
+                int meshConstLen = _program.ConstantMeshes?.Length ?? 0;
+                if (doLog && (mc >= (uint)meshConstLen)) MutableResolverDebugLog.Log($"CONST_ME_CONSTANT\tdepth={constLogDepth}\tvalue={mc}\tconstantMeshesLen={meshConstLen}");
+                int meshIndex = (int)mc;
+                if (meshIndex >= meshConstLen && meshConstLen > 0)
+                {
+                    // Value may be stored as op index (e.g. value >> 8); use as constant index if in range
+                    int try8 = (int)(mc >> 8), try16 = (int)(mc >> 16);
+                    if (try8 >= 0 && try8 < meshConstLen) meshIndex = try8;
+                    else if (try16 >= 0 && try16 < meshConstLen) meshIndex = try16;
+                }
+                if (meshIndex >= 0 && meshIndex < meshConstLen) { meshes.Add(meshIndex); if (doLog) MutableResolverDebugLog.Log($"CONST_ADD_MESH\tdepth={constLogDepth}\tconstantIndex={meshIndex}"); }
+                break;
+            case EOpType.IM_CONDITIONAL:
+            case EOpType.ME_CONDITIONAL:
+                var (_, yes, no) = ReadConditionalArgs(_byteCode, argsOffset);
+                uint yesOff = AddressToByteCodeOffset(yes), noOff = AddressToByteCodeOffset(no);
+                if (doLog) MutableResolverDebugLog.Log($"CONST_CONDITIONAL\tdepth={constLogDepth}\tyes={yes}\tyesOff={yesOff}\tno={no}\tnoOff={noOff}");
+                if (yesOff != 0) { var (yi, ym) = CollectConstantsFromAddress(yesOff, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in yi) images.Add(i); foreach (var m in ym) meshes.Add(m); }
+                if (noOff != 0) { var (ni, nm) = CollectConstantsFromAddress(noOff, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in ni) images.Add(i); foreach (var m in nm) meshes.Add(m); }
+                break;
+            case EOpType.IM_SWITCH:
+            case EOpType.ME_SWITCH:
+                var (varAddress, defAddress, useRanges, cases) = ReadSwitchOpArgs(_byteCode, argsOffset);
+                int? paramIndex = ResolveVarAddressToParameterIndex(varAddress);
+                int? optionIndex = paramIndex.HasValue && paramIndexToOptionIndex.TryGetValue(paramIndex.Value, out var oi) ? oi : null;
+                uint varResolvedOff = AddressToByteCodeOffset(varAddress);
+                if (doLog) MutableResolverDebugLog.Log($"CONST_SWITCH\tdepth={constLogDepth}\tvarAddress={varAddress}\tvarResolvedOff={varResolvedOff}\tresolvedParamIndex={paramIndex?.ToString() ?? "null"}\toptionIndex={optionIndex?.ToString() ?? "null"}\tcasesCount={cases.Count}\tuseRanges={useRanges}");
+                bool switchMatched = false;
+                if (optionIndex.HasValue)
+                {
+                    foreach (var (c, size, caseAt) in cases)
+                    {
+                        uint caseOff = AddressToByteCodeOffset((uint)caseAt);
+                        bool match = caseOff != 0 && (useRanges ? (optionIndex.Value >= c && optionIndex.Value < c + size) : (c == optionIndex.Value));
+                        if (doLog) MutableResolverDebugLog.Log($"CONST_SWITCH_CASE\tdepth={constLogDepth}\tcondition={c}\tsize={size}\tcaseAt={caseAt}\tcaseOff={caseOff}\tmatch={match}");
+                        if (match) { switchMatched = true; var (si, sm) = CollectConstantsFromAddress(caseOff, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in si) images.Add(i); foreach (var m in sm) meshes.Add(m); break; }
+                    }
+                    if (doLog && !switchMatched) MutableResolverDebugLog.Log($"CONST_SWITCH_NO_MATCH\tdepth={constLogDepth}");
+                }
+                else if (doLog) MutableResolverDebugLog.Log($"CONST_SWITCH_NO_OPTION\tdepth={constLogDepth}");
+                // When no case matched (or no option), follow default branch to still collect constants
+                if (!switchMatched && defAddress != 0)
+                {
+                    uint defOff = AddressToByteCodeOffset(defAddress);
+                    if (defOff != 0) { var (di, dm) = CollectConstantsFromAddress(defOff, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in di) images.Add(i); foreach (var m in dm) meshes.Add(m); }
+                }
+                break;
+            case EOpType.IM_LAYER:
+                if (argsOffset + 12 <= _byteCode.Length)
+                {
+                    uint b = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint mask = (uint)(_byteCode[argsOffset + 4] | (_byteCode[argsOffset + 5] << 8) | (_byteCode[argsOffset + 6] << 16) | (_byteCode[argsOffset + 7] << 24));
+                    uint blend = (uint)(_byteCode[argsOffset + 8] | (_byteCode[argsOffset + 9] << 8) | (_byteCode[argsOffset + 10] << 16) | (_byteCode[argsOffset + 11] << 24));
+                    foreach (uint a in new[] { b, mask, blend }) { uint o = AddressToByteCodeOffset(a); if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); } }
+                }
+                break;
+            case EOpType.ME_MERGE:
+                if (argsOffset + 8 <= _byteCode.Length)
+                {
+                    uint baseAddr = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint addedAddr = (uint)(_byteCode[argsOffset + 4] | (_byteCode[argsOffset + 5] << 8) | (_byteCode[argsOffset + 6] << 16) | (_byteCode[argsOffset + 7] << 24));
+                    foreach (uint a in new[] { baseAddr, addedAddr }) { uint o = AddressToByteCodeOffset(a); if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); } }
+                }
+                break;
+            case EOpType.ME_PREPARELAYOUT:
+                // MeshPrepareLayoutArgs: Mesh (0-3), Layout (4-7). Recurse both so we collect image constants from Layout.
+                if (argsOffset + 8 <= _byteCode.Length)
+                {
+                    uint meshAddr = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint layoutAddr = (uint)(_byteCode[argsOffset + 4] | (_byteCode[argsOffset + 5] << 8) | (_byteCode[argsOffset + 6] << 16) | (_byteCode[argsOffset + 7] << 24));
+                    foreach (uint a in new[] { meshAddr, layoutAddr })
+                    {
+                        uint o = AddressToByteCodeOffset(a);
+                        if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                    }
+                }
+                break;
+            case EOpType.ME_APPLYLAYOUT:
+            case EOpType.ME_DIFFERENCE:
+            case EOpType.ME_MORPH:
+            case EOpType.ME_FORMAT:
+                if (argsOffset + 8 <= _byteCode.Length)
+                {
+                    uint a1 = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint a2 = (uint)(_byteCode[argsOffset + 4] | (_byteCode[argsOffset + 5] << 8) | (_byteCode[argsOffset + 6] << 16) | (_byteCode[argsOffset + 7] << 24));
+                    foreach (uint a in new[] { a1, a2 }) { uint o = AddressToByteCodeOffset(a); if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); } }
+                }
+                break;
+            case EOpType.IM_PIXELFORMAT:
+            case EOpType.IM_MIPMAP:
+            case EOpType.IM_TRANSFORM:
+                if (argsOffset + 4 <= _byteCode.Length)
+                {
+                    uint src = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint o = AddressToByteCodeOffset(src);
+                    if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+            case EOpType.ME_SKELETALMESH_BREAK:
+                if (argsOffset + 8 <= _byteCode.Length)
+                {
+                    uint a1 = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint a2 = (uint)(_byteCode[argsOffset + 4] | (_byteCode[argsOffset + 5] << 8) | (_byteCode[argsOffset + 6] << 16) | (_byteCode[argsOffset + 7] << 24));
+                    uint o1 = AddressToByteCodeOffset(a1), o2 = AddressToByteCodeOffset(a2);
+                    if (doLog) MutableResolverDebugLog.Log($"CONST_ME_SKELETAL_BREAK\tdepth={constLogDepth}\ta1={a1}\to1={o1}\ta2={a2}\to2={o2}");
+                    foreach (uint o in new[] { o1, o2 })
+                        if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+            case EOpType.ME_OPTIMIZESKINNING:
+                if (argsOffset + 4 <= _byteCode.Length)
+                {
+                    uint src = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint o = AddressToByteCodeOffset(src);
+                    if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+            case EOpType.IN_ADDSTRING:
+                // Instance string op; no mesh/image constants to collect from this branch
+                break;
+            case EOpType.ME_ADDMETADATA:
+                if (argsOffset + 4 <= _byteCode.Length)
+                {
+                    uint src = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint o = AddressToByteCodeOffset(src);
+                    if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+            case EOpType.IM_REFERENCE:
+                // ResourceReferenceArgs: first 4 bytes can be an image address in some layouts; recurse to keep chain.
+                if (argsOffset + 4 <= _byteCode.Length)
+                {
+                    uint a = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint o = AddressToByteCodeOffset(a);
+                    if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+            case EOpType.IM_LAYERCOLOUR:
+                // Base image at first 4 bytes.
+                if (argsOffset + 4 <= _byteCode.Length)
+                {
+                    uint a = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint o = AddressToByteCodeOffset(a);
+                    if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+            default:
+                // Fallback: unhandled IM_* (Unreal op 34–43) often have an image child at first 4 bytes; recurse to avoid dropping chain.
+                byte opByte = (byte)opType;
+                if (opByte >= 34 && opByte <= 43 && argsOffset + 4 <= _byteCode.Length)
+                {
+                    uint a = (uint)(_byteCode[argsOffset] | (_byteCode[argsOffset + 1] << 8) | (_byteCode[argsOffset + 2] << 16) | (_byteCode[argsOffset + 3] << 24));
+                    uint o = AddressToByteCodeOffset(a);
+                    if (o != 0) { var (xi, xm) = CollectConstantsFromAddress(o, paramIndexToOptionIndex, visited, constLogDepth >= 0 ? constLogDepth + 1 : -1); foreach (var i in xi) images.Add(i); foreach (var m in xm) meshes.Add(m); }
+                }
+                break;
+        }
+
+        return (images, meshes);
+    }
+
+    /// <summary>
+    /// Walks the instance tree from the given op (by byte offset), following IN_SWITCH (with param selection), IN_CONDITIONAL, IN_ADDMESH, IN_ADDIMAGE, IN_ADDSURFACE.
+    /// Returns the op indices (into OpAddress) of all mesh and image roots that are selected for the given parameters.
+    /// Use AddressToByteCodeOffset on each to get byte offset, then CollectConstantsFromAddress to get constants.
+    /// </summary>
+    public (List<uint> meshOpIndices, List<uint> imageOpIndices) CollectMeshAndImageOpIndicesFromInstanceTree(
+        uint byteCodeOffset,
+        IReadOnlyDictionary<int, int> paramIndexToOptionIndex,
+        HashSet<uint>? visited = null,
+        int depth = 0)
+    {
+        var meshOpIndices = new List<uint>();
+        var imageOpIndices = new List<uint>();
+        visited ??= [];
+        if (!visited.Add(byteCodeOffset))
+        {
+            if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                MutableResolverDebugLog.LogDepth(depth, $"SKIP_ALREADY_VISITED\toffset={byteCodeOffset}");
+            return (meshOpIndices, imageOpIndices);
+        }
+
+        if (byteCodeOffset >= _byteCode.Length)
+        {
+            if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                MutableResolverDebugLog.LogDepth(depth, $"OUT_OF_RANGE\toffset={byteCodeOffset}\tbyteCodeLen={_byteCode.Length}");
+            return (meshOpIndices, imageOpIndices);
+        }
+        var (opType, argsOffset) = GetInstructionAt(byteCodeOffset);
+
+        if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+            MutableResolverDebugLog.LogDepth(depth, $"OP\toffset={byteCodeOffset}\targsOffset={argsOffset}\topType={opType}");
+
+        switch (opType)
+        {
+            case EOpType.IN_SWITCH:
+                var (varAddress, _, useRanges, cases) = ReadSwitchOpArgs(_byteCode, argsOffset);
+                int? paramIndex = ResolveVarAddressToParameterIndex(varAddress);
+                int? optionIndex = paramIndex.HasValue && paramIndexToOptionIndex.TryGetValue(paramIndex.Value, out var oi) ? oi : null;
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"IN_SWITCH\tvarAddress={varAddress}\tresolvedParamIndex={paramIndex?.ToString() ?? "null"}\toptionIndex={optionIndex?.ToString() ?? "null"}\tcasesCount={cases.Count}\tuseRanges={useRanges}");
+                if (optionIndex.HasValue)
+                {
+                    foreach (var (c, size, caseAt) in cases)
+                    {
+                        uint caseOff = AddressToByteCodeOffset((uint)caseAt);
+                        if (caseOff == 0) continue;
+                        bool match = useRanges ? (optionIndex.Value >= c && optionIndex.Value < c + size) : (c == optionIndex.Value);
+                        if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath) && match)
+                            MutableResolverDebugLog.LogDepth(depth, $"IN_SWITCH_MATCH\tcondition={c}\tsize={size}\tcaseAt={caseAt}\tcaseByteOff={caseOff}");
+                        if (match)
+                        {
+                            var (mOps, iOps) = CollectMeshAndImageOpIndicesFromInstanceTree(caseOff, paramIndexToOptionIndex, visited, depth + 1);
+                            meshOpIndices.AddRange(mOps);
+                            imageOpIndices.AddRange(iOps);
+                            break;
+                        }
+                    }
+                }
+                break;
+            case EOpType.IN_CONDITIONAL:
+                var (_, yes, no) = ReadConditionalArgs(_byteCode, argsOffset);
+                uint yesOff = AddressToByteCodeOffset(yes), noOff = AddressToByteCodeOffset(no);
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"IN_CONDITIONAL\tyes={yes}\tyesOff={yesOff}\tno={no}\tnoOff={noOff}");
+                if (yesOff != 0) { var (m1, i1) = CollectMeshAndImageOpIndicesFromInstanceTree(yesOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(m1); imageOpIndices.AddRange(i1); }
+                if (noOff != 0) { var (m2, i2) = CollectMeshAndImageOpIndicesFromInstanceTree(noOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(m2); imageOpIndices.AddRange(i2); }
+                break;
+            case EOpType.IN_ADDMESH:
+                var (instM, valueM) = ReadInstanceAddArgs(_byteCode, argsOffset);
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"IN_ADDMESH\tinstance={instM}\tvalue={valueM}");
+                if (valueM != 0) { meshOpIndices.Add(valueM); if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath)) MutableResolverDebugLog.LogDepth(depth, $"COLLECT_MESH\topIndex={valueM}"); }
+                if (instM != 0) { uint instOff = AddressToByteCodeOffset(instM); if (instOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(instOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                break;
+            case EOpType.IN_ADDIMAGE:
+                var (instI, valueI) = ReadInstanceAddArgs(_byteCode, argsOffset);
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"IN_ADDIMAGE\tinstance={instI}\tvalue={valueI}");
+                if (valueI != 0) { imageOpIndices.Add(valueI); if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath)) MutableResolverDebugLog.LogDepth(depth, $"COLLECT_IMAGE\topIndex={valueI}"); }
+                if (instI != 0) { uint instOff = AddressToByteCodeOffset(instI); if (instOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(instOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                break;
+            case EOpType.IN_ADDSURFACE:
+                var (instS, valueS) = ReadInstanceAddArgs(_byteCode, argsOffset);
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                {
+                    var raw = new List<string>();
+                    if (argsOffset + 16 <= _byteCode.Length)
+                        for (int j = 0; j < 16; j++) raw.Add(_byteCode[argsOffset + j].ToString("X2"));
+                    MutableResolverDebugLog.LogDepth(depth, $"IN_ADDSURFACE\tinstance={instS}\tvalue={valueS}\tinstanceOff={AddressToByteCodeOffset(instS)}\tvalueOff={AddressToByteCodeOffset(valueS)}\traw16={(raw.Count == 16 ? string.Join(" ", raw) : "n/a")}");
+                }
+                if (instS != 0) { uint instOff = AddressToByteCodeOffset(instS); if (instOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(instOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                if (valueS != 0) { uint valOff = AddressToByteCodeOffset(valueS); if (valOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(valOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                break;
+            case EOpType.IN_ADDCOMPONENT:
+                var (instC, valueC) = ReadInstanceAddArgs(_byteCode, argsOffset);
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"IN_ADDCOMPONENT\tinstance={instC}\tvalue={valueC}");
+                if (instC != 0) { uint instOff = AddressToByteCodeOffset(instC); if (instOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(instOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                if (valueC != 0) { uint valOff = AddressToByteCodeOffset(valueC); if (valOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(valOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                break;
+            case EOpType.IN_ADDMATERIAL:
+            case EOpType.IN_ADDOVERLAYMATERIAL:
+            case EOpType.IN_ADDOVERRIDEMATERIAL:
+                var (instMat, valueMat) = ReadInstanceAddArgs(_byteCode, argsOffset);
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"{opType}\tinstance={instMat}\tvalue={valueMat}");
+                if (instMat != 0) { uint instOff = AddressToByteCodeOffset(instMat); if (instOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(instOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                if (valueMat != 0) { uint valOff = AddressToByteCodeOffset(valueMat); if (valOff != 0) { var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(valOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mx); imageOpIndices.AddRange(ix); } }
+                break;
+            case EOpType.IM_SWITCH:
+            case EOpType.MI_SWITCH:
+                // Follow selected case (or default) so we reach image/material roots from instance tree (e.g. material texture branches).
+                var (imVarAddress, imDefAddress, imUseRanges, imCases) = ReadSwitchOpArgs(_byteCode, argsOffset);
+                int? imParamIndex = ResolveVarAddressToParameterIndex(imVarAddress);
+                int? imOptionIndex = imParamIndex.HasValue && paramIndexToOptionIndex.TryGetValue(imParamIndex.Value, out var imOi) ? imOi : null;
+                if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"{opType}\tvarAddress={imVarAddress}\tresolvedParamIndex={imParamIndex?.ToString() ?? "null"}\toptionIndex={imOptionIndex?.ToString() ?? "null"}\tcasesCount={imCases.Count}");
+                uint branchOff = 0;
+                if (imOptionIndex.HasValue)
+                {
+                    foreach (var (c, size, caseAt) in imCases)
+                    {
+                        bool match = imUseRanges ? (imOptionIndex.Value >= c && imOptionIndex.Value < c + size) : (c == imOptionIndex.Value);
+                        if (match) { branchOff = AddressToByteCodeOffset((uint)caseAt); break; }
+                    }
+                }
+                if (branchOff == 0 && imDefAddress != 0) branchOff = AddressToByteCodeOffset(imDefAddress);
+                if (branchOff != 0) { var (mOps, iOps) = CollectMeshAndImageOpIndicesFromInstanceTree(branchOff, paramIndexToOptionIndex, visited, depth + 1); meshOpIndices.AddRange(mOps); imageOpIndices.AddRange(iOps); }
+                break;
+            case EOpType.IN_ADDLOD:
+                // Args: uint8 LODCount, then LODCount x ADDRESS (4 bytes each). Recurse into each LOD.
+                if (argsOffset + 1 <= _byteCode.Length)
+                {
+                    int lodCount = _byteCode[argsOffset];
+                    int pos = (int)argsOffset + 1;
+                    if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                        MutableResolverDebugLog.LogDepth(depth, $"IN_ADDLOD\tLODCount={lodCount}\targsOffset={argsOffset}");
+                    for (int i = 0; i < lodCount && pos + 4 <= _byteCode.Length; i++)
+                    {
+                        uint lodAddr = (uint)(_byteCode[pos] | (_byteCode[pos + 1] << 8) | (_byteCode[pos + 2] << 16) | (_byteCode[pos + 3] << 24));
+                        pos += 4;
+                        if (lodAddr != 0)
+                        {
+                            uint off = AddressToByteCodeOffset(lodAddr);
+                            if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                                MutableResolverDebugLog.LogDepth(depth, $"IN_ADDLOD_LOD\tlodIndex={i}\tlodAddr={lodAddr}\tbyteOff={off}");
+                            if (off != 0)
+                            {
+                                var (mx, ix) = CollectMeshAndImageOpIndicesFromInstanceTree(off, paramIndexToOptionIndex, visited, depth + 1);
+                                meshOpIndices.AddRange(mx);
+                                imageOpIndices.AddRange(ix);
+                            }
+                        }
+                    }
+                }
+                break;
+            default:
+                // Instance tree can point at mesh/image ops (e.g. ME_SKELETALMESH_BREAK); treat as mesh/image root.
+                if (IsMeshProducingOp(opType))
+                {
+                    var opIdx = GetOpIndexFromByteCodeOffset(byteCodeOffset);
+                    if (opIdx.HasValue) { meshOpIndices.Add(opIdx.Value); if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath)) MutableResolverDebugLog.LogDepth(depth, $"COLLECT_MESH_OP\topType={opType}\topIndex={opIdx.Value}"); }
+                }
+                else if (IsImageProducingOp(opType))
+                {
+                    var opIdx = GetOpIndexFromByteCodeOffset(byteCodeOffset);
+                    if (opIdx.HasValue) { imageOpIndices.Add(opIdx.Value); if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath)) MutableResolverDebugLog.LogDepth(depth, $"COLLECT_IMAGE_OP\topType={opType}\topIndex={opIdx.Value}"); }
+                }
+                else if (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath))
+                    MutableResolverDebugLog.LogDepth(depth, $"UNHANDLED_OP\topType={opType}");
+                break;
+        }
+
+        return (meshOpIndices, imageOpIndices);
+    }
+
+    private static bool IsMeshProducingOp(EOpType opType)
+    {
+        return opType == EOpType.ME_CONSTANT || opType == EOpType.ME_SKELETALMESH_BREAK
+            || opType == EOpType.ME_MERGE || opType == EOpType.ME_APPLYLAYOUT || opType == EOpType.ME_FORMAT
+            || opType == EOpType.ME_DIFFERENCE || opType == EOpType.ME_MORPH;
+    }
+
+    private static bool IsImageProducingOp(EOpType opType)
+    {
+        return opType == EOpType.IM_CONSTANT || opType == EOpType.IM_LAYER || opType == EOpType.IM_PIXELFORMAT || opType == EOpType.IM_MIPMAP;
+    }
+
+    /// <summary>
+    /// Enumerates all IM_SWITCH and ME_SWITCH ops: (byteCodeOffset, opType, varAddress, defAddress, cases).
+    /// </summary>
+    public IEnumerable<(uint byteCodeOffset, EOpType opType, uint varAddress, uint defAddress, List<(int conditionOrStart, int size, uint caseAt)> cases)> EnumerateSwitchOps()
+    {
+        if (_program.OpAddress == null) yield break;
+        for (int i = 0; i < _program.OpAddress.Length; i++)
+        {
+            uint offset = GetByteCodeOffset(_program.OpAddress[i]);
+            if (offset >= _byteCode.Length) continue;
+            byte op = _byteCode[offset];
+            if (op != (byte)EOpType.IM_SWITCH && op != (byte)EOpType.ME_SWITCH) continue;
+            uint argsOffset = offset + 1;
+            var (varAddress, defAddress, _, cases) = ReadSwitchOpArgs(_byteCode, argsOffset);
+            yield return (offset, (EOpType)op, varAddress, defAddress, cases);
+        }
+    }
+
+    /// <summary>
     /// Builds a map from ROM index to how it is identified in the ByteCode (type and constant index).
     /// Multiple constant ops can reference the same ROM (e.g. different LODs of same image).
     /// </summary>
@@ -386,7 +1003,7 @@ public class MutableByteCode
         }
 
         var romType = _program.Roms != null ? (Func<uint, ERomDataType?>)(i => i < _program.Roms.Length ? _program.Roms[i].Type : null) : _ => null;
-        return new RomIdentification(_program, byRom, romType, _program.Roms?.Length ?? 0);
+        return new RomIdentification(_program, byRom, romType, _program.Roms?.Length ?? 0, this);
     }
 }
 
@@ -421,13 +1038,15 @@ public class RomIdentification
     private readonly Dictionary<uint, List<RomRef>> _byRom;
     private readonly Func<uint, ERomDataType?> _getRomType;
     private readonly int _romCount;
+    private readonly MutableByteCode _byteCode;
 
-    internal RomIdentification(FProgram program, Dictionary<uint, List<RomRef>> byRom, Func<uint, ERomDataType?> getRomType, int romCount)
+    internal RomIdentification(FProgram program, Dictionary<uint, List<RomRef>> byRom, Func<uint, ERomDataType?> getRomType, int romCount, MutableByteCode byteCode)
     {
         _program = program;
         _byRom = byRom;
         _getRomType = getRomType;
         _romCount = romCount;
+        _byteCode = byteCode ?? throw new ArgumentNullException(nameof(byteCode));
     }
 
     public int RomCount => _romCount;
@@ -448,36 +1067,65 @@ public class RomIdentification
     public IEnumerable<uint> ReferencedRomIndices => _byRom.Keys;
 
     /// <summary>
+    /// Returns the constant mesh index (0..ConstantMeshes.Length-1) for this ROM, or null if not found.
+    /// Use this as the grouping key so all ROMs belonging to the same logical mesh share the same index.
+    /// </summary>
+    public int? GetMeshConstantIndex(uint romIndex)
+    {
+        var id = GetMeshRomIdentity(romIndex);
+        return id.HasValue ? id.Value.ConstantMeshIndex : null;
+    }
+
+    /// <summary>
     /// Identity for a mesh ROM from ByteCode/Program: MeshIDPrefix, skeleton constant index, and constant mesh index.
     /// SkeletonConstantIndex is -1 if the mesh has no skeleton; otherwise index into Program.ConstantSkeletons.
-    /// The streamed FMesh blob also contains MeshIDPrefix when read with the correct constructor alignment.
+    /// Falls back to Program.ConstantMeshes/ConstantMeshContentIndices reverse lookup when ROM is not referenced by ME_CONSTANT.
     /// </summary>
     public MeshRomIdentity? GetMeshRomIdentity(uint romIndex)
     {
-        if (!_byRom.TryGetValue(romIndex, out var refs) || refs.Count == 0) return null;
-        var r = refs[0];
-        if (r.OpType != EOpType.ME_CONSTANT) return null;
-        if (_program.ConstantMeshes == null || r.ConstantIndex < 0 || r.ConstantIndex >= _program.ConstantMeshes.Length)
-            return null;
-        var range = _program.ConstantMeshes[r.ConstantIndex];
-        return new MeshRomIdentity(range.MeshIDPrefix, r.SkeletonConstantIndex, r.ConstantIndex);
+        if (_byRom.TryGetValue(romIndex, out var refs) && refs.Count > 0)
+        {
+            var r = refs[0];
+            if (r.OpType == EOpType.ME_CONSTANT && _program.ConstantMeshes != null && r.ConstantIndex >= 0 && r.ConstantIndex < _program.ConstantMeshes.Length)
+            {
+                var range = _program.ConstantMeshes[r.ConstantIndex];
+                return new MeshRomIdentity(range.MeshIDPrefix, r.SkeletonConstantIndex, r.ConstantIndex);
+            }
+        }
+        var fallback = _byteCode.TryGetMeshConstantForRomIndex(romIndex);
+        if (fallback.HasValue)
+        {
+            var (constantMeshIndex, range) = fallback.Value;
+            return new MeshRomIdentity(range.MeshIDPrefix, -1, constantMeshIndex);
+        }
+        return null;
     }
 
     /// <summary>
     /// Identity for an image ROM from ByteCode/Program: constant image index and metadata (size, LOD count, format).
     /// Multiple ROMs can belong to the same constant image (one per MIP/LOD).
-    /// Use ImageGroupId to group all LODs of the same logical image (same value as ConstantImageIndex; stable across ROMs).
+    /// Falls back to Program.ConstantImages/ConstantImageLODIndices reverse lookup when ROM is not referenced by IM_CONSTANT.
     /// </summary>
     public ImageRomIdentity? GetImageRomIdentity(uint romIndex)
     {
-        if (!_byRom.TryGetValue(romIndex, out var refs) || refs.Count == 0) return null;
-        var r = refs[0];
-        if (r.OpType != EOpType.IM_CONSTANT) return null;
-        if (_program.ConstantImages == null || r.ConstantIndex < 0 || r.ConstantIndex >= _program.ConstantImages.Length)
-            return null;
-        var range = _program.ConstantImages[r.ConstantIndex];
-        uint? sourceId = GetRomSourceId(romIndex);
-        return new ImageRomIdentity(r.ConstantIndex, range, sourceId);
+        if (_byRom.TryGetValue(romIndex, out var refs) && refs.Count > 0)
+        {
+            var r = refs[0];
+            if (r.OpType == EOpType.IM_CONSTANT && _program.ConstantImages != null && r.ConstantIndex >= 0 && r.ConstantIndex < _program.ConstantImages.Length)
+            {
+                var range = _program.ConstantImages[r.ConstantIndex];
+                uint? sourceId = GetRomSourceId(romIndex);
+                return new ImageRomIdentity(r.ConstantIndex, range, sourceId);
+            }
+        }
+        var fallback = _byteCode.TryGetImageConstantForRomIndex(romIndex);
+        if (fallback.HasValue)
+        {
+            var (constantImageIndex, range) = fallback.Value;
+            uint? sourceId = GetRomSourceId(romIndex);
+            return new ImageRomIdentity(constantImageIndex, range, sourceId);
+        }
+        return null;
     }
 
     /// <summary>

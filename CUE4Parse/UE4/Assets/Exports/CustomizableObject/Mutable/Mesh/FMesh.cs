@@ -50,7 +50,7 @@ public class FMesh
             Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
             // Tags = [];
             // StreamedResources = [];
-            Tags = Ar.ReadArray(Ar.ReadFString);
+            Tags = Ar.ReadArray(Ar.ReadMutableFString);
             StreamedResources = Ar.ReadArray<ulong>();
             BonePoses = Ar.ReadArray<FBonePose>();
             BoneMap = Ar.ReadArray<FBoneName>();
