@@ -1,6 +1,7 @@
 ﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse.UE4.Versions;
 using Newtonsoft.Json;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject;
@@ -15,7 +16,7 @@ public class UCustomizableObject : UObject
     {
         base.Deserialize(Ar, validPos);
         // tested only on 5.7+, but in theory should also work on 5.6
-        if (Ar.Game < Versions.EGame.GAME_UE5_6) return;
+        if (Ar.Game < EGame.GAME_UE5_6) return;
         InternalVersion = Ar.Read<long>();
         if (InternalVersion != -1)
             Model = new FModel(new FMutableArchive(Ar));
