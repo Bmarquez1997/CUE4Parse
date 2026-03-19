@@ -95,10 +95,10 @@ namespace CUE4Parse.Example
                 Log.Error("No image constants or ROMs found");
             
             if (_meshRomIDs.Any(mesh => !meshRoms.Contains(uint.Parse(mesh.ToString()))))
-                Log.Error("Required meshes missing");
+                Log.Error("Required meshes missing. Returned indices: " + string.Join("\n", meshRoms.Select(p => $"{p}, ")));
             
             if (_textureRomIDs.Any(img => !imageRoms.Contains(uint.Parse(img.ToString()))))
-                Log.Error("Required textures missing");
+                Log.Error("Required textures missing. Returned indices: " + string.Join("\n", imageRoms.Select(p => $"{p}, ")));
 
             
             // // Read the COI and only export the related meshes and textures

@@ -128,16 +128,15 @@ public class ParameterToResourceResolver
             }
         }
 
-        // Collect image constants from IM_SWITCH before mesh roots so shared bytecode nodes aren't marked visited and skipped.
+        // Collect from IM_SWITCH and ME_SWITCH before instance/mesh roots so instance-selected constants aren't skipped by shared visited set.
         var allSwitches = _byteCode.EnumerateSwitchOps().ToList();
         int imSwitchDefaultPassCount = 0;
         foreach (var (_, opType, varAddress, defAddress, cases) in allSwitches)
         {
-            if (opType != EOpType.IM_SWITCH) continue;
+            if (opType != EOpType.IM_SWITCH && opType != EOpType.ME_SWITCH) continue;
             int? paramIndex = _byteCode.ResolveVarAddressToParameterIndex(varAddress);
             int optionIndex = -1;
             bool haveOption = paramIndex.HasValue && paramIndexToOptionIndex.TryGetValue(paramIndex.Value, out optionIndex);
-            // Collect from matched case when we have an option; also collect from default when no case matched.
             bool collectedFromCase = false;
             if (haveOption)
             {
@@ -163,8 +162,8 @@ public class ParameterToResourceResolver
                 uint defOff = _byteCode.AddressToByteCodeOffset(defAddress);
                 if (defOff != 0)
                 {
-                    imSwitchDefaultPassCount++;
-                    int constLog = (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath) && imSwitchDefaultPassCount == 1) ? 0 : -1;
+                    if (opType == EOpType.IM_SWITCH) imSwitchDefaultPassCount++;
+                    int constLog = (!string.IsNullOrEmpty(MutableResolverDebugLog.LogPath) && opType == EOpType.IM_SWITCH && imSwitchDefaultPassCount == 1) ? 0 : -1;
                     var (imgC, meshC) = _byteCode.CollectConstantsFromAddress(defOff, paramIndexToOptionIndex, visitedConstants, constLog);
                     foreach (var i in imgC) imageConstants.Add(i);
                     foreach (var m in meshC) meshConstants.Add(m);
@@ -211,7 +210,7 @@ public class ParameterToResourceResolver
         int imSwitchDefaultCount = 0;
         foreach (var (_, opType, varAddress, defAddress, cases) in allSwitches)
         {
-            if (opType == EOpType.IM_SWITCH) continue; // Already processed above before mesh roots.
+            if (opType == EOpType.IM_SWITCH || opType == EOpType.ME_SWITCH) continue; // Already processed above before instance/mesh roots.
             bool matched = false;
             int? paramIndex = _byteCode.ResolveVarAddressToParameterIndex(varAddress);
             if (paramIndex.HasValue && paramIndexToOptionIndex.TryGetValue(paramIndex.Value, out int optionIndex))
@@ -243,16 +242,6 @@ public class ParameterToResourceResolver
                     foreach (var i in imgC) imageConstants.Add(i);
                     foreach (var m in meshC) meshConstants.Add(m);
                 }
-            }
-        }
-
-        // If no image constants were found from instance/switches, include all IM_CONSTANT indices from the program so the COI has image references.
-        if (imageConstants.Count == 0)
-        {
-            foreach (var (_, opType, constantIndex, _) in _byteCode.EnumerateConstantReferences())
-            {
-                if (opType == EOpType.IM_CONSTANT && constantIndex >= 0)
-                    imageConstants.Add(constantIndex);
             }
         }
 
