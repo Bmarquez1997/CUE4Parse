@@ -79,7 +79,7 @@ public class MutableExporter : ExporterBase
                     break;
                 case ERomDataType.Mesh:
                     var mesh = loader.LoadMesh(index);
-                    StoreMutableMesh(mesh, meshes, surfaceNameMap);
+                    StoreMutableMesh(mesh, meshes, surfaceNameMap, index);
                     break;
                 default:
                     Log.Information("Unknown resource type: {0} for index: {1}", rom.Type, index);
@@ -110,10 +110,11 @@ public class MutableExporter : ExporterBase
         return surfaceNameMap;
     }
 
-    private void StoreMutableMesh(FMesh mesh, Dictionary<uint, Dictionary<string, List<FMesh>>> meshes, Dictionary<uint, string> surfaceNameMap)
+    private void StoreMutableMesh(FMesh mesh, Dictionary<uint, Dictionary<string, List<FMesh>>> meshes, Dictionary<uint, string> surfaceNameMap, uint romIndex)
     {
-        var skeletonIndex = mesh.SkeletonIDs.LastOrDefault(0u);
-
+        // var skeletonIndex = mesh.SkeletonIDs.LastOrDefault(0u);
+        var skeletonIndex = romIndex;
+        
         if (mesh.Surfaces == null || mesh.Surfaces.Length == 0 || mesh.Surfaces[0].SubMeshes.Length == 0 ||
             !surfaceNameMap.TryGetValue(mesh.Surfaces[0].SubMeshes[0].ExternalId, out var materialSlotName)) return;
 
@@ -136,7 +137,7 @@ public class MutableExporter : ExporterBase
     {
         foreach (var skeletonGroup in meshes)
         {
-            var skeletonSoftObject = skeletons[skeletonGroup.Key];
+            var skeletonSoftObject = skeletons[0];
             var skeletonName = skeletonSoftObject.AssetPathName.PlainText.SubstringAfterLast(".");
             if (filterSkeletonName != null &&
                 !skeletonName.Contains(filterSkeletonName, StringComparison.OrdinalIgnoreCase)) continue;
@@ -149,7 +150,7 @@ public class MutableExporter : ExporterBase
 
                     if (exportAll || materialGroup.Key.Equals("Wheel", StringComparison.OrdinalIgnoreCase) || materialGroup.Key.Equals("UNNAMED", StringComparison.OrdinalIgnoreCase) || skeletonName.Equals("SK_Figure"))
                         materialGroup.Value.ForEach(mesh =>
-                            ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeletonSoftObject, true));
+                            ExportMutableMesh(originalCustomizableObject, [mesh], materialGroup.Key, skeletonSoftObject, true, skeletonGroup.Key));
                     else
                     {
                         var sortedList = materialGroup.Value.OrderByDescending(mesh => mesh.VertexBuffers.ElementCount)
@@ -170,7 +171,7 @@ public class MutableExporter : ExporterBase
         }
     }
 
-    private void ExportMutableMesh(UCustomizableObject originalCustomizableObject, List<FMesh> meshes, string materialSlotName, FSoftObjectPath skeletonSoftObject, bool appendId = false)
+    private void ExportMutableMesh(UCustomizableObject originalCustomizableObject, List<FMesh> meshes, string materialSlotName, FSoftObjectPath skeletonSoftObject, bool appendId = false, uint romIndex = 0)
     {
         var mesh = meshes[0];
         meshes.RemoveAt(0);
@@ -194,7 +195,7 @@ public class MutableExporter : ExporterBase
 
         var meshName = $"{skeletonName.Replace("_Skeleton", "")}_{matName}";
         // var meshName = materialSlotName;
-        if (appendId) meshName = $"{meshIndex++:D4}_{matName}_{convertedMesh.LODs[0].NumVerts}_{convertedMesh.LODs[0].Indices.Value.Length}";
+        if (appendId) meshName = $"{meshIndex++:D4}_{romIndex:D5}_{matName}_{convertedMesh.LODs[0].NumVerts}_{convertedMesh.LODs[0].Indices.Value.Length}";
         var exportPath = $"{skeletonName}/{meshName}";
 
         var totalSockets = new List<FPackageIndex>();

@@ -10,6 +10,8 @@ using Serilog;
 
 namespace CUE4Parse.UE4.Assets.Exports.Rig;
 
+public class UDNA : UDNAAsset;
+
 public class UDNAAsset : UObject
 {
     public DNAVersion Version;

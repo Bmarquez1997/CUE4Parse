@@ -41,7 +41,7 @@ public class FMutableLoader
     public FImage? LoadImage(uint index)
     {
         var block = ModelStreamables[index];
-        if (block.Flags != 1) return null;
+        // if (block.Flags != 1) return null;
         var archive = GetArchive(block);
         archive.Position = (long) block.Offset;
         return new FImage(archive);
