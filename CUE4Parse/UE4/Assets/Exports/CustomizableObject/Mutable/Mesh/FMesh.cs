@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Layout;
@@ -27,6 +27,9 @@ public class FMesh
     public FBoneName[] BoneMap;
     public FPhysicsBody[] AdditionalPhysicsBodies;
     public uint MeshIDPrefix;
+    public FCloth[] ClothSections;
+    public FMeshMorph Morph;
+    public uint[] MorphDataBuffer;
     public uint ReferenceID;
     public string ReferenceMorph;
     
@@ -35,7 +38,9 @@ public class FMesh
         IndexBuffers = new FMeshBufferSet(Ar);
         VertexBuffers = new FMeshBufferSet(Ar);
         AdditionalBuffers = Ar.ReadArray(() => new KeyValuePair<EMeshBufferType, FMeshBufferSet>(Ar.Read<EMeshBufferType>(), new FMeshBufferSet(Ar)));
-        Layouts = Ar.ReadPtrArray(() => new FLayout(Ar));
+        Layouts = Ar.ReadPtrArrayWithHistory(() => new FLayout(Ar));
+        // SkeletonIDs = [];
+        // Skeleton = null;
         SkeletonIDs = Ar.ReadArray<uint>();
         Skeleton = Ar.ReadPtr(() => new FSkeleton(Ar));
         try
@@ -43,17 +48,23 @@ public class FMesh
             PhysicsBody = Ar.ReadPtr(() => new FPhysicsBody(Ar));
             Flags = Ar.Read<EMeshFlags>();
             Surfaces = Ar.ReadArray(() => new FMeshSurface(Ar));
-            Tags = Ar.ReadArray(Ar.ReadFString);
+            // Tags = [];
+            // StreamedResources = [];
+            Tags = Ar.ReadArray(Ar.ReadMutableFString);
             StreamedResources = Ar.ReadArray<ulong>();
             BonePoses = Ar.ReadArray<FBonePose>();
             BoneMap = Ar.ReadArray<FBoneName>();
             AdditionalPhysicsBodies = Ar.ReadArray(() => new FPhysicsBody(Ar));
             MeshIDPrefix = Ar.Read<uint>();
+            // ClothSections = Ar.ReadArray(() => new FCloth(Ar));
+            // Morph = new FMeshMorph(Ar);
+            // MorphDataBuffer = Ar.ReadArray<uint>();
         }
         catch (Exception e)
         {
-            Log.Warning("Exception thrown reading FMesh: {0}", e);
+            Log.Error("Exception thrown reading FMesh: {0}", e);
         }
+        
     }
 }
 

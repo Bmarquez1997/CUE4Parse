@@ -22,7 +22,7 @@ public class MutableDataConverter
         if (channel.ComponentCount == 0 || indexBuffer == null || indexBuffer.Data.Length == 0)
         {
             // throw new ArgumentNullException("Index component count == 0 or indexBuffer null/empty");
-            Log.Warning("Index component count == 0 or indexBuffer null/empty");
+            //Log.Warning("Index component count == 0 or indexBuffer null/empty");
             return [];
         }
 

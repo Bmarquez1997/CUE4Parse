@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CUE4Parse.UE4.Assets.Readers;
 
 namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable;
@@ -13,7 +13,7 @@ public class FState
 
     public FState(FMutableArchive Ar)
     {
-        Name = Ar.ReadFString();
+        Name = Ar.ReadMutableFString();
         Root = Ar.Read<uint>();
         RuntimeParameters = Ar.ReadArray<int>();
         UpdateCache = Ar.ReadArray<uint>();

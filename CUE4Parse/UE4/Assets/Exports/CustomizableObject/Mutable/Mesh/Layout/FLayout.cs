@@ -22,7 +22,7 @@ public class FLayout
         Strategy = Ar.Read<EPackStrategy>();
         ReductionMethod = Ar.Read<EReductionMethod>();
         Blocks = Ar.ReadArray<FLayoutBlock>();
-        Masks = Ar.ReadPtrArray(() => new FImage(Ar));
+        Masks = Ar.ReadPtrArrayWithHistory(() => new FImage(Ar));
     }
 }
 

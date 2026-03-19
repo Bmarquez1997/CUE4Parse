@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CUE4Parse.UE4.Assets.Readers;
 using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Core.Misc;
@@ -21,7 +21,7 @@ public class FParameterDesc
    
     public FParameterDesc(FMutableArchive Ar)
     {
-        Name = Ar.ReadFString();
+        Name = Ar.ReadMutableFString();
         UID = Ar.Read<FGuid>();
         Type = Ar.Read<EParameterType>();
 
@@ -37,7 +37,7 @@ public class FParameterDesc
             EParameterType.Texture => null,
             EParameterType.SkeletalMesh => null,
             EParameterType.Material => null,
-            EParameterType.String => Ar.ReadFString(),
+            EParameterType.String => Ar.ReadMutableFString(),
             EParameterType.Matrix => new FMatrix(Ar, false),
             EParameterType.InstancedStruct => null,
             _ => throw new NotSupportedException("Serialization for parameter type " + Type + " is not supported")

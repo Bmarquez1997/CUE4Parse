@@ -9,7 +9,7 @@ public class FBodyShape
 
     public FBodyShape(FMutableArchive Ar)
     {
-        Name = Ar.ReadFString();
+        Name = Ar.ReadMutableFString();
         Flags = Ar.Read<uint>();
     }
 }

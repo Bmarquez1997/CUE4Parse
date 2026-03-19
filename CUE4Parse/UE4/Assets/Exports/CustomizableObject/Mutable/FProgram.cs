@@ -46,6 +46,8 @@ public class FProgram
     public ushort[][] ParameterLists;
     public Dictionary<uint, int>? RelevantParameterList;
     public FMaterial[]? ConstantMaterials;
+    public Dictionary<uint, string> ConstantNames;
+    public Dictionary<uint, FMeshSocket> ConstantSockets;
    
     public FProgram(FMutableArchive Ar)
     {
@@ -54,37 +56,45 @@ public class FProgram
         States = Ar.ReadArray(() => new FState(Ar));
         Roms = Ar.ReadArray<FRomDataRuntime>();
         RomsCompileData = Ar.ReadArray<FRomDataCompile>();
-        ConstantImageLODsPermanent = Ar.ReadPtrArray(() => new FImage(Ar));
+        ConstantImageLODsPermanent = Ar.ReadPtrArrayWithHistory(() => new FImage(Ar));
         ConstantImageLODIndices = Ar.ReadArray<FConstantResourceIndex>();
         ConstantImages = Ar.ReadArray<FImageLODRange>();
-        ConstantMeshesPermanent = Ar.ReadPtrArray(() => new FMesh(Ar));
-        ConstantMeshContentIndices = Ar.ReadArray<FConstantResourceIndex>();
-        ConstantMeshes = Ar.ReadArray<FMeshContentRange>();
-        ConstantExtensionData = Ar.ReadArray(() => new FExtensionDataConstant(Ar));
-        ConstantStrings = Ar.ReadArray(Ar.ReadFString);
-        if (Ar.Game >= EGame.GAME_UE5_7)
-        {
-            ConstantUInt32Lists = Ar.ReadArray(Ar.ReadArray<uint>);
-            ConstantUInt64Lists = Ar.ReadArray(Ar.ReadArray<ulong>);
-        }
         try
         {
-            ConstantLayouts = Ar.ReadPtrArray(() => new FLayout(Ar));
+            // Unreal TManagedPtr deduplicates by id: only first occurrence reads from stream; reuse for same id.
+            ConstantMeshesPermanent = Ar.ReadPtrArrayWithHistory(() => new FMesh(Ar));
+            ConstantMeshContentIndices = Ar.ReadArray<FConstantResourceIndex>();
+            ConstantMeshes = Ar.ReadArray<FMeshContentRange>();
+            // ConstantExtensionData = [];
+            ConstantExtensionData = Ar.ReadArray(() => new FExtensionDataConstant(Ar));
+            ConstantStrings = Ar.ReadArray(Ar.ReadFString);
+            if (Ar.Game >= EGame.GAME_UE5_7)
+            {
+                ConstantUInt32Lists = Ar.ReadArray(Ar.ReadArray<uint>);
+                ConstantUInt64Lists = Ar.ReadArray(Ar.ReadArray<ulong>);
+            }
+            ConstantLayouts = Ar.ReadPtrArrayWithHistory(() => new FLayout(Ar));
             ConstantProjectors = Ar.ReadArray<FProjector>();
             ConstantMatrices = Ar.ReadArray(() => new FMatrix(Ar, false));
             ConstantShapes = Ar.ReadArray<FShape>();
             ConstantCurves = Ar.ReadArray(() => new FRichCurve(Ar));
-            ConstantSkeletons = Ar.ReadPtrArray(() => new FSkeleton(Ar));
-            if (Ar.Game < EGame.GAME_UE5_7) ConstantPhysicsBodies = Ar.ReadPtrArray(() => new FPhysicsBody(Ar));
+            ConstantSkeletons = Ar.ReadPtrArrayWithHistory(() => new FSkeleton(Ar));
+            if (Ar.Game < EGame.GAME_UE5_7) ConstantPhysicsBodies = Ar.ReadPtrArrayWithHistory(() => new FPhysicsBody(Ar));
             Parameters = Ar.ReadArray(() => new FParameterDesc(Ar));
             Ranges = Ar.ReadArray(() => new FRangeDesc(Ar));
             ParameterLists = Ar.ReadArray(Ar.ReadArray<ushort>);
             //if (Ar.Game >= EGame.GAME_UE5_8) RelevantParameterList = Ar.ReadMap(Ar.Read<uint>, Ar.Read<int>);
-            if (Ar.Game >= EGame.GAME_UE5_7) ConstantMaterials = Ar.ReadPtrArray(() => new FMaterial(Ar));
+            if (Ar.Game >= EGame.GAME_UE5_7) ConstantMaterials = Ar.ReadPtrArrayWithHistory(() => new FMaterial(Ar));
+            // ConstantNames = Ar.ReadMap(Ar.Read<uint>, Ar.ReadMutableFString);
+            // ConstantSockets = Ar.ReadMap(Ar.Read<uint>, () => new FMeshSocket(Ar));
         }
         catch (Exception e)
         {
             Log.Warning("Exception thrown reading FProgram: {0}", e);
         }
+        
+        // If OpAddress was not in the stream or is empty, rebuild from ByteCode for ROM identification.
+        if (OpAddress == null || OpAddress.Length == 0)
+            OpAddress = MutableByteCode.BuildOpAddressFromByteCode(ByteCode);
     }
 }

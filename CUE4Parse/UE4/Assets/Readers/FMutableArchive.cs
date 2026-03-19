@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Text;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Readers;
 
@@ -9,6 +11,9 @@ namespace CUE4Parse.UE4.Assets.Readers;
 public class FMutableArchive : FArchive
 {
     private readonly FArchive _baseArchive;
+    
+    /// <summary> Maximum array length when reading TArray from Mutable blobs to avoid overflow from misaligned/garbage lengths. </summary>
+    private const int MaxArrayLength = 256 * 1024;
     
     public FMutableArchive(FArchive baseArchive)
     {
@@ -20,12 +25,48 @@ public class FMutableArchive : FArchive
     public override long Seek(long offset, SeekOrigin origin) => _baseArchive.Seek(offset, origin);
     public override string ReadFString() => new string(_baseArchive.ReadArray<char>()).Replace("\0", string.Empty);
     
+    /// <summary>
+    /// Mutable serializes FString as TArray&lt;TCHAR&gt;: int32 length then length*sizeof(TCHAR) bytes (UTF-16 LE on Windows).
+    /// Use this for physics body names and other Mutable FString fields; standard ReadFString uses 1 byte per char and misaligns.
+    /// </summary>
+    public string ReadMutableFString()
+    {
+        var length = _baseArchive.Read<int>();
+        if (length <= 0) return string.Empty;
+        if (length > 65536) length = 65536; // guard against corrupted/garbage length
+        var bytes = _baseArchive.ReadBytes(length * 2);
+        return Encoding.Unicode.GetString(bytes).Replace("\0", string.Empty);
+    }
+    
+    public override T[] ReadArray<T>(Func<T> getter)
+    {
+        // var length = _baseArchive.Read<int>();
+        // if (length <= 0) return [];
+        // if (length > MaxArrayLength) length = MaxArrayLength;
+        // return _baseArchive.ReadArray(length, getter);
+        return _baseArchive.ReadArray(getter);
+    }
+    // TODO: Determine if we need these clamped ReadArray methods (and what the max should be)
+    public override T[] ReadArray<T>() where T : struct
+    {
+        // var length = _baseArchive.Read<int>();
+        // if (length <= 0) return [];
+        // if (length > MaxArrayLength) length = MaxArrayLength;
+        // var elemSize = Unsafe.SizeOf<T>();
+        // var remaining = _baseArchive.Length - _baseArchive.Position;
+        // if (remaining < (long)length * elemSize && remaining >= 0)
+        //     length = (int)Math.Max(0, remaining / elemSize);
+        // return length > 0 ? _baseArchive.ReadArray<T>(length) : [];
+        return _baseArchive.ReadArray<T>();
+    }
+    
     public T ReadPtr<T>() where T : unmanaged => _baseArchive.Read<int>() == -1 ? default : _baseArchive.Read<T>();
     public T? ReadPtr<T>(Func<T> getter) where T : class => _baseArchive.Read<int>() == -1 ? null : getter();
     public T[] ReadPtrArray<T>(Func<T> getter)
     {
         var length = _baseArchive.Read<int>();
-        if (length == 0) return [];
+        if (length <= 0) return [];
+        if (length > MaxArrayLength) length = MaxArrayLength;
 
         var list = new List<T>(length);
         for (var i = 0; i < length; i++)
@@ -36,6 +77,34 @@ public class FMutableArchive : FArchive
             list.Add(getter());
         }
 
+        return list.ToArray();
+    }
+
+    /// <summary>
+    /// Read TArray of TManagedPtr like Unreal: each element is int32 id; id==-1 means null/skip.
+    /// When id was already seen we reuse the same instance (no read); first occurrence reads from stream.
+    /// Use for ConstantMeshesPermanent, ConstantImageLODsPermanent, etc. so stream alignment is correct.
+    /// </summary>
+    public T[] ReadPtrArrayWithHistory<T>(Func<T> getter) where T : class
+    {
+        var length = _baseArchive.Read<int>();
+        if (length <= 0) return [];
+        if (length > MaxArrayLength) length = MaxArrayLength;
+        var history = new Dictionary<int, T>();
+        var list = new List<T>(length);
+        for (var i = 0; i < length; i++)
+        {
+            var id = _baseArchive.Read<int>();
+            if (id == -1) continue;
+            if (history.TryGetValue(id, out var existing))
+            {
+                list.Add(existing);
+                continue;
+            }
+            var item = getter();
+            history[id] = item;
+            list.Add(item);
+        }
         return list.ToArray();
     }
     
@@ -49,6 +118,24 @@ public class FMutableArchive : FArchive
             1 => new TVariant<T1, T2>(getter2()),
             _ => throw new IndexOutOfRangeException($"Index {variantIndex} out of bounds")
         };
+    }
+
+    /// <summary>
+    /// Read TMap: uint32 count then count pairs of (key, value). Matches C++ Serialisation.h operator>> for TMap.
+    /// </summary>
+    public new Dictionary<TK, TV> ReadMap<TK, TV>(Func<TK> readKey, Func<TV> readValue)
+    {
+        var count = _baseArchive.Read<int>();
+        if (count <= 0) return new Dictionary<TK, TV>();
+        if (count > MaxArrayLength) count = MaxArrayLength;
+        var dict = new Dictionary<TK, TV>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var key = readKey();
+            var value = readValue();
+            dict[key] = value;
+        }
+        return dict;
     }
 
     public override bool CanSeek => _baseArchive.CanSeek;
