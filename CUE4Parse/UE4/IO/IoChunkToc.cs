@@ -6,35 +6,47 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using CUE4Parse.UE4.IO.Objects;
 using CUE4Parse.UE4.Readers;
+using CUE4Parse.UE4.Versions;
 using CUE4Parse.Utils;
 
 namespace CUE4Parse.UE4.IO;
 
-public class IoChunkToc : IOnDemandTocReader
+public class IoChunkToc
 {
-    public IOnDemandTocHeader Header { get; }
+    public readonly FOnDemandTocHeader Header;
     public readonly FTocMeta Meta;
-    public IOnDemandContainerEntry[] Containers { get; }
+    public readonly FOnDemandTocContainerEntry[] Containers;
     public readonly FOnDemandTocAdditionalFile[] AdditionalFiles;
     public readonly FOnDemandTocTagSet[] TagSets;
-
-    public IoChunkToc(string file) : this(new FileInfo(file)) { }
-    public IoChunkToc(FileInfo file) : this(new FByteArchive(file.FullName, File.ReadAllBytes(file.FullName))) { }
+    public IoChunkToc(string file, VersionContainer versions) : this(new FileInfo(file), versions) { }
+    public IoChunkToc(FileInfo file, VersionContainer versions) : this(new FByteArchive(file.FullName, File.ReadAllBytes(file.FullName), versions)) { }
     public IoChunkToc(FArchive Ar)
     {
-        var header = new FOnDemandTocHeader(Ar);
-        Header = header;
+        Header = new FOnDemandTocHeader(Ar);
 
-        if (header.Version >= EOnDemandTocVersion.Meta)
-            Meta = new FTocMeta(Ar);
+        if (Header.IsLegacy)
+        {
+            if (Header.LegacyVersion >= EOnDemandTocVersion.Meta)
+                Meta = new FTocMeta(Ar);
 
-        Containers = Ar.ReadArray(() => new FOnDemandTocContainerEntry(Ar, header.Version));
+            Containers = Ar.ReadArray(() => new FOnDemandTocContainerEntry(Ar, Header));
 
-        if (header.Version >= EOnDemandTocVersion.AdditionalFiles)
-            AdditionalFiles = Ar.ReadArray(() => new FOnDemandTocAdditionalFile(Ar));
+            if (Header.LegacyVersion >= EOnDemandTocVersion.AdditionalFiles)
+                AdditionalFiles = Ar.ReadArray(() => new FOnDemandTocAdditionalFile(Ar));
 
-        if (header.Version >= EOnDemandTocVersion.TagSets)
-            TagSets = Ar.ReadArray(() => new FOnDemandTocTagSet(Ar));
+            if (Header.LegacyVersion >= EOnDemandTocVersion.TagSets)
+                TagSets = Ar.ReadArray(() => new FOnDemandTocTagSet(Ar));
+        }
+        else
+        {
+            Meta = new FTocMeta(Header.EpochTimestamp, Header.BuildVersion, Header.TargetPlatform);
+            Containers = Ar.ReadArray((int)Header.ContainerCount, () => new FOnDemandTocContainerEntry(Ar, Header));
+
+            Ar.ForEach(Containers, entry =>
+            {
+                entry.ContainerData = new FOnDemandContainerData(Ar, entry);
+            });
+        }
     }
 }
 

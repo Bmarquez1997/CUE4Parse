@@ -11,8 +11,21 @@ using CUE4Parse.Utils;
 
 namespace CUE4Parse.UE4.IO
 {
-    public class IoStoreOnDemandReader(FArchive tocStream, IOnDemandTocReader onDemandToc, IOnDemandContainerEntry container, IoStoreOnDemandDownloader downloader) : IoStoreReader(tocStream, it => new FByteArchive(it, [], tocStream.Versions))
+    public class IoStoreOnDemandReader : IoStoreReader
     {
+        public IoChunkToc ChunkToc { get; }
+        public FOnDemandTocContainerEntry Container { get; }
+
+        private readonly IoStoreOnDemandDownloader _downloader;
+
+        public IoStoreOnDemandReader(FArchive tocStream, IoChunkToc chunkToc, FOnDemandTocContainerEntry container, IoStoreOnDemandDownloader downloader)
+            : base(tocStream, it => new FByteArchive(it, Array.Empty<byte>(), tocStream.Versions))
+        {
+            ChunkToc = chunkToc;
+            Container = container;
+            _downloader = downloader;
+        }
+
         public override byte[] Extract(VfsEntry entry, FByteBulkDataHeader? header = null)
         {
             if (entry is not FIoStoreEntry ioEntry || entry.Vfs != this)
@@ -21,9 +34,22 @@ namespace CUE4Parse.UE4.IO
             return Read(ioEntry.ChunkId);
         }
 
-        public override byte[] Read(FIoChunkId chunkId) => Read(container.Entries.FirstOrDefault(entry => entry.ChunkId == chunkId));
+        public override byte[] Read(FIoChunkId chunkId)
+        {
+            if (ChunkToc.Header.IsLegacy)
+            {
+                return Read(Container.Entries.FirstOrDefault(entry => entry.ChunkId == chunkId));
+            }
 
-        private byte[] Read(IOnDemandTocEntry? onDemandEntry)
+            var index = Array.IndexOf(Container.ContainerData.ChunkIds, chunkId);
+            if (index >= 0)
+            {
+                return Read(chunkId, Container.ContainerData.ChunkEntries[index]);
+            }
+
+            throw new KeyNotFoundException($"Couldn't find chunk {chunkId} in IoStoreOnDemand {Name}");
+        }
+        private byte[] Read(FOnDemandTocEntry? onDemandEntry)
         {
             if (onDemandEntry == null) throw new ParserException("Can't read unknown on-demand entry");
             if (TryResolve(onDemandEntry.ChunkId, out var offsetLength))
@@ -33,9 +59,19 @@ namespace CUE4Parse.UE4.IO
             throw new KeyNotFoundException($"Couldn't find chunk {onDemandEntry.ChunkId} in IoStoreOnDemand {Name}");
         }
 
+        private byte[] Read(FIoChunkId chunkId, FOnDemandChunkEntry? onDemandEntry)
+        {
+            if (onDemandEntry == null) throw new ParserException("Can't read unknown on-demand entry");
+            if (TryResolve(chunkId, out var offsetLength))
+            {
+                return Read(onDemandEntry.Hash.ToString().ToLower(), (long)offsetLength.Offset, (long)offsetLength.Length);
+            }
+            throw new KeyNotFoundException($"Couldn't find chunk {chunkId} in IoStoreOnDemand {Name}");
+        }
+
         private byte[] Read(string hash, long offset, long length)
         {
-            var reader = downloader.Download($"{onDemandToc.Header.ChunksDirectory}/chunks/{hash[..2]}/{hash}.iochunk").GetAwaiter().GetResult();
+            var reader = _downloader.Download($"{ChunkToc.Header.ChunksDirectory}/chunks/{hash[..2]}/{hash}.iochunk").GetAwaiter().GetResult();
 
             var compressionBlockSize = TocResource.Header.CompressionBlockSize;
             var dst = new byte[length];
@@ -94,7 +130,7 @@ namespace CUE4Parse.UE4.IO
         public override void Dispose()
         {
             base.Dispose();
-            downloader.Dispose();
+            _downloader.Dispose();
         }
     }
 }
