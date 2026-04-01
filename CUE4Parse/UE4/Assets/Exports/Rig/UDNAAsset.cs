@@ -139,27 +139,40 @@ public class UDNAAsset : UObject
 
     public int GetRawControlCount()
     {
-        return Definition.RawControlNames.Length;
+        return GetRawControlNames().Length;
     }
 
     public string[] GetRawControlNames()
     {
-        return Definition.RawControlNames;
+        if (Layers.TryGetValue("defn", out var definition) && definition is RawDefinition rawDefinition)
+            return rawDefinition.RawControlNames;
+
+        return [];
     }
 
     public string GetRawControlName(int index)
     {
-        return index >= GetRawControlCount() ? throw new IndexOutOfRangeException($"Index {index} is greater than total raw control count") : Definition.RawControlNames[index];
+        var controlNames = GetRawControlNames();
+        return index >= controlNames.Length ? throw new IndexOutOfRangeException($"Index {index} is greater than total raw control count") : controlNames[index];
     }
 
     public int GetJointCount()
     {
-        return Definition.JointNames.Length;
+        return GetJointNames().Length;
+    }
+
+    public string[] GetJointNames()
+    {
+        if (Layers.TryGetValue("defn", out var definition) && definition is RawDefinition rawDefinition)
+            return rawDefinition.JointNames;
+
+        return [];
     }
 
     public string GetJointName(int index)
     {
-        return index >= GetJointCount() ? throw new IndexOutOfRangeException($"Index {index} is greater than total joint count") : Definition.JointNames[index];
+        var jointNames = GetJointNames();
+        return index >= jointNames.Length ? throw new IndexOutOfRangeException($"Index {index} is greater than total joint count") : jointNames[index];
     }
 
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
