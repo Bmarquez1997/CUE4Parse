@@ -175,6 +175,13 @@ public class UDNAAsset : UObject
         return index >= jointNames.Length ? throw new IndexOutOfRangeException($"Index {index} is greater than total joint count") : jointNames[index];
     }
 
+    public RawBehavior? GetBehavior()
+    {
+        if (Layers.TryGetValue("bhvr", out var behavior) &&  behavior is RawBehavior rawBehavior)
+            return rawBehavior;
+        return null;
+    }
+
     protected internal override void WriteJson(JsonWriter writer, JsonSerializer serializer)
     {
         base.WriteJson(writer, serializer);

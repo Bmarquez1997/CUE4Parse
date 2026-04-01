@@ -68,12 +68,15 @@ public static class DNAConverter
     {
         // Each joint has 9 values, Position(xyz), Rotation(xyz), Scale(xyz)
         var outputs = new float[dna.GetJointCount() * 9];
+
+        var jointGroups = dna.GetBehavior()?.Joints.JointGroups;
+        if (jointGroups == null) return outputs.ToList();
         
-        foreach (var jointGroup in dna.Behavior.Joints.JointGroups)
+        foreach (var jointGroup in jointGroups)
         {
             ProcessJointGroup(jointGroup, activeInputIndex, outputs);
         }
-        
+
         return outputs.ToList();
     }
     
