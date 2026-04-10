@@ -10,7 +10,7 @@ public struct FCapsuleMeshCollision(FKSphylElem SphylElem) : ISerializable
     {
         Ar.WriteFString(SphylElem.Name.Text);
         SphylElem.Center.Serialize(Ar);
-        SphylElem.Rotation.Serialize(Ar);
+        SphylElem.Rotation.Quaternion().Serialize(Ar);
         Ar.Write(SphylElem.Radius);
         Ar.Write(SphylElem.Length);
     }

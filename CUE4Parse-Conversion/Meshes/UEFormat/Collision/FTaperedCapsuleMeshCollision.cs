@@ -10,7 +10,7 @@ public struct FTaperedCapsuleMeshCollision(FKTaperedCapsuleElem TaperedCapsuleEl
     {
         Ar.WriteFString(TaperedCapsuleElem.Name.Text);
         TaperedCapsuleElem.Center.Serialize(Ar);
-        TaperedCapsuleElem.Rotation.Serialize(Ar);
+        TaperedCapsuleElem.Rotation.Quaternion().Serialize(Ar);
         Ar.Write(TaperedCapsuleElem.Radius0);
         Ar.Write(TaperedCapsuleElem.Radius1);
         Ar.Write(TaperedCapsuleElem.Length);

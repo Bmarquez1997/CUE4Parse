@@ -49,9 +49,9 @@ public class UEModel : UEFormatExport
                 var collision = new FConvexMeshCollision(convexElem);
                 collision.Serialize(collisionChunk);
             }
+
             collisionChunk.Serialize(Ar);
         }
-
     }
 
     public UEModel(string name, CSkeletalMesh mesh, FPackageIndex[]? morphTargets, FPackageIndex[] sockets, FPackageIndex skeletonLazy, FPackageIndex physicsAssetLazy, ExporterOptions options) : base(name, options)
@@ -81,26 +81,26 @@ public class UEModel : UEFormatExport
             SerializeSkeletonData(skeletonChunk, skeletonLazy.Load<USkeleton>(), mesh.RefSkeleton, sockets, []);
 
             skeletonChunk.Serialize(Ar);
-    }
+        }
 
-        /*if (physicsAssetLazy.TryLoad(out UPhysicsAsset physicsAsset))
+        if (!physicsAssetLazy.TryLoad(out UPhysicsAsset physicsAsset)) return;
+        
+        using (var physicsChunk = new FDataChunk("PHYSICS", 1))
         {
-            using var physicsChunk = new FDataChunk("PHYSICS", 1);
-
             SerializePhysicsData(physicsChunk, physicsAsset);
 
             physicsChunk.Serialize(Ar);
-        }*/
+        }
     }
 
     public UEModel(string name, USkeleton skeleton, List<CSkelMeshBone> bones, FPackageIndex[] sockets, FVirtualBone[] virtualBones, ExporterOptions options) : base(name, options)
     {
         using (var skeletonChunk = new FDataChunk("SKELETON", 1))
         {
-        SerializeSkeletonData(skeletonChunk, skeleton,bones, sockets, virtualBones);
+            SerializeSkeletonData(skeletonChunk, skeleton, bones, sockets, virtualBones);
 
-        skeletonChunk.Serialize(Ar);
-    }
+            skeletonChunk.Serialize(Ar);
+        }
     }
 
     private void SerializeStaticMeshData(FArchiveWriter archive, IReadOnlyCollection<CMeshVertex> verts, uint[] indices, FColor[]? vertexColors, CVertexColor[]? extraVertexColors, CMeshSection[] sections, FMeshUVFloat[][] extraUVs)
@@ -118,11 +118,11 @@ public class UEModel : UEFormatExport
             var normalSign = vert.Normal.W;
             normalsChunk.Write(normalSign); // EUEFormatVersion.SerializeBinormalSign
 
-            var normal = (FVector) vert.Normal;
+            var normal = (FVector)vert.Normal;
             normal /= MathF.Sqrt(normal | normal);
             normal.Serialize(normalsChunk);
 
-            var tangent = (FVector) vert.Tangent;
+            var tangent = (FVector)vert.Tangent;
             tangent.Normalize();
             tangent.Serialize(tangentsChunk);
 
@@ -197,7 +197,7 @@ public class UEModel : UEFormatExport
 
                 var materialPath = section.Material?.GetPathName() ?? string.Empty;
                 materialChunk.WriteFString(materialPath);
-                
+
                 materialChunk.Write(section.FirstIndex);
                 materialChunk.Write(section.NumFaces);
             }
@@ -226,7 +226,7 @@ public class UEModel : UEFormatExport
             weightsChunk.Serialize(archive);
         }
 
-        if (morphTargets is {Length: > 0})
+        if (morphTargets is { Length: > 0 })
         {
             using var morphTargetsChunk = new FDataChunk("MORPHTARGETS");
             foreach (var morphTarget in morphTargets)
@@ -240,6 +240,7 @@ public class UEModel : UEFormatExport
                 morphData.Serialize(morphTargetsChunk);
                 morphTargetsChunk.Count++;
             }
+
             morphTargetsChunk.Serialize(archive);
         }
     }
@@ -251,7 +252,7 @@ public class UEModel : UEFormatExport
             metaDataChunk.WriteFString(skeleton?.GetPathName() ?? string.Empty);
             metaDataChunk.Serialize(archive);
         }
-        
+
         using (var boneChunk = new FDataChunk("BONES", bones.Count))
         {
             foreach (var bone in bones)
@@ -267,6 +268,7 @@ public class UEModel : UEFormatExport
                 var boneRot = bone.Orientation;
                 boneRot.Serialize(boneChunk);
             }
+
             boneChunk.Serialize(archive);
         }
 
@@ -321,5 +323,4 @@ public class UEModel : UEFormatExport
             bodyChunk.Serialize(archive);
         }
     }
-
 }

@@ -10,7 +10,7 @@ public struct FBoxMeshCollision(FKBoxElem BoxElem) : ISerializable
     {
         Ar.WriteFString(BoxElem.Name.Text);
         BoxElem.Center.Serialize(Ar);
-        BoxElem.Rotation.Serialize(Ar);
+        BoxElem.Rotation.Quaternion().Serialize(Ar);
         Ar.Write(BoxElem.X);
         Ar.Write(BoxElem.Y);
         Ar.Write(BoxElem.Z);
