@@ -28,8 +28,11 @@ public class MutableExporter : ExporterBase
     public readonly List<CTexture> Images;
     public int meshIndex;
     
-    // Flag to disable makeshift LOD grouping logic
+    // Temp flag to disable makeshift LOD grouping logic
     private bool exportAll = true;
+    
+    //TODO: make this a config that's passed in
+    private bool exportImages = true; 
 
     private Dictionary<uint, string> surfaceNameMap;
 
@@ -61,8 +64,6 @@ public class MutableExporter : ExporterBase
             return;
 
         surfaceNameMap = GetSurfaceNameMap(modelResources);
-
-        var exportImages = true; //TODO: make this a config that's passed in
         
         for (uint index = 0; index < original.Model.Program.Roms.Length; index++)
         {
