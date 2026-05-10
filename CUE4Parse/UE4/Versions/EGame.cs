@@ -25,6 +25,7 @@ public enum EGame : uint
         GAME_GearsOfWar4 = GAME_UE4_11 + 1,
         GAME_DaysGone = GAME_UE4_11 + 2,
     GAME_UE4_12 = GameUtils.GameUe4Base + (12 << 16),
+        GAME_Abzu = GAME_UE4_12 + 1,
     GAME_UE4_13 = GameUtils.GameUe4Base + (13 << 16),
         GAME_StateOfDecay2 = GAME_UE4_13 + 1,
         GAME_WeHappyFew = GAME_UE4_13 + 2,
