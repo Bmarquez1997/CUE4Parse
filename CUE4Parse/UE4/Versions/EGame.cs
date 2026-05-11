@@ -200,7 +200,7 @@ public enum EGame : uint
         GAME_Brickadia = GAME_UE5_5 + 1,
         GAME_Splitgate2 = GAME_UE5_5 + 2,
         GAME_DeadzoneRogue = GAME_UE5_5 + 3,
-        GAME_Placeholder6 = GAME_UE5_5 + 4,
+        GAME_Directive8020 = GAME_UE5_5 + 4,
         GAME_Wildgate = GAME_UE5_5 + 5,
         GAME_ARKSurvivalAscended = GAME_UE5_5 + 6,
         GAME_NevernessToEverness_CBT2 = GAME_UE5_5 + 7, // keep for now, will be removed later

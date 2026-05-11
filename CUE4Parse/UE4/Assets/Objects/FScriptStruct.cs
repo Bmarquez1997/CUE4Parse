@@ -373,7 +373,7 @@ public class FScriptStruct
 
             "ActorReference" when Ar.Game is EGame.GAME_DarkPicturesAnthologyHouseOfAshes or EGame.GAME_DarkPicturesAnthologyManofMedan or
                 EGame.GAME_DarkPicturesAnthologyLittleHope or EGame.GAME_DarkPicturesAnthologyTheDevilinMe or
-                EGame.GAME_TheQuarry or EGame.GAME_TheCastingofFrankStone => new FActorReference(Ar),
+                EGame.GAME_TheQuarry or EGame.GAME_TheCastingofFrankStone or EGame.GAME_Directive8020 => new FActorReference(Ar),
 
             "ParameterWrapperArray" when Ar.Game is EGame.GAME_NevernessToEverness => new FStructFallback(Ar, structName, new FRawHeader([(0, 1)], ERawHeaderFlags.RawProperties), ReadType.RAW),
 
@@ -399,6 +399,9 @@ public class FScriptStruct
             "MovieSceneTangentData" when Ar.Game is EGame.GAME_HonorofKingsWorld => new FMovieSceneTangentData(Ar.Read<float>(), Ar.Read<float>(), Ar.Read<float>(), Ar.Read<float>(), Ar.Read<ERichCurveTangentWeightMode>()),
 
             "BodyInstance" when Ar.Game is EGame.GAME_ConanExilesEnhanced => new FBodyInstance(Ar),
+
+            // Cloudheim
+            "NamedGuid" => new FStructFallback(Ar, structName, FRawHeader.FullRead, ReadType.RAW),
 
             _ => Ar.Game switch
             {
