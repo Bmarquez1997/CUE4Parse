@@ -102,7 +102,7 @@ namespace CUE4Parse.UE4.Assets.Exports.StaticMesh
 
         public FDistanceFieldVolumeData5(FAssetArchive Ar)
         {
-            LocalSpaceMeshBounds = Ar.Game is >= EGame.GAME_UE5_4 and not EGame.GAME_Fortnite_S27 ? new FBox(Ar.Read<FVector>(), Ar.Read<FVector>(), Ar.Read<byte>()) : new FBox(Ar);
+            LocalSpaceMeshBounds = (Ar.Game is >= EGame.GAME_UE5_4 and not EGame.GAME_Fortnite_S27) || Ar.Game is EGame.GAME_Highguard ? Ar.Read<FBox>() : new FBox(Ar);
             bMostlyTwoSided = Ar.ReadBoolean();
             var mips = Ar.Game switch
             {
