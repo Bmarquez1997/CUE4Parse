@@ -76,6 +76,20 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandContainerEntry.cs" />
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandStringEntry.cs" />
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandTocEntryLight.cs" />
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandTocFooter.cs" />
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandTocHeader2.cs" />
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandTocReader.cs" />
+    <Compile Remove="UE4\IO\OnDemand\FOnDemandTocSignature.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="UE4\IO\OnDemand\" />
+  </ItemGroup>
+
   <!-- remove everything?? -->
   <Target Name="CleanCMakeProj" BeforeTargets="BeforeClean">
     <RemoveDir Directories="$(CMakeBuildDir);$(CMakeProject)bin/">
