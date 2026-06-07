@@ -44,7 +44,7 @@ public class URigHierarchy : UObject
             var uncompressedBytes = new byte[uncompressedSize];
             if (bStoreCompressedBytes)
             {
-                OodleHelper.Decompress(compressedBytes, 0, compressedBytes.Length, uncompressedBytes, 0, uncompressedBytes.Length);
+                Compression.Compression.Decompress(compressedBytes, 0, compressedBytes.Length, uncompressedBytes, 0, uncompressedBytes.Length, CompressionMethod.Oodle, Ar);
             }
 
             using var baseArchive = new FByteArchive("Archive for elements", bStoreCompressedBytes ? uncompressedBytes : compressedBytes, Ar.Versions);
@@ -135,8 +135,16 @@ public class URigHierarchy : UObject
 
             if (numComponents > 0)
             {
-                var scriptStructNames = Ar.ReadArray(Ar.ReadFString);
-                throw new NotImplementedException();
+                var scriptStructNames = archiveForElements.ReadArray(archiveForElements.ReadFString);
+
+                for (var i = 0; i < numComponents; i++)
+                {
+                    var indexOfScriptStruct = archiveForElements.Read<int>();
+                    long archivePositionAfterComponent = archiveForElements.Read<long>();
+                    // just skip for now
+                    // 1 example asset in Subnautica2
+                    archiveForElements.Position = archivePositionAfterComponent;
+                }
             }
         }
     }
