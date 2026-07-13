@@ -1,21 +1,16 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using CUE4Parse.UE4.Assets.Exports.Animation;
-using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
-using CUE4Parse.UE4.Assets.Exports.StaticMesh;
-using CUE4Parse.UE4.Writers;
 using CUE4Parse_Conversion.DNA;
 using CUE4Parse_Conversion.Materials;
 using CUE4Parse_Conversion.Meshes.glTF;
 using CUE4Parse_Conversion.Meshes.PSK;
 using CUE4Parse_Conversion.Meshes.UEFormat;
-using CUE4Parse.UE4.Assets;
+using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.Component.SplineMesh;
 using CUE4Parse.UE4.Assets.Exports.Nanite;
 using CUE4Parse.UE4.Assets.Exports.Rig;
-using CUE4Parse.UE4.Objects.PhysicsEngine;
+using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
+using CUE4Parse.UE4.Assets.Exports.StaticMesh;
 using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse.UE4.Writers;
 using CUE4Parse.Utils;
 using Serilog;
 
@@ -67,7 +62,7 @@ namespace CUE4Parse_Conversion.Meshes
         {
             MeshLods = new List<Mesh>();
 
-            if (!originalMesh.TryConvert(splineMeshComponent, out var convertedMesh, out var naniteLod, options.NaniteMeshFormat) || convertedMesh.LODs.Count == 0)
+            if (!originalMesh.TryConvert(splineMeshComponent, out var convertedMesh, out var naniteLod, options.NaniteMeshFormat, options.LodFormat) || convertedMesh.LODs.Count == 0)
             {
                 Log.Logger.Warning($"Mesh '{ExportName}' has no LODs");
                 return;

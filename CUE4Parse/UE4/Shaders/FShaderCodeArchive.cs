@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CUE4Parse.UE4.Objects.Core.Misc;
 using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
@@ -24,6 +23,10 @@ namespace CUE4Parse.UE4.Shaders
             {
                 if (archiveVersion == 1) bIsIoStore = true;
             }
+        if (Ar.Game is GAME_ArenaBreakoutMobile)
+        {
+            archiveVersion = 2;
+        }
 
             switch (archiveVersion)
             {

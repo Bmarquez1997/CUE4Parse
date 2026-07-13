@@ -1,4 +1,3 @@
-using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using CUE4Parse.UE4.Assets.Exports.Animation.ACL;
@@ -8,6 +7,7 @@ using CUE4Parse.UE4.Objects.Core.Math;
 using CUE4Parse.UE4.Objects.Engine;
 using CUE4Parse.UE4.Objects.Engine.Animation;
 using CUE4Parse.UE4.Objects.UObject;
+using CUE4Parse.UE4.Readers;
 using CUE4Parse.UE4.Versions;
 using CUE4Parse.Utils;
 using Newtonsoft.Json;
@@ -352,8 +352,9 @@ namespace CUE4Parse.UE4.Assets.Exports.Animation
 
             if (bUseBulkDataForLoad)
             {
-                throw new NotImplementedException("Anim: bUseBulkDataForLoad not implemented");
-                //todo: read from bulk to serializedByteStream
+                var bulkData = new FByteBulkData(Ar);
+                using var bulkAr = new FByteArchive("AnimSequenceBulkData", bulkData.Data, Ar.Versions);
+                serializedByteStream = bulkAr.ReadBytes(numBytes);
             }
             else
             {

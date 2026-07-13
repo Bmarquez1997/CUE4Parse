@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using AssetRipper.TextureDecoder.Bc;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 
