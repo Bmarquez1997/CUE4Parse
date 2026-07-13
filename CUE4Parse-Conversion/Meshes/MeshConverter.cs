@@ -87,6 +87,7 @@ public static class MeshConverter
         out CStaticMesh convertedMesh, out CStaticMeshLod? naniteLod, ENaniteMeshFormat naniteFormat = ENaniteMeshFormat.OnlyNormalLODs, ELodFormat lodFormat = ELodFormat.AllLods)
     {
         convertedMesh = new CStaticMesh();
+        naniteLod = null;
         var renderData = originalMesh.RenderData;
         if (renderData == null || originalMesh.RenderData?.Bounds == null || originalMesh.RenderData?.LODs is null)
             return false;

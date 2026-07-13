@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Text;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Objects.Core.Math;
@@ -204,7 +204,7 @@ public static class TextureEncoder
 
     private static unsafe nint ConvertHalfToRGBE(EPixelFormat pixelFormat, int width, int height, ReadOnlySpan<byte> inp, bool flipOrder = false)
     {
-        int channelCount = PixelFormatUtils.PixelFormats.First(x => x.UnrealFormat == pixelFormat).NumComponents;
+        int channelCount = PixelFormatUtils.PixelFormats.First(x => x.Key == pixelFormat).Value.NumComponents;
 
         MemoryUtils.NativeAlloc<byte>(width * height * 4, out var retPtr);
 

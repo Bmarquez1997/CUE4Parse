@@ -203,9 +203,7 @@ public static class TextureDecoder
                     if (pixelDataPtr is null)
                     {
                         colorType = tileColorType;
-                        if (!PixelFormatUtils.PixelFormats.TryGetValue(tileColorType, out var tempFormatInfo))
-                            throw new NotImplementedException("Unsupported pixel format: " + tileColorType);
-                        bytesPerPixel = tempFormatInfo.BlockBytes / (tempFormatInfo.BlockSizeX * tempFormatInfo.BlockSizeY * tempFormatInfo.BlockSizeZ);
+                        bytesPerPixel = GetBytesPerPixel(tileColorType);
                         rowBytes = bytesPerPixel * bitmapWidth;
                         tileRowBytes = tileSize * bytesPerPixel;
                         var imageBytes = bitmapHeight * bitmapWidth * bytesPerPixel;
@@ -279,7 +277,8 @@ public static class TextureDecoder
     
     private static int GetBytesPerPixel(EPixelFormat pixelFormat)
     {
-        var tempFormatInfo = PixelFormatUtils.PixelFormats.ElementAtOrDefault((int) pixelFormat)!;
+        if (!PixelFormatUtils.PixelFormats.TryGetValue(pixelFormat, out var tempFormatInfo))
+            throw new NotImplementedException("Unsupported pixel format: " + pixelFormat);
         return tempFormatInfo.BlockBytes / (tempFormatInfo.BlockSizeX * tempFormatInfo.BlockSizeY * tempFormatInfo.BlockSizeZ);
     }
 
@@ -597,7 +596,8 @@ public static class TextureDecoder
                 }
                 else
                     data = DXTDecoder.DXT1(bytes, sizeX, sizeY, sizeZ);
-                }colorType = EPixelFormat.PF_R8G8B8A8;
+                
+                colorType = EPixelFormat.PF_R8G8B8A8;
                 break;
             }
             case EPixelFormat.PF_DXT3:
@@ -614,15 +614,17 @@ public static class TextureDecoder
                 break;
             }
             case EPixelFormat.PF_DXT5:
+            {
                 if (UseAssetRipperTextureDecoder)
                 {
                     Bc3.Decompress<ColorRGBA<byte>, byte>(bytes, sizeX, sizeY, out data);
                 }
                 else
                     data = DXTDecoder.DXT5(bytes, sizeX, sizeY, sizeZ);
-                }
+
                 colorType = UseAssetRipperTextureDecoder ? EPixelFormat.PF_B8G8R8A8 : EPixelFormat.PF_R8G8B8A8;
                 break;
+            }
             case EPixelFormat.PF_ASTC_4x4:
             case EPixelFormat.PF_ASTC_6x6:
             case EPixelFormat.PF_ASTC_8x8:
