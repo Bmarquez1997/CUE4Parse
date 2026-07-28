@@ -16,7 +16,6 @@ using CUE4Parse.UE4.Assets.Objects;
 using CUE4Parse.UE4.Objects.UObject;
 using CUE4Parse.UE4.Writers;
 using CUE4Parse.Utils;
-using Serilog;
 using SkiaSharp;
 
 namespace CUE4Parse_Conversion.Mutable;
@@ -183,7 +182,7 @@ public class MutableExporter : ExporterBase
         // if (!mesh.TryConvert(originalCustomizableObject, matName, out CSkeletalMesh convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         if (!mesh.TryConvert(originalCustomizableObject, matName, out CStaticMesh convertedMesh, meshes) || convertedMesh.LODs.Count == 0)
         {
-            Log.Logger.Warning($"Mesh '{ExportName}.{skeletonSoftObject.AssetPathName.PlainText}.{matName}' has no LODs");
+            Log.Warning($"Mesh '{ExportName}.{skeletonSoftObject.AssetPathName.PlainText}.{matName}' has no LODs");
             return;
         }
 

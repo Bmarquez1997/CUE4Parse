@@ -1,6 +1,5 @@
 using CUE4Parse_Conversion.PoseAsset.Conversion;
 using CUE4Parse.UE4.Objects.Engine.Animation;
-using Serilog;
 
 namespace CUE4Parse_Conversion.PoseAsset;
 

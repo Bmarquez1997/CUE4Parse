@@ -13,7 +13,6 @@ using CUE4Parse.Compression;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.Utils;
-using Serilog;
 using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
 
 namespace CUE4Parse_Conversion.Textures;
