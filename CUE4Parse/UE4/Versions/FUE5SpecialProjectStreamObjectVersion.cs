@@ -54,6 +54,8 @@ public static class FUE5SpecialProjectStreamObjectVersion
         return Ar.Game switch
         {
             < GAME_UE5_0 => Type.BeforeCustomVersionWasAdded,
+            // Fortnite S20: SceneComponent static bounds yes; ActorLabel / morph-target LOD payload no
+            GAME_Fortnite_S20 => Type.ChaosClothAddTethersToCachedData,
             < GAME_UE5_6 => Type.StripMorphTargetSourceDataForCookedBuilds,
             _ => Type.LatestVersion
         };

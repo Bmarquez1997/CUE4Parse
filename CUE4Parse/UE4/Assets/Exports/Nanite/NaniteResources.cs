@@ -63,8 +63,18 @@ public class FNaniteResources
         if (!stripFlags.IsAudioVisualDataStripped())
         {
             ResourceFlags = Ar.Read<NaniteConstants.NANITE_RESOURCE_FLAG>();
-            StreamablePages = new FByteBulkData(Ar);
-            RootData = Ar.ReadArray<byte>();
+            // Early UE5.0 / Fortnite S20: RootClusterPage then StreamablePages (no NumRootPages).
+            // Later UE5: StreamablePages then RootData, then NumRootPages after ImposterAtlas.
+            if (Ar.Game == GAME_Fortnite_S20)
+            {
+                RootData = Ar.ReadArray<byte>();
+                StreamablePages = new FByteBulkData(Ar);
+            }
+            else
+            {
+                StreamablePages = new FByteBulkData(Ar);
+                RootData = Ar.ReadArray<byte>();
+            }
             PageStreamingStates = Ar.ReadArray(() => new FPageStreamingState(Ar));
             HierarchyNodes = Ar.ReadArray(() => new FPackedHierarchyNode(Ar));
             HierarchyRootOffsets = Ar.ReadArray<uint>();
@@ -86,7 +96,8 @@ public class FNaniteResources
             }
             if (Ar.Game < GAME_UE5_8) ImposterAtlas = Ar.ReadArray<ushort>();
             if (Ar.Game is GAME_Aion2) Ar.SkipFixedArray(1); // same length as ImposterAtlas
-            NumRootPages = Ar.Read<int>();
+            if (Ar.Game != GAME_Fortnite_S20)
+                NumRootPages = Ar.Read<int>();
             PositionPrecision = Ar.Read<int>();
             if (Ar.Game >= GAME_UE5_2) NormalPrecision = Ar.Read<int>();
             NumInputTriangles = Ar.Read<uint>();

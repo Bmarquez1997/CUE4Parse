@@ -534,8 +534,8 @@ public class FStaticLODModel
             }
         }
 
-        if (FUE5SpecialProjectStreamObjectVersion.Get(Ar) >= FUE5SpecialProjectStreamObjectVersion.Type.SerializeSkeletalMeshMorphTargetRenderData ||
-                Ar.Game is GAME_TheQuarry)
+        if ((FUE5SpecialProjectStreamObjectVersion.Get(Ar) >= FUE5SpecialProjectStreamObjectVersion.Type.SerializeSkeletalMeshMorphTargetRenderData ||
+                Ar.Game is GAME_TheQuarry) && Ar.Game is not GAME_Fortnite_S20)
         {
             bool bSerializeCompressedMorphTargets = Ar.ReadBoolean();
             if (bSerializeCompressedMorphTargets)

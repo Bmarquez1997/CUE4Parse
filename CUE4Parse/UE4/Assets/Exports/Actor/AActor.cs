@@ -22,9 +22,22 @@ public class AActor : UObject
         if (Ar.Game == GAME_WorldofJadeDynasty) Ar.Position += 24;
         if (FUE5SpecialProjectStreamObjectVersion.Get(Ar) >= FUE5SpecialProjectStreamObjectVersion.Type.SerializeActorLabelInCookedBuilds)
         {
-            bIsCooked = Ar.ReadBoolean();
-            if (bIsCooked)
-                ActorLabel = Ar.ReadFString();
+            // S20: some actors have no cooked label at this offset (next int is not a UE bool).
+            var canReadLabel = true;
+            if (Ar.Game is GAME_Fortnite_S20)
+            {
+                if (Ar.Position + 4 > validPos) return;
+                var peek = Ar.Read<int>();
+                Ar.Position -= 4;
+                canReadLabel = peek is 0 or 1;
+            }
+
+            if (canReadLabel)
+            {
+                bIsCooked = Ar.ReadBoolean();
+                if (bIsCooked)
+                    ActorLabel = Ar.ReadFString();
+            }
         }
 
         if (FFortniteMainBranchObjectVersion.Get(Ar) >= FFortniteMainBranchObjectVersion.Type.LevelInstanceStaticLightingSupport && Ar.IsLoadingFromCookedPackage)

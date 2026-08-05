@@ -92,6 +92,24 @@ public class UInstancedStaticMeshComponent : UStaticMeshComponent
                     else
                         PerInstanceSMData = Ar.ReadBulkArray(() => new FInstancedStaticMeshInstanceData(Ar));
                     break;
+                case GAME_Fortnite_S20:
+                    // Bulk header often reports LWC sizeof(FMatrix)=128, but S20 instance transforms
+                    // are float matrices (same as CUE4Parse-2040). Read float, then skip to element end.
+                    {
+                        var smElementSize = Ar.Read<int>();
+                        var smElementCount = Ar.Read<int>();
+                        PerInstanceSMData = smElementCount > 0
+                            ? new FInstancedStaticMeshInstanceData[smElementCount]
+                            : [];
+                        for (var i = 0; i < smElementCount; i++)
+                        {
+                            var start = Ar.Position;
+                            PerInstanceSMData[i] = new FInstancedStaticMeshInstanceData(new FMatrix(Ar, readDouble: false));
+                            if (smElementSize > 0)
+                                Ar.Position = start + smElementSize;
+                        }
+                    }
+                    break;
                 default:
                     PerInstanceSMData = Ar.ReadBulkArray(() => new FInstancedStaticMeshInstanceData(Ar));
                     break;
@@ -99,7 +117,26 @@ public class UInstancedStaticMeshComponent : UStaticMeshComponent
 
             if (FRenderingObjectVersion.Get(Ar) >= FRenderingObjectVersion.Type.PerInstanceCustomData || Ar.Game == GAME_DeltaForce)
             {
-                PerInstanceSMCustomData = Ar.ReadBulkArray(Ar.Read<float>);
+                // S20: after PerInstanceSMData the next field is often cooked render-data size, not
+                // custom floats — only read when the bulk header looks like float elements.
+                if (Ar.Game is GAME_Fortnite_S20)
+                {
+                    if (Ar.Position + 8 <= validPos)
+                    {
+                        var elemSize = Ar.Read<int>();
+                        var elemCount = Ar.Read<int>();
+                        Ar.Position -= 8;
+                        if (elemSize == sizeof(float) && elemCount >= 0 &&
+                            Ar.Position + 8 + (long) elemSize * elemCount <= validPos)
+                        {
+                            PerInstanceSMCustomData = Ar.ReadBulkArray(Ar.Read<float>);
+                        }
+                    }
+                }
+                else
+                {
+                    PerInstanceSMCustomData = Ar.ReadBulkArray(Ar.Read<float>);
+                }
             }
         }
 
@@ -135,6 +172,13 @@ public class UInstancedStaticMeshComponent : UStaticMeshComponent
         if (bCooked && (FFortniteMainBranchObjectVersion.Get(Ar) >= FFortniteMainBranchObjectVersion.Type.SerializeInstancedStaticMeshRenderData ||
                         FEditorObjectVersion.Get(Ar) >= FEditorObjectVersion.Type.SerializeInstancedStaticMeshRenderData))
         {
+            // S20: match 2040 — cooked render blob size is not reliably parseable under the Ver pin
+            if (Ar.Game is GAME_Fortnite_S20)
+            {
+                Ar.Position = validPos;
+                return;
+            }
+
             if (Ar.Game >= GAME_UE5_4)
             {
                 var bHasCookedData = Ar.ReadBoolean();

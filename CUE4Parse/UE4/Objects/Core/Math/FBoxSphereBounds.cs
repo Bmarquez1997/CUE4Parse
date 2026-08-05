@@ -27,6 +27,22 @@ namespace CUE4Parse.UE4.Objects.Core.Math
             SphereRadius = Ar.ReadFReal();
         }
 
+        public FBoxSphereBounds(FArchive Ar, bool readDouble)
+        {
+            if (readDouble)
+            {
+                Origin = new FVector(Ar.Read<double>(), Ar.Read<double>(), Ar.Read<double>());
+                BoxExtent = new FVector(Ar.Read<double>(), Ar.Read<double>(), Ar.Read<double>());
+                SphereRadius = (float) Ar.Read<double>();
+            }
+            else
+            {
+                Origin = new FVector(Ar);
+                BoxExtent = new FVector(Ar);
+                SphereRadius = Ar.ReadFReal();
+            }
+        }
+
         public FBoxSphereBounds(FVector origin, FVector boxExtent, float sphereRadius)
         {
             Origin = origin;

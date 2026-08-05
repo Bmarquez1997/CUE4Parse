@@ -29,8 +29,10 @@ public class FPageStreamingState
         else
         {
             DependenciesNum = Ar.Read<uint>();
-            // doesn't exist in 5.0EA
-            Flags = (NANITE_PAGE_FLAG) (Ar.Ver >= EUnrealEngineObjectUE5Version.LARGE_WORLD_COORDINATES ? Ar.Read<uint>() : 0);
+            // doesn't exist in 5.0EA; present for later 5.0 cooks (e.g. Fortnite S20) even when Ver is pinned below LWC
+            Flags = (NANITE_PAGE_FLAG) (Ar.Ver >= EUnrealEngineObjectUE5Version.LARGE_WORLD_COORDINATES || Ar.Game == GAME_Fortnite_S20
+                ? Ar.Read<uint>()
+                : 0);
         }
     }
 }

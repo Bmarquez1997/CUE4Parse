@@ -43,11 +43,33 @@ public class USceneComponent : UActorComponent
         var bComputeBoundsOnceForGame = GetOrDefault<bool>("bComputeBoundsOnceForGame");
         var bComputedBoundsOnceForGame = GetOrDefault<bool>("bComputedBoundsOnceForGame");
         var bComputeBounds = bComputeBoundsOnceForGame || bComputedBoundsOnceForGame;
-        if (bComputeBounds && FUE5SpecialProjectStreamObjectVersion.Get(Ar) >= FUE5SpecialProjectStreamObjectVersion.Type.SerializeSceneComponentStaticBounds)
+        if (FUE5SpecialProjectStreamObjectVersion.Get(Ar) >= FUE5SpecialProjectStreamObjectVersion.Type.SerializeSceneComponentStaticBounds)
         {
-            bIsCooked = Ar.ReadBoolean();
-            if (bIsCooked)
-                Bounds = new FBoxSphereBounds(Ar);
+            var shouldReadBounds = bComputeBounds;
+            // Fortnite S20: bitfield props are unreliable — only consume bounds when the next
+            // int is a real UE bool (0/1). Never force-read by leftover size (caused Invalid bool (2)).
+            if (Ar.Game is GAME_Fortnite_S20)
+            {
+                shouldReadBounds = false;
+                if (Ar.Position + 4 <= validPos)
+                {
+                    var peek = Ar.Read<int>();
+                    Ar.Position -= 4;
+                    shouldReadBounds = peek is 0 or 1;
+                }
+            }
+
+            if (shouldReadBounds)
+            {
+                bIsCooked = Ar.ReadBoolean();
+                if (bIsCooked)
+                {
+                    // S20 pins Ver below LWC for props, but cooked SceneComponent bounds use doubles
+                    Bounds = Ar.Game is GAME_Fortnite_S20
+                        ? new FBoxSphereBounds(Ar, readDouble: true)
+                        : new FBoxSphereBounds(Ar);
+                }
+            }
         }
     }
 
