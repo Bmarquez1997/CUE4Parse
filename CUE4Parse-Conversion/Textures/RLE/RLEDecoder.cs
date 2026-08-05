@@ -1,5 +1,5 @@
 ﻿using System;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 
 namespace CUE4Parse_Conversion.Textures.RLE;
 

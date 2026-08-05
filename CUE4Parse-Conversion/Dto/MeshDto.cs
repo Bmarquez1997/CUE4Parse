@@ -34,6 +34,11 @@ public abstract class MeshDto<TVertex> : ObjectDto where TVertex : struct, IMesh
 
     }
 
+    protected MeshDto(UObject owner, MeshMaterialDto[] materials) : base(owner)
+    {
+        Materials = materials;
+    }
+
     protected MeshDto(UStaticMesh mesh) : base(mesh)
     {
         Materials = new MeshMaterialDto[mesh.StaticMaterials.Length];
@@ -174,6 +179,14 @@ public class StaticMeshDto : MeshDto<MeshVertex>
     {
 
     }
+
+    /// <summary>Construct an empty static mesh DTO for manually populated LODs (e.g. Mutable FMesh conversion).</summary>
+    public StaticMeshDto(UObject owner, MeshMaterialDto[] materials, FBox bounds) : base(owner, materials)
+    {
+        Bounds = bounds;
+    }
+
+    internal void FinalizeLods() => SetLodSuffixes();
 
     public StaticMeshDto(UStaticMesh mesh, EMeshQuality quality = EMeshQuality.All, ENaniteMeshFormat naniteFormat = ENaniteMeshFormat.NoNanite, USplineMeshComponent? spline = null) : base(mesh)
     {

@@ -12,8 +12,6 @@ public class FPartialAssetData
     
     public string ObjectPath => $"{PackageName}.{AssetName}";
 
-    public string ObjectPath => $"{PackageName}.{AssetName}";
-
     public FPartialAssetData(FAssetRegistryArchive Ar)
     {
         if (Ar.Header.Version < FAssetRegistryVersionType.RemoveAssetPathFNames)

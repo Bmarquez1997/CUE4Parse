@@ -1,0 +1,210 @@
+using System;
+using System.Collections.Generic;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Mesh.Buffers;
+using CUE4Parse.UE4.Objects.Core.Math;
+using CUE4Parse.UE4.Objects.Meshes;
+using CUE4Parse.UE4.Objects.RenderCore;
+using Serilog;
+using Log = Serilog.Log;
+
+namespace CUE4Parse_Conversion.Mutable;
+
+public class MutableDataConverter
+{
+    private readonly uint _indexBufferElementCount;
+
+    public MutableDataConverter(uint indexBufferElementCount)
+    {
+        _indexBufferElementCount = indexBufferElementCount;
+    }
+
+    public uint[] GetIndices(FMeshBufferChannel channel, FMeshBuffer? indexBuffer)
+    {
+        if (channel.ComponentCount == 0 || indexBuffer == null || indexBuffer.Data.Length == 0)
+        {
+            Log.Warning("Index component count == 0 or indexBuffer null/empty");
+            return [];
+        }
+
+        var indices = new uint[_indexBufferElementCount];
+
+        try
+        {
+            for (int i = 0; i < indices.Length; i++)
+            {
+                indices[i] = channel.Format switch
+                {
+                    EMeshBufferFormat.UInt32 => BitConverter.ToUInt32(indexBuffer.Data, i * (int)indexBuffer.ElementSize + channel.Offset),
+                    _ => throw new NotImplementedException($"Format {channel.Format} is currently not supported")
+                };
+            }
+        }
+        catch (Exception)
+        {
+            Log.Warning("Exception thrown reading indices");
+            return [];
+        }
+
+        if (indices.Length != _indexBufferElementCount)
+        {
+            Log.Warning("indices.Length != IndexBufferElementCount");
+            return [];
+        }
+
+        return indices;
+    }
+
+    public FVector GetVertices(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
+    {
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
+            throw new ArgumentNullException();
+
+        switch (channel.Format)
+        {
+            case EMeshBufferFormat.Float32:
+            {
+                var x = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset);
+                var y = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 4);
+                var z = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 8);
+
+                return new FVector(x, y, z);
+            }
+            default:
+                throw new NotImplementedException($"Format {channel.Format} is currently not supported");
+        }
+    }
+
+    public FPackedNormal GetNormals(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
+    {
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
+            throw new ArgumentNullException();
+
+        switch (channel.Format)
+        {
+            case EMeshBufferFormat.PackedDirS8_W_TangentSign:
+            {
+                float x = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 0] / 127.5f;
+                float y = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 1] / 127.5f;
+                float z = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 2] / 127.5f;
+                float w = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 3] / 127.5f;
+
+                return new FPackedNormal(new FVector4(x, y, z, w));
+            }
+            case EMeshBufferFormat.Float32:
+            {
+                float x = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset);
+                float y = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 4);
+                float z = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 8);
+
+                return new FPackedNormal(new FVector(x, y, z));
+            }
+            default:
+                throw new NotImplementedException($"Format {channel.Format} is currently not supported");
+        }
+    }
+
+    public FPackedNormal GetTangent(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
+    {
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
+            throw new ArgumentNullException();
+
+        switch (channel.Format)
+        {
+            case EMeshBufferFormat.PackedDirS8:
+            case EMeshBufferFormat.PackedDirS8_W_TangentSign:
+            {
+                float x = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 0] / 127.5f;
+                float y = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 1] / 127.5f;
+                float z = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 2] / 127.5f;
+                float w = vertexBuffer.Data[index * (int)vertexBuffer.ElementSize + channel.Offset + 3] / 127.5f;
+
+                return new FPackedNormal(new FVector4(x, y, z, w));
+            }
+            case EMeshBufferFormat.Float32:
+            {
+                float x = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset);
+                float y = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 4);
+                float z = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 8);
+
+                return new FPackedNormal(new FVector(x, y, z));
+            }
+            default:
+                throw new NotImplementedException($"Format {channel.Format} is currently not supported");
+        }
+    }
+
+    public FMeshUVFloat GetUVs(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
+    {
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
+            throw new ArgumentNullException();
+
+        switch (channel.Format)
+        {
+            case EMeshBufferFormat.Float32:
+            {
+                var u = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset);
+                var v = BitConverter.ToSingle(vertexBuffer.Data, index * (int)vertexBuffer.ElementSize + channel.Offset + 4);
+
+                return new FMeshUVFloat(u, v);
+            }
+            default:
+                throw new NotImplementedException($"Format {channel.Format} is currently not supported");
+        }
+    }
+
+    public FColor GetColor(FMeshBufferChannel channel, FMeshBuffer? vertexBuffer, int index)
+    {
+        if (channel.ComponentCount == 0 || vertexBuffer == null)
+            throw new ArgumentNullException();
+
+        switch (channel.Format)
+        {
+            case EMeshBufferFormat.NUInt8:
+            {
+                var colorB = vertexBuffer.Data[index * ((int)vertexBuffer.ElementSize) + channel.Offset];
+                var colorG = vertexBuffer.Data[index * ((int)vertexBuffer.ElementSize) + channel.Offset + 1];
+                var colorR = vertexBuffer.Data[index * ((int)vertexBuffer.ElementSize) + channel.Offset + 2];
+                var colorA = vertexBuffer.Data[index * ((int)vertexBuffer.ElementSize) + channel.Offset + 3];
+
+                return new FColor(colorR, colorG, colorB, colorA);
+            }
+            default:
+                throw new NotImplementedException($"Format {channel.Format} is currently not supported");
+        }
+    }
+
+    public List<Tuple<short, byte>> GetWeights(FMeshBufferChannel boneIndexChannel, FMeshBufferChannel weightChannel, FMeshBuffer? boneIndexBuffer, FMeshBuffer? weightBuffer, int index)
+    {
+        if (boneIndexChannel.ComponentCount == 0 || weightChannel.ComponentCount == 0 || boneIndexBuffer == null || weightBuffer == null)
+            throw new ArgumentNullException();
+
+        if (weightChannel.Format == EMeshBufferFormat.NUInt8 && boneIndexChannel.Format == EMeshBufferFormat.UInt8)
+        {
+            List<Tuple<short, byte>> weightList = [];
+
+            for (var i = 0; i < boneIndexChannel.ComponentCount; i++)
+            {
+                var boneIndex = boneIndexBuffer.Data[index * ((int)boneIndexBuffer.ElementSize) + boneIndexChannel.Offset + i];
+                var weight = weightBuffer.Data[index * ((int)weightBuffer.ElementSize) + weightChannel.Offset + i];
+                weightList.Add(new Tuple<short, byte>(boneIndex, weight));
+            }
+
+            return weightList;
+        }
+        if (weightChannel.Format == EMeshBufferFormat.NUInt16 && boneIndexChannel.Format == EMeshBufferFormat.UInt16)
+        {
+            List<Tuple<short, byte>> weightList = [];
+
+            for (var i = 0; i < boneIndexChannel.ComponentCount; i++)
+            {
+                var boneIndex = BitConverter.ToInt16(boneIndexBuffer.Data, index * (int)boneIndexBuffer.ElementSize + boneIndexChannel.Offset + i);
+                var weight = BitConverter.ToInt16(weightBuffer.Data, index * (int)weightBuffer.ElementSize + weightChannel.Offset + i);
+                weightList.Add(new Tuple<short, byte>(boneIndex, (byte)weight));
+            }
+
+            return weightList;
+        }
+
+        throw new NotImplementedException($"Format combination (boneIndex: {boneIndexChannel.Format}, weight: {weightChannel.Format}) is currently not supported");
+    }
+}

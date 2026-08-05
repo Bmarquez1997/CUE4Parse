@@ -6,6 +6,7 @@ using CUE4Parse.UE4.Assets.Exports.Actor;
 using CUE4Parse.UE4.Assets.Exports.Animation;
 using CUE4Parse.UE4.Assets.Exports.Component.Landscape;
 using CUE4Parse.UE4.Assets.Exports.Component.SplineMesh;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject;
 using CUE4Parse.UE4.Assets.Exports.Material;
 using CUE4Parse.UE4.Assets.Exports.Rig;
 using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
@@ -53,6 +54,7 @@ public sealed class ExportSession(Action<StreamingLevelFilterArgs, CancellationT
             UPoseAsset poseAsset => Add(new PoseAssetExporter(poseAsset)),
             UAnimationAsset animation => Add(new AnimationExporter(animation)),
             UDNAAsset dna => Add(new DnaExporter(dna)),
+            UCustomizableObject customizableObject => Add(new Mutable.MutableExporter(customizableObject, new ExportOptions())),
             UWorld world => Add(new WorldExporter(world)),
             ALandscapeProxy landscape => Add(new LandscapeMeshExporter(landscape)),
             ULandscapeComponent landscape => Add(new LandscapeMeshExporter2(landscape)),

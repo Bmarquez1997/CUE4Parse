@@ -30,10 +30,6 @@ public class USceneComponent : UActorComponent
     public FVector RelativeScale3D;
     
     public bool bIsCooked;
-    
-    public FVector RelativeLocation;
-    public FRotator RelativeRotation;
-    public FVector RelativeScale3D;
 
 
     public override void Deserialize(FAssetArchive Ar, long validPos)
@@ -46,10 +42,6 @@ public class USceneComponent : UActorComponent
         RelativeScale3D = GetOrDefault(nameof(RelativeScale3D), FVector.OneVector);
 
         if (Ar.Game == GAME_WorldofJadeDynasty) Ar.Position += 4;
-        
-        RelativeLocation = GetOrDefault(nameof(RelativeLocation), FVector.ZeroVector);
-        RelativeRotation = GetOrDefault(nameof(RelativeRotation), FRotator.ZeroRotator);
-        RelativeScale3D = GetOrDefault(nameof(RelativeScale3D), FVector.OneVector);
         
         var bComputeBoundsOnceForGame = GetOrDefault<bool>("bComputeBoundsOnceForGame");
         var bComputedBoundsOnceForGame = GetOrDefault<bool>("bComputedBoundsOnceForGame");

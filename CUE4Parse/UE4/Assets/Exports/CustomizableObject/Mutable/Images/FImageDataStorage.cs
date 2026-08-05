@@ -9,6 +9,8 @@ namespace CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 public class FImageDataStorage
 {
     public FImageSize Size;
+    /// <summary>Alias used by conversion/texture decode paths.</summary>
+    public FImageSize ImageSize => Size;
     public EImageFormat ImageFormat;
     [JsonIgnore] public byte NumLODs;
     public FImageArray[] Buffers;

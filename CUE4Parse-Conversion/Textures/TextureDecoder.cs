@@ -13,7 +13,7 @@ using CUE4Parse.Compression;
 using CUE4Parse.UE4.Assets.Exports.Texture;
 using CUE4Parse.UE4.Exceptions;
 using CUE4Parse.Utils;
-using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 
 namespace CUE4Parse_Conversion.Textures;
 
@@ -259,13 +259,6 @@ public static class TextureDecoder
         }
         return bitmaps;
     }
-    
-    private static int GetBytesPerPixel(EPixelFormat pixelFormat)
-    {
-        if (!PixelFormatUtils.PixelFormats.TryGetValue(pixelFormat, out var tempFormatInfo))
-            throw new NotImplementedException("Unsupported pixel format: " + pixelFormat);
-        return tempFormatInfo.BlockBytes / (tempFormatInfo.BlockSizeX * tempFormatInfo.BlockSizeY * tempFormatInfo.BlockSizeZ);
-    }
 
     private static void DecodeTexture(UTexture texture, FTexture2DMipMap? mip, int sizeX, int sizeY, int sizeZ, ETexturePlatform platform, out byte[] data, out EPixelFormat colorType)
     {
@@ -322,8 +315,8 @@ public static class TextureDecoder
         {
             EImageFormat.BC5 => BCDecoder.BC5(rawBytes, size.X, size.Y, 1),
             EImageFormat.BC4 => BCDecoder.BC4(rawBytes, size.X, size.Y, 1),
-            EImageFormat.BC3 => DXTDecoder.DXT5(rawBytes, size.X, size.Y, 1),
-            EImageFormat.BC1 => DXTDecoder.DXT1(rawBytes, size.X, size.Y, 1),
+            EImageFormat.BC3 => BCDecoder.BC3(rawBytes, size.X, size.Y, 1),
+            EImageFormat.BC1 => BCDecoder.BC1(rawBytes, size.X, size.Y, 1),
             EImageFormat.L_UByte => rawBytes,
             EImageFormat.L_UByteRLE => UncompressRLE_L(size.X, size.Y, rawBytes),
             EImageFormat.RGB_UByte => rawBytes,

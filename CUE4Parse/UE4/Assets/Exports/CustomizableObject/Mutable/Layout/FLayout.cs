@@ -1,4 +1,4 @@
-﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Image;
+﻿using CUE4Parse.UE4.Assets.Exports.CustomizableObject.Mutable.Images;
 using CUE4Parse.UE4.Assets.Readers;
 using FIntVector2 = CUE4Parse.UE4.Objects.Core.Math.TIntVector2<int>;
 
