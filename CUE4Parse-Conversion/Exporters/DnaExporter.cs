@@ -31,7 +31,7 @@ public sealed class DnaExporter(UDNAAsset dna) : ExporterBase(dna)
             var poseName = string.IsNullOrEmpty(dna.DnaFileName)
                 ? ObjectName
                 : Path.GetFileNameWithoutExtension(dna.DnaFileName);
-            var poseFile = new UEFormatPoseFormat().Build(poseName, Session.Options, convertedPoseAsset);
+            var poseFile = new UEFormatPoseFormat().Build(poseName, ObjectPath, Session.Options, convertedPoseAsset);
             results.Add(poseFile with { NameSuffix = suffix });
         }
 

@@ -192,7 +192,7 @@ public class MutableExporter : ExporterBase
 
         if (_options.MeshFormat == EMeshFormat.UEFormat)
         {
-            var files = new UEFormatMeshFormat().BuildStaticMesh(meshName, _options, convertedMesh);
+            var files = new UEFormatMeshFormat().BuildStaticMesh(meshName, ObjectPath, _options, convertedMesh);
             if (files.Count == 0)
             {
                 convertedMesh.Dispose();
