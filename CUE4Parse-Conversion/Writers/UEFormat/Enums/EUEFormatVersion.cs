@@ -13,7 +13,7 @@ public enum EUEFormatVersion
     PreserveOriginalTransforms = 8,
     AddPoseExport = 9,
     AttributeFormatRestructure = 10,
-    SerializePhysicsAssets = 11,
+    // SerializePhysicsAssets = 11, TODO: Add back in
 
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1
