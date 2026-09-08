@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using CUE4Parse.MappingsProvider;
@@ -85,11 +84,6 @@ public abstract class AbstractPropertyHolder : IPropertyHolder
         }
         return obj.Length > 0;
     }
-}
-
-public class UPropertyAttribute(string? propertyName = null) : Attribute
-{
-    public readonly string? PropertyName = propertyName;
 }
 
 [JsonConverter(typeof(UObjectConverter))]
@@ -223,6 +217,8 @@ public class UObject : AbstractPropertyHolder
             DeserializePropertiesTagged(Properties = [], Ar, false);
         }
 
+        UPropertyCache.ApplyProperties(this);
+
         if (Ar.Game >= GAME_UE4_0 && !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
         {
             var hasGuid = Ar.ReadBoolean();
@@ -249,29 +245,11 @@ public class UObject : AbstractPropertyHolder
         if (FUE5MainStreamObjectVersion.Get(Ar) < FUE5MainStreamObjectVersion.Type.SparseClassDataStructSerialization || !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
             return;
 
-        if (FUE5MainStreamObjectVersion.Get(Ar) >=
-            FUE5MainStreamObjectVersion.Type.SparseClassDataStructSerialization ||
-            !Flags.HasFlag(EObjectFlags.RF_ClassDefaultObject))
+        if (Class?.Object?.Value.ExportType is { } type && type.EndsWith("BlueprintGeneratedClass"))
         {
-            if (Class?.Object?.Value.ExportType is { } type && type.EndsWith("BlueprintGeneratedClass"))
-            {
-                SerializedSparseClassDataStruct = new FPackageIndex(Ar).Load<UStruct>();
-                if (SerializedSparseClassDataStruct is null) return;
-                SerializedSparseClassData = new FStructFallback(Ar, SerializedSparseClassDataStruct);
-            }
-        }
-        
-        var fields = GetType().GetFields();
-        foreach (var field in fields)
-        {
-            var attribute = field.GetCustomAttribute<UPropertyAttribute>();
-            if (attribute is null) continue;
-            
-            var name = attribute.PropertyName ?? field.Name;
-            if (Properties.FirstOrDefault(prop => prop.Name.Text.Equals(name)) 
-                is not { } property) continue;
-            
-            field.SetValue(this, property.Tag?.GetValue(field.FieldType));
+            SerializedSparseClassDataStruct = new FPackageIndex(Ar).Load<UStruct>();
+            if (SerializedSparseClassDataStruct is null) return;
+            SerializedSparseClassData = new FStructFallback(Ar, SerializedSparseClassDataStruct);
         }
     }
 
