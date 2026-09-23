@@ -55,7 +55,7 @@ public sealed class ExportSession(Action<StreamingLevelFilterArgs, CancellationT
             USkeleton skeleton => Add(new SkeletonExporter(skeleton)),
             UPoseAsset poseAsset => Add(new PoseAssetExporter(poseAsset)),
             UAnimationAsset animation => Add(new AnimationExporter(animation)),
-            UDNAAsset dna => Add(new DnaExporter(dna)),
+            UDNAObject dna => Add(new DnaExporter(dna)),
             UCustomizableObject customizableObject => Add(new Mutable.MutableExporter(customizableObject, new ExportOptions())),
             UWorld world => Add(new WorldExporter(world)),
             ALandscapeProxy landscape => Add(new LandscapeMeshExporter(landscape)),
